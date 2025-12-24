@@ -97,7 +97,7 @@ theorem mod_add_mul_eq (n m : Nat) {base : Nat} (hn: n < base) : (n + m * base) 
       _ = n - 0 := by simp only [hn, ↓reduceIte, Nat.sub_zero]
       _ = n := by rw [Nat.sub_zero]
 
-theorem div_add_mul_eq (n m : Nat) {base : Nat} (hb : 1 < base) (hn: n < base) : (n + m * base) / base = m := by
+theorem div_add_mul_eq (n m : Nat) {base : Nat} (hn: n < base) : (n + m * base) / base = m := by
   induction m with
   | zero => simp only [Nat.zero_mul, Nat.add_zero]; exact Nat.div_eq_of_lt hn
   | succ m ih => sorry
@@ -511,8 +511,8 @@ theorem addNatAux_add_eq_append_addNatAux_addNatAux (n m : Nat) {base : Nat} (hb
     calc 0 < n := hn.left
       _ ≤ n + m * base := Nat.le_add_right n (m * base)
   have hnr : ¬ base ≤ n := by simp only [Nat.not_le, hn.right]
-  have hme: (n + m * base) % base = n := mod_add_mul_eq n m hb hn.right
-  have hde : (n + m * base) / base = m := div_add_mul_eq n m hb hn.right
+  have hme: (n + m * base) % base = n := mod_add_mul_eq n m hn.right
+  have hde : (n + m * base) / base = m := div_add_mul_eq n m hn.right
   rw [hac, addNatAux, hme]
   simp only [Nat.ne_zero_of_lt hnz, ↓reduceDIte, hde]
 
