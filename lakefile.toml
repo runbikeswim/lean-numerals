@@ -1,0 +1,10 @@
+name = "lean-numerals"
+version = "0.1.0"
+defaultTargets = ["lean-numerals"]
+
+[[lean_lib]]
+name = "LeanNumerals"
+
+[[lean_exe]]
+name = "lean-numerals"
+root = "Main"
