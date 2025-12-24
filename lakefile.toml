@@ -3,7 +3,7 @@ version = "0.1.0"
 defaultTargets = ["lean-numerals"]
 
 [[lean_lib]]
-name = "LeanNumerals"
+name = "Numerals"
 
 [[lean_exe]]
 name = "lean-numerals"
