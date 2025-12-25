@@ -2,6 +2,12 @@ name = "lean-numerals"
 version = "0.1.0"
 defaultTargets = ["lean-numerals"]
 
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+autoImplicit = false
+relaxedAutoImplicit = false
+maxSynthPendingDepth = 3
+
 [[lean_lib]]
 name = "Numerals"
 
