@@ -152,6 +152,8 @@ deriving Repr, DecidableEq
 
 namespace Numeral
 
+section Groundwork
+
 @[simp]
 def isZero (a : Numeral) : Prop := a.digits = [] ∨ a.digits = [0]
 
@@ -190,6 +192,25 @@ def oneBase10 : Numeral := {
     noTrailingZeros := by simp only [ne_eq, List.cons_ne_self, not_false_eq_true,
                         List.cons.injEq, Nat.succ_ne_self, and_true,
                         List.getLast_singleton, imp_self]
+  }
+
+def twoBase3 : Numeral := {
+    digits := [2],
+    base := 3,
+    baseGtOne := by decide,
+    allDigitsLtBase := by decide,
+    noTrailingZeros := by simp only [ne_eq, List.cons_ne_self, not_false_eq_true,
+                        List.cons.injEq, and_true, List.getLast_singleton, imp_self]
+  }
+
+def threeBase2 : Numeral := {
+    digits := [1, 1],
+    base := 2,
+    baseGtOne := by decide,
+    allDigitsLtBase := by decide,
+    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true, List.cons.injEq,
+                        Nat.succ_ne_self, List.cons_ne_self, and_self, and_true,
+                        List.getLast_cons_of_singleton, imp_self]
   }
 
 def fourBase2 : Numeral := {
@@ -242,14 +263,9 @@ def threeHundredSixtyBase60 : Numeral := {
   }
 
 def numerals := [
-    nilBase10, zeroBase10, oneBase10, fourBase2, twelveBase10,
-    thirteenBase8, abcdefBase16, threeHundredSixtyBase60
+    nilBase10, zeroBase10, oneBase10, twoBase3, threeBase2,
+    fourBase2, twelveBase10, thirteenBase8, abcdefBase16, threeHundredSixtyBase60
   ]
-
-@[simp]
-def allDigitsLtBase_cons {n base : Nat} {d : List Nat} :
-  (n::d).all (· < base) ↔ n < base ∧ d.all (· < base) := by
-    simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
 
 def toString (n : Numeral) : String :=
   let digits : List Nat := if n.digits = [] then [0] else n.digits.reverse
@@ -273,6 +289,15 @@ def toString (n : Numeral) : String :=
     | _ => ",".intercalate (l.map (fun d : Nat => s!"{d}")) ++ s!"({b})"
 
 instance instToStringNumeral : ToString Numeral := ⟨toString⟩
+
+@[simp]
+def allDigitsLtBase_cons {n base : Nat} {d : List Nat} :
+  (n::d).all (· < base) ↔ n < base ∧ d.all (· < base) := by
+    simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true]
+
+end Groundwork
+
+section TrailingZeros
 
 @[simp]
 theorem noTrailingZeros_cons_of_ne_zero (n : Nat) {d : List Nat} (hdnz : d ≠ [0])
@@ -315,6 +340,10 @@ theorem noTrailingZeros_of_noTrailingZeros_cons {n : Nat} {d : List Nat}
   have h4 : (n::d).getLast h1 ≠ 0 := hntc h1 h2
   rwa [h3] at h4
 
+end TrailingZeros
+
+section MulDivBase
+
 def mul_base (a : Numeral) : Numeral :=
   if h : a.isZero then
     a
@@ -334,12 +363,12 @@ def mul_base (a : Numeral) : Numeral :=
 theorem mul_base_eq_cons_zero_of_ne_zero {a : Numeral} (h : ¬ a.isZero) : a.mul_base.digits = 0::(a.digits) := by
   simp only [mul_base, h, ↓reduceDIte]
 
-def div_base' (a : Numeral) : Numeral :=
+def div_base (a : Numeral) : Numeral :=
   match h : a.digits with
   | [] => a
-  | h::t =>
+  | head::tail =>
     {
-      digits := t,
+      digits := tail,
       base := a.base,
       baseGtOne := a.baseGtOne,
       allDigitsLtBase := by
@@ -352,12 +381,46 @@ def div_base' (a : Numeral) : Numeral :=
         exact noTrailingZeros_of_noTrailingZeros_cons this
     }
 
+end MulDivBase
+
+section ToNat
+
 def toNat (n : Numeral) : Nat :=
-  (helper n.digits 1 0).1 where
-    helper (d : List Nat) (b : Nat) (r : Nat) : Nat × Nat :=
-      match d with
-      | [] => (r, b)
-      | a::as => helper as (b * n.base) (a * b + r)
+  (helper n.digits n.base 1 0).snd where
+    helper (digits : List Nat) (base factor acc : Nat) : Nat × Nat :=
+      match digits with
+      | [] => (factor, acc)
+      | a::as => helper as base (factor * base) (a * factor + acc)
+
+@[simp]
+theorem toNat_helper_nil {base factor acc : Nat} : (toNat.helper [] base factor acc) = (factor, acc) := by
+  unfold toNat.helper
+  rfl
+
+@[simp]
+theorem toNat_helper_acc_factor (digits : List Nat) (base factor acc : Nat)  :
+  (toNat.helper digits base factor acc).snd = acc + factor * (toNat.helper digits base 1 0).snd := by
+  induction digits generalizing factor acc with
+  | nil => simp_all only [toNat_helper_nil, Nat.mul_zero, Nat.add_zero]
+  | cons head tail ih =>
+    unfold toNat.helper
+    simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
+    rw [ih base head]
+    rw [Nat.left_distrib factor head, ← Nat.add_assoc, ← Nat.mul_assoc factor base]
+    rw [Nat.add_comm acc (factor * head)]
+    rw [Nat.mul_comm factor head]
+    rw [ih (factor * base) (head * factor + acc)]
+
+@[simp]
+theorem toNat_helper_cons (digits : List Nat) (n base : Nat) :
+  (toNat.helper (n::digits) base 1 0).snd = n + base * (toNat.helper digits base 1 0).snd := by
+  rw [toNat.helper.eq_def]
+  simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
+  exact toNat_helper_acc_factor digits base base n
+
+end ToNat
+
+section AddNatAux
 
 def addNatAux (n : Nat) (digits : List Nat) (base : Nat) (hb : 1 < base) : List Nat :=
   match digits with
@@ -526,13 +589,6 @@ theorem all_addNatAux_lt_base {n base : Nat} {digits : List Nat} (hb : 1 < base)
     exact allDigitsLtBase_cons.mpr (And.intro hs ih)
 
 @[simp]
-theorem addNatAux_eq_cons_zero_addNatAux (n : Nat) {base : Nat} (hb : 1 < base) (hn : base ≤ n ∧ n % base = 0) :
-  addNatAux n [] base hb = 0::(addNatAux (n / base) [] base hb) := by
-  rw [addNatAux]
-  have hne : n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr (Nat.pos_of_one_lt (Nat.lt_of_lt_of_le hb hn.left))
-  simp only [hne, ↓reduceDIte, hn.right]
-
-@[simp]
 theorem addNatAux_eq_singleton (n : Nat) {base : Nat} (hb : 1 < base) (hn : 0 < n ∧ n < base) :
   addNatAux n [] base hb = [n] := by
   have he : n % base = n := Nat.mod_eq_of_lt hn.right
@@ -541,6 +597,13 @@ theorem addNatAux_eq_singleton (n : Nat) {base : Nat} (hb : 1 < base) (hn : 0 < 
   have hnil : addNatAux 0 [] base hb = [] := (addNatAux_nil_iff_and_zero_nil 0 [] hb).mpr (And.intro rfl rfl)
   rw [addNatAux, he]
   simp only [hne, ↓reduceDIte, hdz, hnil]
+
+@[simp]
+theorem addNatAux_eq_cons_zero_addNatAux (n : Nat) {base : Nat} (hb : 1 < base) (hn : base ≤ n ∧ n % base = 0) :
+  addNatAux n [] base hb = 0::(addNatAux (n / base) [] base hb) := by
+  rw [addNatAux]
+  have hne : n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr (Nat.pos_of_one_lt (Nat.lt_of_lt_of_le hb hn.left))
+  simp only [hne, ↓reduceDIte, hn.right]
 
 @[simp]
 theorem addNatAux_add_eq_append_addNatAux_addNatAux (n m : Nat) {base : Nat} (hb : 1 < base) (hn : 0 < n ∧ n < base) :
@@ -552,11 +615,15 @@ theorem addNatAux_add_eq_append_addNatAux_addNatAux (n m : Nat) {base : Nat} (hb
   have hnz : 0 < n + m * base := by
     calc 0 < n := hn.left
       _ ≤ n + m * base := Nat.le_add_right n (m * base)
-  have hnr : ¬ base ≤ n := by simp only [Nat.not_le, hn.right]
+  have hnr : ¬base ≤ n := by simp only [Nat.not_le, hn.right]
   have hme: (n + m * base) % base = n := Nat.mod_add_mul_eq n m hn.right
   have hde : (n + m * base) / base = m := Nat.div_add_mul_eq n m hn.right
   rw [hac, addNatAux, hme]
   simp only [Nat.ne_zero_of_lt hnz, ↓reduceDIte, hde]
+
+end AddNatAux
+
+section OfNat
 
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral where
   digits := addNatAux n [] base hb
@@ -570,7 +637,7 @@ theorem ofNat_base_eq_base (n : Nat) (base : Nat) (hb : 1 < base) : (ofNat n bas
   unfold ofNat
   rfl
 
--- @[simp]
+@[simp]
 theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n base hb) = n := by
   induction n using Nat.strongRecOn with
   | _ n ih =>
@@ -581,10 +648,29 @@ theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n 
       unfold toNat toNat.helper
       rfl
     else
-      have : n / base * base ≤ n := Nat.div_mul_le_self n base
-      have : n = n % base + (n / base) * base := by rw [Nat.mod_eq_sub_div_mul, Nat.sub_add_cancel this]
-      unfold ofNat
-      sorry
+      have h0 : 0 < n := Nat.pos_iff_ne_zero.mpr h
+      have h1 : n / base * base ≤ n := Nat.div_mul_le_self n base
+      have h2 : n = n % base + (n / base) * base := by rw [Nat.mod_eq_sub_div_mul, Nat.sub_add_cancel h1]
+      unfold ofNat toNat at ⊢ ih
+      simp only at ⊢ ih
+      if g: n % base = 0 then
+        have h3 : base ≤ n := Nat.le_of_mod_lt (by rwa [← g] at h0)
+        rw [addNatAux_eq_cons_zero_addNatAux n hb (And.intro h3 g)]
+        rw [toNat_helper_cons (addNatAux (n / base) [] base hb) 0 base]
+        rw [ih (n / base) (Nat.div_lt_self h0 hb)]
+        simp only [Nat.zero_add, Nat.mul_div_eq_iff_dvd.mpr (Nat.dvd_of_mod_eq_zero g)]
+      else
+        have h4 : 0 < n % base := Nat.pos_iff_ne_zero.mpr g
+        have h5 : n % base < base := Nat.mod_lt n (Nat.lt_trans (by decide) hb)
+        rw [h2, addNatAux_add_eq_append_addNatAux_addNatAux (n % base) (n / base) hb (And.intro h4 h5)]
+        rw [addNatAux_eq_singleton (n % base) hb (And.intro h4 h5), List.singleton_append]
+        rw [toNat_helper_cons (addNatAux (n / base) [] base hb) (n % base) base]
+        rw [ih (n / base) (Nat.div_lt_self h0 hb)]
+        simp only [Nat.mul_comm]
+
+end OfNat
+
+section Rebase
 
 def rebase (n : Numeral) (base : Nat) (hb : 1 < base) : Numeral :=
   ofNat (n.toNat) base hb
@@ -593,6 +679,10 @@ def rebase (n : Numeral) (base : Nat) (hb : 1 < base) : Numeral :=
 theorem rebase_base_eq_base (n : Numeral) (base : Nat) (hb : 1 < base) : (rebase n base hb).base = base := by
   unfold rebase ofNat toNat
   rfl
+
+end Rebase
+
+section AddAux
 
 def addAux (a b : List Nat) (base carry : Nat)
   (halt : a.all (· < base)) (hblt : b.all (· < base))
@@ -754,6 +844,10 @@ theorem addAux_noTrailingZeros_of_noTrailingZeros
       (iff_iff_iff_not_not.mp (addAux_eq_zero_iff xs ys base ((x + y + carry) / base) halt' hblt' hb hc')).mpr h1
     exact noTrailingZeros_cons_of_ne_zero ((x + y + carry) % base) h2 (ih hantz' hbntz')
 
+end AddAux
+
+section Add
+
 def add (a b : Numeral) (h : a.base = b.base) : Numeral where
     digits := addAux a.digits b.digits a.base 0
                 a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
@@ -855,7 +949,7 @@ instance instCommutativeHAddNumerals : Std.Commutative hAdd := ⟨hAdd_comm⟩
 instance instHAddNumerals : HAdd Numeral Numeral Numeral := ⟨hAdd⟩
 
 -- @[simp]
-theorem toNat_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (add a b h) = a.toNat + b.toNat := by
+theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (add a b h) = a.toNat + b.toNat := by
   match ga : a.digits, gb : b.digits with
   | [], [] =>
     unfold add toNat
@@ -868,5 +962,6 @@ theorem toNat_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (add a 
   | [], y::ys => sorry
   | x::xs, y::ys => sorry
 
+end Add
 end Numeral
 end Numerals
