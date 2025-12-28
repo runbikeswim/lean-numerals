@@ -4,144 +4,24 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
+import Numerals.Corollaries
+
 set_option linter.all true
 /-
 TODO: remove and resolve
 -/
 set_option linter.missingDocs false
 
-section BasicLemmas
-
-@[simp]
-theorem or_elim_of_not {p q : Prop} (h : p ∨ q) (g : ¬ p) : q :=
-  Or.elim h (fun t : p => False.elim (g t)) id
-
-@[simp]
-theorem iff_iff_iff_not_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
-  constructor
-  · intro h
-    exact not_congr h
-  · intro h
-    have : ¬¬p ↔ ¬¬q := not_congr h
-    simp only [Classical.not_not] at this
-    assumption
-
-end BasicLemmas
-
-section NatLemmas
-
-namespace Nat
-
-@[simp]
-theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
-
-@[simp]
-theorem div_ne_zero {a b : Nat} (h1 : b ≠ 0) (h2 : ¬ a < b) : ¬ a / b = 0  :=
-  Nat.div_ne_zero_iff.mpr (And.intro h1 (Nat.le_of_not_lt h2))
-
-@[simp]
-theorem eq_zero_of_lt_of_mod_eq_zero {a b : Nat}
-  (h1 : 1 < b) (h2 : a % b = 0) (h3 : b = 0 ∨ a < b) : a = 0 := by
-  have h4 : b ∣ a  := Nat.dvd_iff_mod_eq_zero.mpr h2
-  have h5 : a < b := or_elim_of_not h3 (Nat.ne_zero_of_lt h1)
-  exact Nat.eq_zero_of_dvd_of_lt h4 h5
-
-@[simp]
-theorem ne_zero_mod_of_ne_zero {a b : Nat}
-  (h1 : 1 < b) (h2 : a / b = 0) (h3 : a ≠ 0) : a % b ≠ 0 := by
-  have h4 : a < b := Nat.lt_of_div_eq_zero (Nat.pos_of_one_lt h1) h2
-  false_or_by_contra; rename _ => h5
-  have h6 : a = 0 := Nat.eq_zero_of_lt_of_mod_eq_zero h1 h5 (Or.inr h4)
-  contradiction
-
-@[simp]
-theorem lt_sub_3_mul_3_mul {a : Nat}
-  (h : 2 ≤ a) : 3 * a - 3 < a * a := by
-  if g : a = 2 then
-    rw [g]
-    decide
-  else
-    have h1 : 2 < a :=
-      or_elim_of_not
-        (Nat.lt_or_gt_of_ne (by simp only [ne_eq, g, not_false_eq_true]))
-        (by simp only [Nat.not_lt, h])
-    have h2 : 3 ≤ a := Nat.le_of_pred_lt h1
-    have h3 : 3 * a ≤ a * a := Nat.mul_le_mul_right a h2
-    have h4 : 3 * 1 ≤ 3 * a := Nat.mul_le_mul_left 3 (Nat.le_trans (by decide) h)
-    have h5 : 3 * 1 ≤ a * a := Nat.le_trans h4 h3
-    have h6 : 3 * a - 3 ≤ a * a - 3 := (Nat.sub_le_sub_iff_right h5).mpr h3
-    have h7 : a * a - 3 < a * a := Nat.div_rec_lemma (And.intro (by decide) h5)
-    exact Nat.lt_of_le_of_lt h6 h7
-
-@[simp]
-theorem lt_sum_div_base_of_lt_base {a b c base : Nat}
-  (hab : a < base) (hbb : b < base) (hcb : c < base) (hb : 1 < base) :
-  (a + b + c) / base < base := by
-  have h1 : a + b + c ≤ 3 * base - 3 := by
-    calc a + b + c ≤ a + b + (base - 1) := Nat.add_le_add_left (Nat.le_sub_one_of_lt hcb) (a + b)
-      _ = (base - 1) + (a + b) := Nat.add_comm (a + b) (base - 1)
-      _ = (base - 1) + a + b := by rw [← Nat.add_assoc (base - 1) a b]
-      _ ≤ (base - 1) + a + (base - 1) := Nat.add_le_add_left (Nat.le_sub_one_of_lt hbb) ((base - 1) + a)
-      _ = (base - 1) + ((base - 1) + a) := Nat.add_comm ((base - 1) + a) (base - 1)
-      _ = (base - 1) + (base - 1) + a := by rw [← Nat.add_assoc (base - 1) (base - 1) a]
-      _ ≤ (base - 1) + (base - 1) + (base - 1) := Nat.add_le_add_left (Nat.le_sub_one_of_lt hab) ((base - 1) + (base - 1))
-      _ = 2 * (base - 1) + (base - 1) := by rw [← Nat.two_mul (base -1)]
-      _ = 3 * (base - 1) := by rw [← Nat.succ_mul 2 (base -1)]
-      _ = 3 * base - 3 := by rw [Nat.mul_sub 3 base 1]
-  have h2 : a + b + c < base * base := Nat.lt_of_le_of_lt h1 (Nat.lt_sub_3_mul_3_mul (Nat.succ_le_iff.mpr hb))
-  exact Nat.div_lt_of_lt_mul h2
-
-@[simp]
-theorem mod_add_mul_eq (n m : Nat) {base : Nat} (hn: n < base) : (n + m * base) % base = n := by
-  induction m with
-  | zero => simp only [Nat.zero_mul, Nat.add_zero]; exact Nat.mod_eq_of_lt hn
-  | succ m ih =>
-    have : (n + m * base) % base + base % base < base := by simp only [Nat.mod_self base, Nat.add_zero, ih, hn]
-    have hd : n + (m + 1) * base = n + m * base + base := by
-      rw [Nat.add_mul m 1 base, Nat.one_mul base, ← Nat.add_assoc n (m * base) base]
-    calc (n + (m + 1) * base) % base = (n + m * base + base) % base := by rw [hd]
-      _ = (n + m * base) % base + base % base - if (n + m * base) % base + base % base < base then 0 else base := Nat.add_mod_eq_sub
-      _ = (n + m * base) % base + 0 - if (n + m * base) % base + 0 < base then 0 else base := by rw [Nat.mod_self base]
-      _ = (n + m * base) % base - if (n + m * base) % base < base then 0 else base := by rw [Nat.add_zero]
-      _ = n - if n < base then 0 else base := by rw [ih]
-      _ = n - 0 := by simp only [hn, ↓reduceIte, Nat.sub_zero]
-      _ = n := by rw [Nat.sub_zero]
-
-@[simp]
-theorem div_add_mul_eq (n m : Nat) {base : Nat} (hn: n < base) : (n + m * base) / base = m := by
-  induction m with
-  | zero => simp only [Nat.zero_mul, Nat.add_zero]; exact Nat.div_eq_of_lt hn
-  | succ m ih =>
-    have hd : n + (m + 1) * base = n + m * base + base := by
-      rw [Nat.add_mul m 1 base, Nat.one_mul base, ← Nat.add_assoc n (m * base) base]
-    have : (n + m * base + base) / base = (n + m * base) / base + 1 :=
-      Nat.add_div_right (n + m * base) (Nat.lt_of_le_of_lt (zero_le n) hn)
-    rw [hd, this, ih]
-
-end Nat
-end NatLemmas
-
-section ListLemmas
-
-namespace List
-
-@[simp]
-theorem cons_singleton_iff_and_eq_nil {α : Type} {a b : α} {as : List α} :
-  (a::as = [b]) ↔ (a = b ∧ as = []) := by simp only [cons.injEq]
-
-@[simp]
-theorem getLast_cons_of_singleton {α : Type} (a: α) {b: α} {as : List α} (h : as = [b]) :
-  (a::as).getLast (by simp only [ne_eq, reduceCtorEq, not_false_eq_true]) = b := by
-  have g : as ≠ [] := by simp only [h, ne_eq, cons_ne_self, not_false_eq_true]
-  have : as.getLast g = b := by simp only [h, getLast_singleton]
-  rwa [List.getLast_cons g]
-
-
-end List
-end ListLemmas
-
 section Numerals
 
+/-!
+`Numeral` provides a representation of a natural number in positional notation for `base`, with `digits`
+in _reverse_ (little-endian) order. `base` can be any number larger than one, which is ensured by `baseGtOne`.
+`allDigitsLtBase` asserts that every digit is less than `base`.
+Via `noTrailingZeros`, it is ensured that there are no trailing zeros, so except for zero, every natural
+number has a unique representation for the given `base`.
+`0` can be represented in two ways: either digits equals`[]` or `[0]`, which is independent of `base`
+-/
 structure Numeral where
   digits : List Nat
   base: Nat := 10
@@ -154,7 +34,9 @@ namespace Numeral
 
 section Groundwork
 
-@[simp]
+/-!
+`isZero` covers the two representations of zero as `Numeral`
+-/
 def isZero (a : Numeral) : Prop := a.digits = [] ∨ a.digits = [0]
 
 def decIsZero (a : Numeral) : Decidable a.isZero :=
@@ -174,98 +56,6 @@ instance instInhabitedNumeral : Inhabited Numeral := ⟨{
                         not_false_eq_true, not_true_eq_false,
                         List.getLast_singleton, imp_self]
   }⟩
-
-def nilBase10 : Numeral := {
-    digits := [],
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, not_true_eq_false, List.ne_cons_self,
-                        not_false_eq_true, forall_const, forall_false]
-  }
-
-def zeroBase10 : Numeral := default
-
-def oneBase10 : Numeral := {
-    digits := [1],
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, List.cons_ne_self, not_false_eq_true,
-                        List.cons.injEq, Nat.succ_ne_self, and_true,
-                        List.getLast_singleton, imp_self]
-  }
-
-def twoBase3 : Numeral := {
-    digits := [2],
-    base := 3,
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, List.cons_ne_self, not_false_eq_true,
-                        List.cons.injEq, and_true, List.getLast_singleton, imp_self]
-  }
-
-def threeBase2 : Numeral := {
-    digits := [1, 1],
-    base := 2,
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true, List.cons.injEq,
-                        Nat.succ_ne_self, List.cons_ne_self, and_self, and_true,
-                        List.getLast_cons_of_singleton, imp_self]
-  }
-
-def fourBase2 : Numeral := {
-    digits := [0, 0, 1],
-    base := 2
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true,
-                        List.cons.injEq, and_false, List.getLast_cons_cons, and_true,
-                        List.getLast_cons_of_singleton, Nat.succ_ne_self, imp_self]
-  }
-
-def twelveBase10 : Numeral := {
-    digits := [2, 1],
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true,
-                        List.cons.injEq, List.cons_ne_self, and_self, and_true,
-                        List.getLast_cons_of_singleton, Nat.succ_ne_self, imp_self]
-  }
-
-def thirteenBase8 : Numeral := {
-    digits := [5, 1],
-    base := 8
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true,
-                        List.cons.injEq, List.cons_ne_self, and_self, and_true,
-                        List.getLast_cons_of_singleton, Nat.succ_ne_self, imp_self]
-  }
-
-def abcdefBase16 : Numeral := {
-    digits := [15, 14, 13, 12, 11, 10],
-    base := 16,
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true,
-                        List.cons.injEq, and_self, List.getLast_cons_cons, and_true,
-                        List.getLast_cons_of_singleton, imp_self]
-  }
-
-def threeHundredSixtyBase60 : Numeral := {
-    digits := [0, 6],
-    base := 60,
-    baseGtOne := by decide,
-    allDigitsLtBase := by decide,
-    noTrailingZeros := by simp only [ne_eq, reduceCtorEq, not_false_eq_true,
-                        List.cons.injEq, List.cons_ne_self, and_false, and_true,
-                        List.getLast_cons_of_singleton, imp_self]
-  }
-
-def numerals := [
-    nilBase10, zeroBase10, oneBase10, twoBase3, threeBase2,
-    fourBase2, twelveBase10, thirteenBase8, abcdefBase16, threeHundredSixtyBase60
-  ]
 
 def toString (n : Numeral) : String :=
   let digits : List Nat := if n.digits = [] then [0] else n.digits.reverse
@@ -621,6 +411,18 @@ theorem addNatAux_add_eq_append_addNatAux_addNatAux (n m : Nat) {base : Nat} (hb
   rw [hac, addNatAux, hme]
   simp only [Nat.ne_zero_of_lt hnz, ↓reduceDIte, hde]
 
+theorem addNatAux_zero_eq_of_all_lt_base {digits : List Nat} {base : Nat} (hb : 1 < base) (hd : digits.all (· < base)) :
+  addNatAux 0 digits base hb = digits := by
+  induction digits with
+  | nil => simp only [addNatAux_nil_iff_and_zero_nil, and_self]
+  | cons head tail ih =>
+    unfold addNatAux
+    have h1 : head < base := (allDigitsLtBase_cons.mp hd).left
+    have h2 : head / base = 0 := Nat.div_eq_zero_iff.mpr (Or.inr h1)
+    have h3 : head % base = head := Nat.mod_eq_of_lt h1
+    simp only [Nat.zero_add, List.cons.injEq, h2, h3, true_and]
+    exact ih (allDigitsLtBase_cons.mp hd).right
+
 end AddNatAux
 
 section OfNat
@@ -876,28 +678,6 @@ theorem add_zero_iff_or_zero_zero (a b : Numeral) (h : a.base = b.base) :
   unfold add
   simp only [addAux_eq_zero_iff, true_and]
 
-theorem tbd_05 {n : Nat} {a : Numeral} :
-  addNatAux n a.digits a.base a.baseGtOne
-    = (add (ofNat n a.base a.baseGtOne) a (ofNat_base_eq_base n a.base a.baseGtOne)).digits := by
-  sorry
-
-theorem add_eq_left (a b : Numeral) (h : a.base = b.base) : add a b h = a ↔ (b.isZero) := by
-  constructor
-  · intro g
-    unfold isZero
-    -- unfold add at g
-    have hd : addAux a.digits b.digits a.base 0
-                a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
-                a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne) = a.digits := by
-
-      simp_all
-      sorry
-    sorry
-  · intro g
-    unfold isZero at g
-    unfold add
-    sorry
-
 @[simp]
 theorem add_comm (a b : Numeral) (h : a.base = b.base) : add a b h = add b a (by simp only [h]) := by
   have hblt : (b.digits.all fun x ↦ decide (x < b.base)) = true := b.allDigitsLtBase
@@ -938,7 +718,7 @@ theorem hAdd_comm (a b : Numeral) : hAdd a b = hAdd b a := by
       exact add_comm (rebase a b.base b.baseGtOne) b harb
     else
       have he : a.base = b.base ↔ b.base = a.base := eq_comm
-      have h' : ¬ b.base = a.base := (iff_iff_iff_not_not.mp he).mp h
+      have h' : ¬b.base = a.base := (iff_iff_iff_not_not.mp he).mp h
       have g' : b.base ≤ a.base := Nat.le_of_not_lt g
       have g'' : b.base < a.base := Nat.lt_of_le_of_ne g' h'
       simp only [h, g, g'', ↓reduceDIte, ↓reduceIte, eq_comm]
@@ -950,17 +730,27 @@ instance instHAddNumerals : HAdd Numeral Numeral Numeral := ⟨hAdd⟩
 
 -- @[simp]
 theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (add a b h) = a.toNat + b.toNat := by
+  have h0 : 0 < a.base := Nat.lt_trans (by decide) a.baseGtOne
   match ga : a.digits, gb : b.digits with
   | [], [] =>
     unfold add toNat
     simp only [ga, gb]
-    have hblt : (b.digits.all fun x ↦ decide (x < b.base)) = true := b.allDigitsLtBase
+    have hblt := b.allDigitsLtBase
     have hblt' : (b.digits.all fun x ↦ decide (x < a.base)) = true := by rwa [← h] at hblt
-    have x := addAux_nil_iff_and_zero_nil_nil a.digits b.digits a.base 0 a.allDigitsLtBase hblt' a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+    have haan := addAux_nil_iff_and_zero_nil_nil a.digits b.digits a.base 0 a.allDigitsLtBase hblt' a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+    have := haan.mpr (And.intro rfl (And.intro ga gb))
+    simp only [ga, gb] at this
+    rw [this]
+    simp only [toNat_helper_nil]
+  | x::xs, [] =>
+    unfold add toNat
+    simp only [ga, gb]
+    unfold addAux
     sorry
-  | x::xs, [] => sorry
-  | [], y::ys => sorry
-  | x::xs, y::ys => sorry
+  | [], y::ys =>
+    sorry
+  | x::xs, y::ys =>
+    sorry
 
 end Add
 end Numeral
