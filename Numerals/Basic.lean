@@ -227,6 +227,12 @@ def addNatAux (n : Nat) (digits : List Nat) (base : Nat) (hb : 1 < base) : List 
   termination_by (digits.length, n)
 
 @[simp]
+theorem addNatAux_cons {n base : Nat} {digits : List Nat} (hb : 1 < base) :
+  addNatAux 0 (n::digits) base hb = addNatAux n (0::digits) base hb := by
+  unfold addNatAux
+  simp only [Nat.zero_add, Nat.add_zero]
+
+@[simp]
 theorem addNatAux_nil_iff_and_zero_nil (n : Nat) {base : Nat} (digits : List Nat) (hb : 1 < base) :
   addNatAux n digits base hb = [] ↔ n = 0 ∧ digits = [] := by
   unfold addNatAux
@@ -411,6 +417,7 @@ theorem addNatAux_add_eq_append_addNatAux_addNatAux (n m : Nat) {base : Nat} (hb
   rw [hac, addNatAux, hme]
   simp only [Nat.ne_zero_of_lt hnz, ↓reduceDIte, hde]
 
+@[simp]
 theorem addNatAux_zero_eq_of_all_lt_base {digits : List Nat} {base : Nat} (hb : 1 < base) (hd : digits.all (· < base)) :
   addNatAux 0 digits base hb = digits := by
   induction digits with
@@ -500,7 +507,7 @@ def addAux (a b : List Nat) (base carry : Nat)
       simp only [carry', s]
       exact (Nat.lt_sum_div_base_of_lt_base
               (allDigitsLtBase_cons.mp halt).left (allDigitsLtBase_cons.mp hblt).left hc hb)
-    (s % base) :: (addAux xs ys base carry'
+    (s % base)::(addAux xs ys base carry'
       (allDigitsLtBase_cons.mp halt).right (allDigitsLtBase_cons.mp hblt).right hb hc')
 
 @[simp]
@@ -646,24 +653,66 @@ theorem addAux_noTrailingZeros_of_noTrailingZeros
       (iff_iff_iff_not_not.mp (addAux_eq_zero_iff xs ys base ((x + y + carry) / base) halt' hblt' hb hc')).mpr h1
     exact noTrailingZeros_cons_of_ne_zero ((x + y + carry) % base) h2 (ih hantz' hbntz')
 
+@[simp]
+theorem addAux_nil_eq {digits : List Nat} {base : Nat} (hb : 1 < base) (hd : digits.all (· < base)) :
+  addAux [] digits base 0 (List.all_nil) hd hb (Nat.lt_trans (by decide) hb) = digits := by
+  have h1 : addNatAux 0 digits base hb = digits := addNatAux_zero_eq_of_all_lt_base hb hd
+  unfold addAux
+  match digits with
+  | [] | y::ys => simp only [h1]
+
+theorem addAux_carry_eq_addNatAux_carry_addAux_zero {a b : List Nat} {base carry : Nat}
+  (halt : a.all (· < base)) (hblt : b.all (· < base)) (hb : 1 < base) (hc : carry < base) :
+  addAux a b base carry halt hblt hb hc
+    = addNatAux carry (addAux a b base 0 halt hblt hb (Nat.lt_trans (by decide) hb)) base hb := by
+  fun_induction addAux with
+  | case1 => simp only [addAux_nil_eq]
+  | case2 => rw [addAux_comm]; simp only [addAux_nil_eq]
+  | case3 => simp only [addAux_nil_eq]
+  | case4 carry hc x xs y ys halt hblt s carry' hc' ih =>
+    have h1 : ¬(0 = 0 ∧ x::xs = [] ∧ y::ys = []) := by simp only [reduceCtorEq, and_self, and_false, not_false_eq_true]
+    have h2 : addAux (x::xs) (y::ys) base 0 halt hblt hb (Nat.lt_trans (by decide) hb) ≠ [] :=
+      (iff_iff_iff_not_not.mp
+        (addAux_nil_iff_and_zero_nil_nil (x::xs) (y::ys) base 0 halt hblt hb (Nat.lt_trans (by decide) hb))
+      ).mpr h1
+    simp only []
+    rw [Numeral.addNatAux.eq_def]
+    simp_all only [dite_eq_ite]
+    match g : addAux (x::xs) (y::ys) base 0 halt hblt hb (Nat.lt_trans (by decide) hb) with
+    | [] => contradiction
+    | d::ds =>
+      simp_all only [reduceCtorEq, and_self, and_false, not_false_eq_true, ne_eq, List.cons.injEq]
+      sorry
+
+theorem addAux_cons {xs ys : List Nat} {x y base carry : Nat} (hxlt : (x::xs).all (· < base)) (hylt : (y::ys).all (· < base)) (hb : 1 < base) (hc : carry < base) :
+  addAux (x::xs) (y::ys) base carry hxlt hylt hb hc
+    = addNatAux (x + y + carry)
+        (0::(addAux xs ys base 0 (allDigitsLtBase_cons.mp hxlt).right (allDigitsLtBase_cons.mp hylt).right hb (Nat.lt_trans (by decide) hb)))
+        base hb := by
+  rw [addAux, addNatAux, Nat.add_zero, Numeral.addNatAux.eq_def]
+  simp_all
+  sorry
+
 end AddAux
 
 section Add
 
 def add (a b : Numeral) (h : a.base = b.base) : Numeral where
-    digits := addAux a.digits b.digits a.base 0
-                a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
-                a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
-    base := a.base
-    baseGtOne := a.baseGtOne
-    allDigitsLtBase := all_addAux_digits_lt_base a.digits b.digits a.base 0
-                        a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
-                        a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
-    noTrailingZeros := addAux_noTrailingZeros_of_noTrailingZeros
-                        a.digits b.digits a.base 0
-                        a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
-                        a.noTrailingZeros b.noTrailingZeros
-                        a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+  digits := addAux a.digits b.digits a.base 0
+              a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
+              a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+  base := a.base
+  baseGtOne := a.baseGtOne
+  allDigitsLtBase :=
+    all_addAux_digits_lt_base a.digits b.digits a.base 0
+      a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
+      a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+  noTrailingZeros :=
+    addAux_noTrailingZeros_of_noTrailingZeros
+      a.digits b.digits a.base 0
+      a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
+      a.noTrailingZeros b.noTrailingZeros
+      a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
 
 @[simp]
 theorem add_nil_iff_and_nil_nil (a b : Numeral) (h : a.base = b.base) :
@@ -684,17 +733,21 @@ theorem add_comm (a b : Numeral) (h : a.base = b.base) : add a b h = add b a (by
   have hblt' : (b.digits.all fun x ↦ decide (x < a.base)) = true := by rwa [← h] at hblt
   have hd : addAux a.digits b.digits a.base 0
               a.allDigitsLtBase (by simp only [h, b.allDigitsLtBase])
-              a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne) =
-            addAux b.digits a.digits a.base 0
-              hblt' a.allDigitsLtBase
-              a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne) :=
-            addAux_comm a.digits b.digits a.base 0
-              a.allDigitsLtBase hblt'
               a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+              = addAux b.digits a.digits a.base 0
+                  hblt' a.allDigitsLtBase
+                  a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne) :=
+                addAux_comm a.digits b.digits a.base 0
+                  a.allDigitsLtBase hblt'
+                  a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
   unfold add
   simp only [hd]
   simp only [h]
 
+/-
+theorem add_cons ()
+
+-/
 def hAdd (a b : Numeral) : Numeral :=
   if h : a.base = b.base then
     add a b h
@@ -731,27 +784,38 @@ instance instHAddNumerals : HAdd Numeral Numeral Numeral := ⟨hAdd⟩
 -- @[simp]
 theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (add a b h) = a.toNat + b.toNat := by
   have h0 : 0 < a.base := Nat.lt_trans (by decide) a.baseGtOne
-  match ga : a.digits, gb : b.digits with
-  | [], [] =>
-    unfold add toNat
-    simp only [ga, gb]
-    have hblt := b.allDigitsLtBase
-    have hblt' : (b.digits.all fun x ↦ decide (x < a.base)) = true := by rwa [← h] at hblt
-    have haan := addAux_nil_iff_and_zero_nil_nil a.digits b.digits a.base 0 a.allDigitsLtBase hblt' a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
-    have := haan.mpr (And.intro rfl (And.intro ga gb))
-    simp only [ga, gb] at this
-    rw [this]
-    simp only [toNat_helper_nil]
-  | x::xs, [] =>
-    unfold add toNat
-    simp only [ga, gb]
-    unfold addAux
-    sorry
-  | [], y::ys =>
-    sorry
-  | x::xs, y::ys =>
+  induction ga : a.digits with
+  | nil =>
+    have : addAux [] b.digits a.base 0 (by simp [List.all_nil]) (by simp only [h, b.allDigitsLtBase])
+            a.baseGtOne (Nat.lt_trans (by decide) a.baseGtOne)
+              = b.digits := addAux_nil_eq a.baseGtOne (by simp only [h, b.allDigitsLtBase])
+    simp only [add, toNat, ga, this, toNat_helper_nil, Nat.zero_add]
+    rw [h]
+  | cons head tail ih =>
+    simp only [add, toNat]
+    simp only [ga]
+    rw [Numeral.addAux.eq_def]
     sorry
 
+  /-
+  match ga : a.digits, gb : b.digits with
+  | [], [] =>
+    have : (addNatAux 0 [] a.base a.baseGtOne) = [] := by simp only [addNatAux_nil_iff_and_zero_nil, and_self]
+    simp only  [add, toNat, ga, gb, addAux, this, toNat_helper_nil]
+  | x::xs, [] =>
+    have : (addNatAux 0 (x::xs) a.base a.baseGtOne) = x::xs := by
+      rw [← ga]
+      exact addNatAux_zero_eq_of_all_lt_base a.baseGtOne a.allDigitsLtBase
+    simp only [add, toNat, this, ga, gb, addAux, toNat_helper_nil, Nat.add_zero]
+  | [], y::ys =>
+    have : (addNatAux 0 (y::ys) b.base b.baseGtOne) = y::ys := by
+      rw [← gb]
+      exact addNatAux_zero_eq_of_all_lt_base b.baseGtOne b.allDigitsLtBase
+    simp only [add, toNat, ga, gb, addAux, toNat_helper_nil, h, this, Nat.zero_add]
+  | x::xs, y::ys =>
+    simp only [add, toNat, ga, gb, addAux]
+    sorry
+-/
 end Add
 end Numeral
 end Numerals
