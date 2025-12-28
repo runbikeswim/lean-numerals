@@ -675,13 +675,11 @@ theorem addAux_carry_eq_addNatAux_carry_addAux_zero {a b : List Nat} {base carry
       (iff_iff_iff_not_not.mp
         (addAux_nil_iff_and_zero_nil_nil (x::xs) (y::ys) base 0 halt hblt hb (Nat.lt_trans (by decide) hb))
       ).mpr h1
-    simp only []
-    rw [Numeral.addNatAux.eq_def]
-    simp_all only [dite_eq_ite]
     match g : addAux (x::xs) (y::ys) base 0 halt hblt hb (Nat.lt_trans (by decide) hb) with
     | [] => contradiction
     | d::ds =>
       simp_all only [reduceCtorEq, and_self, and_false, not_false_eq_true, ne_eq, List.cons.injEq]
+      rw [ih]
       sorry
 
 theorem addAux_cons {xs ys : List Nat} {x y base carry : Nat} (hxlt : (x::xs).all (· < base)) (hylt : (y::ys).all (· < base)) (hb : 1 < base) (hc : carry < base) :
