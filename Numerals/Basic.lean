@@ -222,38 +222,77 @@ theorem all_addAux_digits_lt_base {a b : List Nat} {n base : Nat}  (hb : 1 < bas
   | case5 x _ y _ n ih =>
     simp only [List.all_cons, Nat.mod_lt (x + y + n) hb0, decide_true, ih, Bool.and_self]
 
-theorem addAux_nil_iff_and_zero_nil_nil {a b : List Nat} {n base : Nat} (hb : 1 < base) :
+theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = [] ↔ n = 0 ∧ a = [] ∧ b = []  := by
   constructor
   · intro h
-    unfold addAux at h
-    sorry
+    match ga : a, gb : b, gn : n with
+    | [], [], 0 => simp only [and_self]
+    | [], [], k + 1 => simp only [addAux, Nat.succ_eq_add_one, reduceCtorEq] at h
+    | x::xs, [], n => simp only [addAux, reduceCtorEq] at h
+    | [], y::ys, n => simp only [addAux, reduceCtorEq] at h
+    | x::xs, y::ys, n => simp only [addAux, reduceCtorEq] at h
   · intro h
-    unfold addAux
-    sorry
+    simp only [h.right.left, h.right.right, h.left, addAux]
+
+#check List.cons.injEq
 
 theorem addAux_eq_zero_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb  = [0] ↔ n = 0 ∧ (a = [0] ∧ b = [] ∨ a = [] ∧ b = [0] ∨ a = [0] ∧ b = [0]) := by
-  unfold addAux
+  rw [Numeral.addAux.eq_def]
   constructor
   · intro h
-    match ga : a, gb : b, hn : n with
-    | [], [], 0 => simp only [List.ne_cons_self] at h
+    match ga : a, gb : b, gn : n with
+    | [], [], 0 => contradiction
     | [], [], k + 1 =>
-      have : (k + 1) % base ≠ 0 := sorry
-      simp only [List.cons.injEq] at h
-      sorry
-    | x::xs, [], n => sorry
-    | [], y::ys, n => sorry
-    | x::xs, y::ys, n => sorry
+      have h1 : (k + 1) % base = 0 := (List.cons_eq_cons.mp h).left
+      have h2 : (k + 1) / base = 0 := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).left
+      have h3 : (k + 1) % base = k + 1 := Nat.mod_eq_of_lt (Nat.lt_of_div_eq_zero (Nat.gt_zero_of_gt_one hb) h2)
+      have h4 : k + 1 = 0 := by rwa [h3] at h1
+      contradiction
+    | x::xs, [], n =>
+      have h1 : (x + n) % base = 0 := (List.cons_eq_cons.mp h).left
+      have h2 : xs = [] := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).right.left
+      have h3 : (x + n) / base = 0 := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).left
+      have h4 : (x + n) < base := Nat.lt_of_div_eq_zero (Nat.gt_zero_of_gt_one hb) h3
+      have h5 : (x + n) = 0 := by rwa [Nat.mod_eq_of_lt h4] at h1
+      have h6 : x = 0 ∧ n = 0 := Nat.add_eq_zero_iff.mp h5
+      have h7 : x::xs = [0] := by rw [List.cons.injEq]; exact And.intro h6.left h2
+      exact And.intro h6.right (.inl (And.intro h7 rfl))
+    | [], y::ys, n =>
+      have h1 : (y + n) % base = 0 := (List.cons_eq_cons.mp h).left
+      have h2 : ys = [] := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).right.right
+      have h3 : (y + n) / base = 0 := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).left
+      have h4 : (y + n) < base := Nat.lt_of_div_eq_zero (Nat.gt_zero_of_gt_one hb) h3
+      have h5 : (y + n) = 0 := by rwa [Nat.mod_eq_of_lt h4] at h1
+      have h6 : y = 0 ∧ n = 0 := Nat.add_eq_zero_iff.mp h5
+      have h7 : y::ys = [0] := by rw [List.cons.injEq]; exact And.intro h6.left h2
+      exact And.intro h6.right (.inr (.inl (And.intro rfl h7)))
+    | x::xs, y::ys, n =>
+      have h1 : (x + y + n) % base = 0 := (List.cons_eq_cons.mp h).left
+      have h2 : xs = [] ∧ ys = [] := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).right
+      have h3 : (x + y + n) / base = 0 := ((addAux_eq_nil_iff hb).mp (List.cons_eq_cons.mp h).right).left
+      have h4 : (x + y + n) < base := Nat.lt_of_div_eq_zero (Nat.gt_zero_of_gt_one hb) h3
+      have h5 : (x + y + n) = 0 := by rwa [Nat.mod_eq_of_lt h4] at h1
+      have h6 : x = 0 ∧ y = 0 ∧ n = 0 := by rwa [Nat.add_eq_zero_iff, Nat.add_eq_zero_iff, and_assoc] at h5
+      have h7 : x::xs = [0] := by rw [List.cons.injEq]; exact And.intro h6.left h2.left
+      have h8 : y::ys = [0] := by rw [List.cons.injEq]; exact And.intro h6.right.left h2.right
+      exact And.intro h6.right.right (.inr (.inr (And.intro h7 h8)))
   · intro h
-    match ga : a, gb : b, hn : n with
-    | [], [], 0 => sorry
-    | [], [], k + 1 => sorry
-    | x::xs, [], n => sorry
-    | [], y::ys, n => sorry
-    | x::xs, y::ys, n => sorry
-
+    match ga : a, gb : b, gn : n with
+    | [], [], 0 =>
+      simp only [List.ne_cons_self, and_true, and_false, and_self, or_self] at h
+    | [], [], k + 1 =>
+      simp only [Nat.add_eq_zero_iff, Nat.succ_ne_self, and_false, List.ne_cons_self, and_true, and_self, or_self] at h
+    | x::xs, [], n =>
+      simp_all only [List.cons.injEq, and_true, reduceCtorEq, List.ne_cons_self, and_self, and_false, or_self, or_false,
+        Nat.add_zero, Nat.zero_mod, Nat.zero_div, addAux]
+    | [], y::ys, n =>
+      simp_all only [List.ne_cons_self, reduceCtorEq, and_self, List.cons.injEq, true_and, false_and, or_false, false_or,
+        Nat.add_zero, Nat.zero_mod, Nat.zero_div, addAux]
+    | x::xs, y::ys, n =>
+      simp_all only [List.cons.injEq, reduceCtorEq, and_false, false_and, false_or, Nat.add_zero,
+        Nat.zero_mod, Nat.zero_div, addAux]
 
 theorem addAux_noTrailingZeros_of_noTrailingZeros
   (a b : List Nat) (n base : Nat)
@@ -310,7 +349,7 @@ def add (a b : Numeral) (h : a.base = b.base) : Numeral where
 theorem add_nil_iff_and_nil_nil (a b : Numeral) (h : a.base = b.base) :
   (add a b h).digits = [] ↔ a.digits = [] ∧ b.digits = [] := by
   unfold add
-  simp only [addAux_nil_iff_and_zero_nil_nil, true_and]
+  simp only [addAux_eq_nil_iff, true_and]
 
 theorem add_zero_iff_or_zero_zero (a b : Numeral) (h : a.base = b.base) :
   (add a b h).digits = [0]

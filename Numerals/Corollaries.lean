@@ -21,6 +21,9 @@ theorem iff_iff_iff_not_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
 namespace Nat
 
 @[simp]
+theorem gt_zero_of_gt_one {n : Nat} (h : 1 < n) : 0 < n := Nat.lt_trans (by decide) h
+
+@[simp]
 theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
 
 @[simp]
