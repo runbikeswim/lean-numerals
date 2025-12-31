@@ -235,8 +235,6 @@ theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   · intro h
     simp only [h.right.left, h.right.right, h.left, addAux]
 
-#check List.cons.injEq
-
 theorem addAux_eq_zero_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb  = [0] ↔ n = 0 ∧ (a = [0] ∧ b = [] ∨ a = [] ∧ b = [0] ∨ a = [0] ∧ b = [0]) := by
   rw [Numeral.addAux.eq_def]
@@ -294,6 +292,60 @@ theorem addAux_eq_zero_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
       simp_all only [List.cons.injEq, reduceCtorEq, and_false, false_and, false_or, Nat.add_zero,
         Nat.zero_mod, Nat.zero_div, addAux]
 
+/-
+TODO: obsolete
+
+theorem addAux_nil_nil_noTrailingZeros_of_ne_zero {a b : List Nat} {n base : Nat} (hb : 1 < base) (hn : n ≠ 0) :
+  (h : addAux [] [] n base hb ≠ []) → addAux [] [] n base hb ≠ [0]
+    → (addAux [] [] n base hb).getLast h ≠ 0  := by
+  induction n using Nat.strongRecOn with
+  | _ n ih =>
+    if g : n < base then
+      have h1 : n / base = 0 := Nat.div_eq_zero_iff.mpr (Or.inr g)
+      have h2 : addAux [] [] (n / base) base hb = [] := (addAux_eq_nil_iff hb).mpr (And.intro h1 (And.intro rfl rfl))
+      have h3 : addAux [] [] n base hb = (n % base)::(addAux [] [] (n / base) base hb) := by
+        rw [Numeral.addAux.eq_def]
+        simp only []
+        sorry
+      sorry
+    else
+      sorry
+-/
+
+theorem addAux_nil_nil_noTrailingZeros {a b : List Nat} {n base : Nat} (han : a = []) (hbn : b = []) (hb : 1 < base) :
+  (h : addAux a b n base hb ≠ []) → addAux a b n base hb ≠ [0]
+    → (addAux a b n base hb).getLast h ≠ 0  := by
+  induction n using Nat.strongRecOn with
+  | _ n ih =>
+    match ga : a, gb: b, gn: n with
+    | [], [], 0 =>
+      intro h
+      have : addAux [] [] 0 base hb = [] := (addAux_eq_nil_iff hb).mpr (And.intro rfl (And.intro rfl rfl))
+      contradiction
+    | [], [], k + 1 =>
+      rw [Numeral.addAux.eq_def]
+      if g : k + 1 < base then -- base case
+        have h1 : (k + 1) / base = 0 := Nat.div_eq_zero_iff.mpr (Or.inr g)
+        have h2 : addAux [] [] ((k + 1) / base) base hb = [] := (addAux_eq_nil_iff hb).mpr (And.intro h1 (And.intro rfl rfl))
+        simp only [h2]
+        intro h3 h4
+        simp only [List.getLast_singleton, ne_eq]
+        exact Nat.ne_zero_mod_of_ne_zero hb h1 (Nat.succ_ne_zero k)
+      else -- induction step
+        simp only []
+        have h1 : (k + 1) / base < k + 1 := Nat.div_lt_self (Nat.zero_lt_succ k) hb
+        have h2 : ∀ (h : addAux [] [] ((k + 1) / base) base hb ≠ []),
+                    addAux [] [] ((k + 1) / base) base hb ≠ [0]
+                      → (addAux [] [] ((k + 1) / base) base hb).getLast h ≠ 0
+                        := ih ((k + 1) / base) h1
+        /-
+        noTrailingZeros_cons_of_ne_zero
+        -/
+        sorry
+    | x::xs, [], n => exact absurd han (List.cons_ne_nil x xs)
+    | [], y::ys, n => exact absurd hbn (List.cons_ne_nil y ys)
+    | x::xs, y::ys, n => exact absurd han (List.cons_ne_nil x xs)
+
 theorem addAux_noTrailingZeros_of_noTrailingZeros
   (a b : List Nat) (n base : Nat)
   (hantz : (h : a ≠ []) → a ≠ [0] → a.getLast h ≠ 0)
@@ -304,7 +356,9 @@ theorem addAux_noTrailingZeros_of_noTrailingZeros
       → (addAux a b n base hb).getLast h ≠ 0 := by
   fun_induction addAux with
   | case1 => intro _; contradiction
-  | case2 k hn0 hltn ih => sorry
+  | case2 k hn0 hltn ih =>
+    simp_all
+    sorry
   | case3 => sorry
   | case4 => sorry
   | case5 => sorry
