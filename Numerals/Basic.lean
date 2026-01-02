@@ -352,7 +352,21 @@ theorem addAux_add_eq_append_addAux_addAux {a b : List Nat} (n m : Nat) {base : 
   addAux a b (n + m * base) base hb = addAux a b n base hb ++ addAux a b m base hb := by
   have hb': 0 < base := Nat.lt_trans (by decide) hb
   have hs : addAux a b n base hb = [n] := addAux_eq_singleton n han hbn hb hn
-  sorry
+  have hac : addAux a b n base hb ++ addAux a b m base hb = n::(addAux a b m base hb) := by
+    rw [hs, List.singleton_append]
+  have hgz : 0 < n + m * base := by
+    calc 0 < n := hn.left
+      _ ≤ n + m * base := Nat.le_add_right n (m * base)
+  have hns : n + m * base ≠ 0 := Nat.ne_zero_of_lt hgz
+  have hde : (n + m * base) / base = m := Nat.div_add_mul_eq n m hn.right
+  rw [hac, Numeral.addAux.eq_def]
+  simp [han, hbn]
+  match gn : n + m * base with
+  | 0 => contradiction
+  | k + 1 =>
+    simp only []
+    rw [Nat.succ_eq_add_one] at gn
+    rw [Nat.mod_eq_of_lt hn.right, ← gn, hde]
 
 end AddAux
 
@@ -364,9 +378,6 @@ def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral where
   baseGtOne := hb
   allDigitsLtBase := all_addAux_digits_lt_base n hb
   noTrailingZeros := addAux_noTrailingZeros_of_noTrailingZeros n (by decide) (by decide) hb
-
-
-
 
 theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n base hb) = n := by
   induction n using Nat.strongRecOn with
@@ -392,7 +403,11 @@ theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n 
       else
         have h4 : 0 < n % base := Nat.pos_iff_ne_zero.mpr g
         have h5 : n % base < base := Nat.mod_lt n (Nat.lt_trans (by decide) hb)
-        sorry
+        rw [h2, addAux_add_eq_append_addAux_addAux (n % base) (n / base) rfl rfl hb (And.intro h4 h5)]
+        rw [addAux_eq_singleton (n % base) rfl rfl hb (And.intro h4 h5), List.singleton_append]
+        rw [toNat_helper_cons (addAux [] [] (n / base) base hb) (n % base) base]
+        rw [ih (n / base) (Nat.div_lt_self h0 hb)]
+        simp only [Nat.mul_comm]
 
 end OfNat
 
