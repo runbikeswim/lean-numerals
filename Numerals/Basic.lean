@@ -327,6 +327,15 @@ theorem addAux_noTrailingZeros_of_noTrailingZeros {a b : List Nat} (n : Nat) {ba
     let  := ih h2 h4
     exact noTrailingZeros_cons_of_ne_zero ((x + y + n) % base) h5 (ih h2 h4)
 
+theorem addAux_eq_cons_zero_addAux_of_eq_nil_of_eq_nil {a b : List Nat} (n : Nat) {base : Nat}
+  (han : a = []) (hbn : b = []) (hb : 1 < base) (hn : base ≤ n ∧ n % base = 0) :
+  addAux a b n base hb = 0::(addAux a b (n / base) base hb) := by
+  rw [Numeral.addAux.eq_def]
+  have hne : n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr (Nat.pos_of_one_lt (Nat.lt_of_lt_of_le hb hn.left))
+  match ga : a, gb : b, gn : n with
+  | [], [], k + 1 => simp only [hn.right]
+  | [], [], 0 | x::xs, [], n | [], y::ys, n | x::xs, y::ys, n => contradiction
+
 end AddAux
 
 section OfNat
@@ -355,8 +364,13 @@ theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n 
       simp only at ⊢ ih
       if g: n % base = 0 then
         have h3 : base ≤ n := Nat.le_of_mod_lt (by rwa [← g] at h0)
-        sorry
+        rw [addAux_eq_cons_zero_addAux_of_eq_nil_of_eq_nil n rfl rfl hb (And.intro h3 g)]
+        rw [toNat_helper_cons (addAux [] [] (n / base) base hb) 0 base]
+        rw [ih (n / base) (Nat.div_lt_self h0 hb)]
+        rw [Nat.zero_add, Nat.mul_div_eq_iff_dvd.mpr (Nat.dvd_of_mod_eq_zero g)]
       else
+        have h4 : 0 < n % base := Nat.pos_iff_ne_zero.mpr g
+        have h5 : n % base < base := Nat.mod_lt n (Nat.lt_trans (by decide) hb)
         sorry
 
 end OfNat
