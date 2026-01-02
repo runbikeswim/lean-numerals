@@ -184,14 +184,17 @@ def addAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   | x::xs, y::ys, n => ((x + y + n) % base)::(addAux xs ys ((x + y + n) / base) base hb)
   termination_by (a.length + b.length, n)
 
-theorem addAux_nil_zero_eq {a b : List Nat} (hbn : b = []) {n base : Nat} (hn : n = 0) (hb : 1 < base) (halt : a.all (· < base)) :
+theorem addAux_nil_zero_eq {a b : List Nat} (hbn : b = []) {n base : Nat}
+  (hn : n = 0) (hb : 1 < base) (halt : a.all (· < base)) :
   addAux a b n base hb = a := by
   fun_induction addAux a b n base hb with
   | case1 => rfl
   | case2 => contradiction
   | case3 x xs n ih =>
     have hxm : x % base = x := Nat.mod_eq_of_lt (allDigitsLtBase_cons.mp halt).left
-    have hxd : (x + n) / base = 0 := by rw [hn, Nat.add_zero]; exact Nat.div_eq_of_lt (allDigitsLtBase_cons.mp halt).left
+    have hxd : (x + n) / base = 0 := by
+      rw [hn, Nat.add_zero]
+      exact Nat.div_eq_of_lt (allDigitsLtBase_cons.mp halt).left
     rw [ih hbn hxd (allDigitsLtBase_cons.mp halt).right, hn, Nat.add_zero, hxm]
   | case4 => contradiction
   | case5 => contradiction
@@ -289,7 +292,8 @@ theorem addAux_eq_zero_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
       simp_all only [List.cons.injEq, reduceCtorEq, and_false, false_and, false_or, Nat.add_zero,
         Nat.zero_mod, Nat.zero_div, addAux]
 
-theorem addAux_ne_zero_of_ne_zero_of_ne_zero {a b : List Nat} (hanz : a ≠ [0]) (hbnz : b ≠ [0]) (n : Nat) {base : Nat} (hb : 1 < base) :
+theorem addAux_ne_zero_of_ne_zero_of_ne_zero {a b : List Nat}
+  (hanz : a ≠ [0]) (hbnz : b ≠ [0]) (n : Nat) {base : Nat} (hb : 1 < base) :
   addAux a b n base hb ≠ [0] := by
   have : ¬(n = 0 ∧ (a = [0] ∧ b = [] ∨ a = [] ∧ b = [0] ∨ a = [0] ∧ b = [0])) := by
       rw [
@@ -300,30 +304,36 @@ theorem addAux_ne_zero_of_ne_zero_of_ne_zero {a b : List Nat} (hanz : a ≠ [0])
   exact (iff_iff_iff_not_not.mp (addAux_eq_zero_iff hb)).mpr this
 
 theorem addAux_noTrailingZeros_of_noTrailingZeros {a b : List Nat} (n : Nat) {base : Nat}
-  (hantz : (h : a ≠ []) → a ≠ [0] → a.getLast h ≠ 0) (hbntz : (h : b ≠ []) → b ≠ [0] → b.getLast h ≠ 0) (hb : 1 < base) :
+  (hantz : (h : a ≠ []) → a ≠ [0] → a.getLast h ≠ 0)
+  (hbntz : (h : b ≠ []) → b ≠ [0] → b.getLast h ≠ 0)
+  (hb : 1 < base) :
   (h : addAux a b n base hb ≠ []) → addAux a b n base hb ≠ [0] → (addAux a b n base hb).getLast h ≠ 0 := by
   have h0 : ([] : List Nat) ≠ [0] := by decide
   fun_induction addAux with
   | case1 => intro _; contradiction
   | case2 k hn0 hltn ih =>
-    have h1 : addAux [] [] ((k + 1) / base) base hb ≠ [0] := addAux_ne_zero_of_ne_zero_of_ne_zero h0 h0 ((k + 1) / base) hb
+    have h1 : addAux [] [] ((k + 1) / base) base hb ≠ [0] :=
+      addAux_ne_zero_of_ne_zero_of_ne_zero h0 h0 ((k + 1) / base) hb
     exact noTrailingZeros_cons_of_ne_zero (k.succ % base) h1 (ih hantz hbntz)
   | case3 x xs n ih =>
     have h1 : xs ≠ [0] := ne_zero_of_noTrailingZeros_cons hantz
     have h2 : (h : xs ≠ []) → xs ≠ [0] → xs.getLast h ≠ 0 := noTrailingZeros_of_noTrailingZeros_cons hantz
-    have h3 : addAux xs [] ((x + n) / base) base hb ≠ [0] := addAux_ne_zero_of_ne_zero_of_ne_zero h1 h0 ((x + n) / base) hb
+    have h3 : addAux xs [] ((x + n) / base) base hb ≠ [0] :=
+      addAux_ne_zero_of_ne_zero_of_ne_zero h1 h0 ((x + n) / base) hb
     exact noTrailingZeros_cons_of_ne_zero ((x + n) % base) h3 (ih h2 hbntz)
   | case4 y ys n ih =>
     have h1 : ys ≠ [0] := ne_zero_of_noTrailingZeros_cons hbntz
     have h2 : (h : ys ≠ []) → ys ≠ [0] → ys.getLast h ≠ 0 := noTrailingZeros_of_noTrailingZeros_cons hbntz
-    have h3 : addAux [] ys ((y + n) / base) base hb ≠ [0] := addAux_ne_zero_of_ne_zero_of_ne_zero h0 h1 ((y + n) / base) hb
+    have h3 : addAux [] ys ((y + n) / base) base hb ≠ [0] :=
+      addAux_ne_zero_of_ne_zero_of_ne_zero h0 h1 ((y + n) / base) hb
     exact noTrailingZeros_cons_of_ne_zero ((y + n) % base) h3 (ih hantz h2)
   | case5 x xs y ys n ih =>
     have h1 : xs ≠ [0] := ne_zero_of_noTrailingZeros_cons hantz
     have h2 : (h : xs ≠ []) → xs ≠ [0] → xs.getLast h ≠ 0 := noTrailingZeros_of_noTrailingZeros_cons hantz
     have h3 : ys ≠ [0] := ne_zero_of_noTrailingZeros_cons hbntz
     have h4 : (h : ys ≠ []) → ys ≠ [0] → ys.getLast h ≠ 0 := noTrailingZeros_of_noTrailingZeros_cons hbntz
-    have h5 : addAux xs ys ((x + y + n) / base) base hb ≠ [0] := addAux_ne_zero_of_ne_zero_of_ne_zero h1 h3 ((x + y + n) / base) hb
+    have h5 : addAux xs ys ((x + y + n) / base) base hb ≠ [0] :=
+      addAux_ne_zero_of_ne_zero_of_ne_zero h1 h3 ((x + y + n) / base) hb
     let  := ih h2 h4
     exact noTrailingZeros_cons_of_ne_zero ((x + y + n) % base) h5 (ih h2 h4)
 
@@ -384,14 +394,16 @@ theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n 
   | _ n ih =>
     if h : n = 0 then
       unfold ofNat
-      have : addAux [] [] 0 base hb = [] := (addAux_eq_nil_iff hb).mpr (And.intro rfl (And.intro rfl rfl))
+      have : addAux [] [] 0 base hb = [] :=
+        (addAux_eq_nil_iff hb).mpr (And.intro rfl (And.intro rfl rfl))
       simp only [h, this]
       unfold toNat toNat.helper
       rfl
     else
       have h0 : 0 < n := Nat.pos_iff_ne_zero.mpr h
       have h1 : n / base * base ≤ n := Nat.div_mul_le_self n base
-      have h2 : n = n % base + (n / base) * base := by rw [Nat.mod_eq_sub_div_mul, Nat.sub_add_cancel h1]
+      have h2 : n = n % base + (n / base) * base := by
+        rw [Nat.mod_eq_sub_div_mul, Nat.sub_add_cancel h1]
       unfold ofNat toNat at ⊢ ih
       simp only at ⊢ ih
       if g: n % base = 0 then
@@ -446,7 +458,11 @@ theorem add_zero_iff_or_zero_zero (a b : Numeral) (h : a.base = b.base) :
 theorem add_comm (a b : Numeral) (h : a.base = b.base) : add a b h = add b a (by simp only [h]) := by
   have hblt : (b.digits.all fun x ↦ decide (x < b.base)) = true := b.allDigitsLtBase
   have hblt' : (b.digits.all fun x ↦ decide (x < a.base)) = true := by rwa [← h] at hblt
-  sorry
+  have hd : addAux a.digits b.digits 0 a.base a.baseGtOne = addAux b.digits a.digits 0 a.base a.baseGtOne :=
+    addAux_comm a.baseGtOne
+  unfold add
+  simp only [hd]
+  simp only [h]
 
 def hAdd (a b : Numeral) : Numeral :=
   if h : a.base = b.base then
@@ -466,7 +482,8 @@ theorem hAdd_comm (a b : Numeral) : hAdd a b = hAdd b a := by
     if g : a.base < b.base then
       have g' : ¬ b.base < a.base := Nat.not_lt_of_gt g
       simp only [h, ↓reduceDIte, g, ↓reduceIte, eq_comm, g']
-      have harb : (rebase a b.base b.baseGtOne).base = b.base := rebase_base_eq_base a b.base b.baseGtOne
+      have harb : (rebase a b.base b.baseGtOne).base = b.base :=
+        rebase_base_eq_base a b.base b.baseGtOne
       exact add_comm (rebase a b.base b.baseGtOne) b harb
     else
       have he : a.base = b.base ↔ b.base = a.base := eq_comm
@@ -474,13 +491,15 @@ theorem hAdd_comm (a b : Numeral) : hAdd a b = hAdd b a := by
       have g' : b.base ≤ a.base := Nat.le_of_not_lt g
       have g'' : b.base < a.base := Nat.lt_of_le_of_ne g' h'
       simp only [h, g, g'', ↓reduceDIte, ↓reduceIte, eq_comm]
-      have hbrb : (rebase b a.base a.baseGtOne).base = a.base := rebase_base_eq_base b a.base a.baseGtOne
+      have hbrb : (rebase b a.base a.baseGtOne).base = a.base :=
+        rebase_base_eq_base b a.base a.baseGtOne
       exact add_comm (rebase b a.base a.baseGtOne) a hbrb
 
 instance instCommutativeHAddNumerals : Std.Commutative hAdd := ⟨hAdd_comm⟩
 instance instHAddNumerals : HAdd Numeral Numeral Numeral := ⟨hAdd⟩
 
-theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (add a b h) = a.toNat + b.toNat := by
+theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) :
+  toNat (add a b h) = a.toNat + b.toNat := by
   have h0 : 0 < a.base := Nat.lt_trans (by decide) a.baseGtOne
   induction ga : a.digits with
   | nil => sorry
@@ -488,6 +507,7 @@ theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (ad
     simp only [add, toNat]
     simp only [ga]
     rw [Numeral.addAux.eq_def]
+    simp only []
     sorry
 
 end Add
@@ -524,10 +544,6 @@ def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :
     cons? s (subAux xs ys carry base hb)
   termination_by a.length + b.length
 
-#eval subAux [7, 7] [7, 7] 0 10 (by decide)
-#eval subAux [3, 1] [7] 0 10 (by decide)
-#eval subAux [3] [7] 0 10 (by decide)
-
 def discardTrailingZeros (a : List Nat) :=
   (helper a.reverse).reverse where
     helper : List Nat → List Nat
@@ -535,9 +551,6 @@ def discardTrailingZeros (a : List Nat) :=
     | [0] => [0]
     | 0::r => helper r
     | r => r
-
-#eval discardTrailingZeros []
-#eval discardTrailingZeros [0]
 
 theorem no_leading_zeros_of_discardTrailingZeros_helper {a : List Nat} :
   (hnn : discardTrailingZeros.helper a ≠ [])

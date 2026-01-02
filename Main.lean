@@ -98,7 +98,5 @@ def main : IO Unit := do
   for n in numerals do
     println! s!"{repr n}: {n} : {n.rebase 10 (by decide)}"
 
-  /-
   for (b, a) in numerals.tail.zip numerals do
     println! s!"{a} + {b}: {a + b}"
-  -/
