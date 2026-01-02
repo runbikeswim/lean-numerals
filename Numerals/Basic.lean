@@ -336,6 +336,24 @@ theorem addAux_eq_cons_zero_addAux_of_eq_nil_of_eq_nil {a b : List Nat} (n : Nat
   | [], [], k + 1 => simp only [hn.right]
   | [], [], 0 | x::xs, [], n | [], y::ys, n | x::xs, y::ys, n => contradiction
 
+theorem addAux_eq_singleton {a b : List Nat} (n : Nat) {base : Nat}
+  (han : a = []) (hbn : b = []) (hb : 1 < base) (hn : 0 < n ∧ n < base) :
+  addAux a b n base hb = [n] := by
+  have hnm : n % base = n := Nat.mod_eq_of_lt hn.right
+  have hln : 0 < n := hn.left
+  have hnd : n / base = 0 := Nat.div_eq_zero_iff.mpr (Or.inr hn.right)
+  rw [Numeral.addAux.eq_def]
+  match ga : a, gb : b, gn: n with
+  | [], [], k + 1 => simp only [List.cons.injEq, hnm, true_and, hnd, addAux_eq_nil_iff hb]
+  | [], [], 0 | x::xs, [], n | [], y::ys, n | x::xs, y::ys, n => contradiction
+
+theorem addAux_add_eq_append_addAux_addAux {a b : List Nat} (n m : Nat) {base : Nat}
+  (han : a = []) (hbn : b = []) (hb : 1 < base) (hn : 0 < n ∧ n < base) :
+  addAux a b (n + m * base) base hb = addAux a b n base hb ++ addAux a b m base hb := by
+  have hb': 0 < base := Nat.lt_trans (by decide) hb
+  have hs : addAux a b n base hb = [n] := addAux_eq_singleton n han hbn hb hn
+  sorry
+
 end AddAux
 
 section OfNat
@@ -346,6 +364,9 @@ def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral where
   baseGtOne := hb
   allDigitsLtBase := all_addAux_digits_lt_base n hb
   noTrailingZeros := addAux_noTrailingZeros_of_noTrailingZeros n (by decide) (by decide) hb
+
+
+
 
 theorem toNat_leftInverse_ofNat {n base : Nat} (hb : 1 < base) : toNat (ofNat n base hb) = n := by
   induction n using Nat.strongRecOn with
@@ -456,5 +477,78 @@ theorem toNat_add_left_distrib (a b : Numeral) (h : a.base = b.base) : toNat (ad
 
 end Add
 
+section SubAux
+
+def subAuxCarry (x y base carry: Nat) (hb : 1 < base) : Nat × Nat :=
+  if h : y ≤ x then
+    (x - y, carry)
+  else
+    have h1 : x < y := Nat.lt_of_not_le h
+    have h2 : x < x + base := Nat.lt_add_of_pos_right (Nat.lt_trans (by decide) hb)
+    have : y - (x + base) < y - x := Nat.sub_lt_sub_left h1 h2
+    subAuxCarry (x + base) y base (carry + 1) hb
+  termination_by y - x
+
+def cons? {α : Type} (a : α) (b : Option (List α)) : Option (List α) :=
+  match b with
+  | none => none
+  | some l => some (a::l)
+
+def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :=
+  match a, b, n with
+  | [], [], 0 => some []
+  | [], [], _ + 1 => none
+  | x::xs, [], n =>
+    let (s, carry) := subAuxCarry x n base 0 hb
+    cons? s (subAux xs [] carry base hb)
+  | [], y::ys, n =>
+    let (s, carry) := subAuxCarry y n base 0 hb
+    cons? s (subAux ys [] carry base hb)
+  | x::xs, y::ys, n =>
+    let (s, carry) := subAuxCarry x (y + n) base 0 hb
+    cons? s (subAux xs ys carry base hb)
+  termination_by a.length + b.length
+
+#eval subAux [7, 7] [7, 7] 0 10 (by decide)
+#eval subAux [3, 1] [7] 0 10 (by decide)
+#eval subAux [3] [7] 0 10 (by decide)
+
+def discardTrailingZeros (a : List Nat) :=
+  (helper a.reverse).reverse where
+    helper : List Nat → List Nat
+    | [] => []
+    | [0] => [0]
+    | 0::r => helper r
+    | r => r
+
+#eval discardTrailingZeros []
+#eval discardTrailingZeros [0]
+
+theorem no_leading_zeros_of_discardTrailingZeros_helper {a : List Nat} :
+  (hnn : discardTrailingZeros.helper a ≠ [])
+    → discardTrailingZeros.helper a ≠ [0]
+      → (discardTrailingZeros.helper a).head hnn ≠ 0 := by
+  unfold discardTrailingZeros.helper
+  intro hnn hnz
+  fun_induction discardTrailingZeros.helper with
+  | case1 => simp only [ne_eq, not_true_eq_false] at hnn
+  | case2 =>
+    simp only [ne_eq, List.cons_ne_self, not_false_eq_true] at hnn
+    simp only [ne_eq, not_true_eq_false] at hnz
+  | case3 r hrnn ih =>
+    simp only [ne_eq] at hnn hnz ih
+    sorry
+  | case4 r hrnn hrnz hrhnz =>
+    /-
+    follows from hrhnz
+    -/
+    sorry
+
+theorem no_trailing_zeros_of_discardTrailingZeros {a : List Nat} :
+  (hnn : discardTrailingZeros a ≠ [])
+    → discardTrailingZeros a ≠ [0]
+      → (discardTrailingZeros a).getLast hnn ≠ 0 := by sorry
+
+end SubAux
 end Numeral
 end Numerals
