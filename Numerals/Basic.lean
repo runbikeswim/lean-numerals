@@ -427,71 +427,30 @@ theorem addAux_eq_of_nil_of_zero {a b : List Nat} (n : Nat) {base : Nat}
       rw [hn, Nat.add_zero, h4, h5, ← h1.left, ← h1.right, ← hn, ih h2.right]
     | [], y::ys, n | x::xs, y::ys, n => contradiction
 
+theorem addAux_cons_nil_eq_addAux {xs : List Nat} {x n base : Nat} (hb : 1 < base) :
+  addAux (x::xs) [] n base hb = addAux (0::xs) [] (x + n) base hb := by
+  unfold addAux
+  rw [Nat.zero_add]
 
-/-
-theorem tbd
-  toNatAux (addAux a [] n base hb) base factor acc =
-    toNatAux a base factor (acc + n * factor)
+theorem addAux_cons_cons_eq_addAux {xs ys: List Nat} {x y n base : Nat} (hb : 1 < base) :
+  addAux (x::xs) (y::ys) n base hb = addAux (0::xs) (0::ys) (x + y + n) base hb := by
+  unfold addAux
+  rw [Nat.zero_add]
 
-def a : List Nat := [1, 2, 3]
-def n : Nat := 17
-def bs : Nat := 10
-def hb : 1 < bs := by decide
-def factor : Nat := bs
-def acc : Nat := 31
-
-#eval toNatAux (addAux a [] n bs hb) bs factor acc
-#eval toNatAux a bs factor (acc + n * factor)
--/
-
-theorem cons_addAux_eq_addAux_toNatAux_cons {base : Nat} {a : List Nat} (hb : 1 < base) :
-  addAux a [] 0 base hb = addAux [] [] (toNatAux a base 1 0).snd base hb := by
-  induction a with
-  | nil => rw [toNatAux_nil]
-  | cons x xs ih =>
-    /-
-      ih : addAux xs [] 0 base hb = addAux [] [] (toNatAux xs base 1 0).snd base hb
-      ⊢ addAux (x :: xs) [] 0 base hb = addAux [] [] (toNatAux (x :: xs) base 1 0).snd base hb
-
-      toNatAux (x :: xs) base 1 0).snd <via toNatAux_cons_factor_acc>
-        x + base * (toNatAux xs base 1 0).snd => k
-      x < base ∧ base * (toNatAux xs base 1 0).snd
-      addAux [] [] (toNatAux (x :: xs) base 1 n).snd base hb
-        addAux a b n base hb ++ addAux a b m base h
-          n::(addAux a b m base h)
-    -/
-    sorry
-
-  -- rw [toNatAux_cons_factor_acc, Nat.one_mul, Nat.one_mul]
-
-
-theorem addAux_eq_addAux_toNatAux {a b : List Nat} (n : Nat) {base : Nat} (hb : 1 < base) :
-  addAux a b n base hb = addAux a [] (toNatAux b base 1 n).snd base hb := by
-  rw [Numeral.addAux.eq_def]
+theorem toNat_addAux_eq {a b: List Nat} {n m base factor acc: Nat} (hb : 1 < base) :
+  toNatAux (addAux a b (n + m) base hb) base factor acc =
+    toNatAux (addAux a b n base hb) base factor (m + acc) := by
+  unfold toNatAux addAux
   induction ga : a with
   | nil =>
-    match gb : b, gn : n with
-    | [], 0 =>
-      simp only [toNatAux]
-      rw [eq_comm]
-      exact (addAux_eq_nil_iff hb).mpr (And.intro rfl (And.intro rfl rfl))
-    | [], k + 1 =>
-      simp only [toNatAux_nil]
-      rw (occs := .pos [2]) [Numeral.addAux.eq_def]
-    | y::ys, n =>
-      simp only []
-      sorry
-  | cons x xs ih => simp_all only []; sorry
-
-
-def a : List Nat := [1000, 2, 3, 0]
-def b : List Nat := [11, 12, 13]
-def n : Nat := 17
-def bs : Nat := 10
-def hb : 1 < bs := by decide
-
-#eval (toNatAux (addAux a b n bs hb) bs 1 0).snd
-#eval (toNatAux a bs 1 0).snd + (toNatAux b bs 1 0).snd + n
+    induction gb : b with
+    | nil => sorry
+    | cons y ys ihb => sorry
+  | cons x xs iha =>
+    induction gb : b with
+    | nil => sorry
+    | cons y ys ihb =>
+    sorry
 
 /-
 toNatAux (addAux x::xs y::ys n base hb) base factor acc =
@@ -501,6 +460,11 @@ toNatAux (addAux x::xs y::ys n base hb) base factor acc =
         toNatAux (addAux xs ys 0 base hb) base (base * factor) 0 + (x + y + n + acc) = <ih>
           toNatAux xs base (base * factor) x + toNatAux ys base (base * factor) y + n + acc <inverse of first step>
             toNatAux x::xs base factor 0 + toNatAux y::ys base factor 0 + n + acc
+
+
+  toNatAux (addAux xs ys ((x + y + (n + m)) / base) base hb) base (factor * base)
+    ((x + y + (n + m)) % base * factor + acc) =
+  toNatAux (addAux xs ys ((x + y + n) / base) base hb) base (factor * base) ((x + y + n) % base * factor + (m + acc))
 -/
 
 theorem toNatAux_addAux_left_distrib {a b : List Nat} (n : Nat) {base : Nat} (hb : 1 < base):
