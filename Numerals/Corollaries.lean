@@ -4,6 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
+universe u
+
+def ifEqLtElse {α β : Type} [DecidableEq α] [LT α] [DecidableLT α] (a b : α) (eq lt el : β) : β :=
+  match decide (a = b), decide (a < b) with
+  | true, _ => eq
+  | false, true => lt
+  | false, false => el
+
+#eval (ifEqLtElse 1 1 "eq" "lt" "else")
+#eval (ifEqLtElse 1 2 "eq" "lt" "else")
+#eval (ifEqLtElse 2 1 "eq" "lt" "else")
+
 @[simp]
 theorem or_elim_of_not {p q : Prop} (h : p ∨ q) (g : ¬ p) : q :=
   Or.elim h (fun t : p => False.elim (g t)) id
@@ -112,6 +124,13 @@ theorem div_add_mul_eq (n m : Nat) {base : Nat} (hn: n < base) : (n + m * base) 
 end Nat
 
 namespace List
+
+def mapWithAll {α β : Type} (a: List α) (p : α → Bool) (ha : a.all p) (f : (x : α) → (hp : p x) → β): List β :=
+  match a with
+  | [] => []
+  | x::xs =>
+    have : p x ∧ xs.all p = true := by rwa [all_cons, Bool.and_eq_true] at ha
+    (f x this.left)::(mapWithAll xs p this.right f)
 
 @[simp]
 theorem cons_singleton_iff_and_eq_nil {α : Type} {a b : α} {as : List α} :
