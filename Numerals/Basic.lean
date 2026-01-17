@@ -30,27 +30,16 @@ structure Numeral where
   noTrailingZeros : (h : digits ≠ []) → digits ≠ [0] → digits.getLast h ≠ 0
 deriving Repr, DecidableEq
 
-#check Numeral.mk
-
 section AlternativeTypes
 
 inductive Numeral' : Nat → Type where
   | nil : (base : Nat) → (hb : 1 < base ) → Numeral' base
   | cons : (m : Nat) → {base : Nat} → (n : Numeral' base) → (hn : m < base) → Numeral' base
 
-#check (Numeral'.nil 10 (by decide))
-#check (Numeral'.cons 0 (Numeral'.nil 10 (by decide)) (by decide))
-#check (Numeral'.cons 5 (Numeral'.nil 10 (by decide)) (by decide))
-
 structure Numeral'' (base : Nat := 10) (hb : 1 < base) where
   digits : List Nat
   allDigitsLtBase : digits.all (· < base)
   noTrailingZeros : (h : digits ≠ []) → digits ≠ [0] → digits.getLast h ≠ 0
-
-#check ({digits := [], allDigitsLtBase := by decide, noTrailingZeros := by decide} : (Numeral'' 10 (by decide)))
-#check ({digits := [0], allDigitsLtBase := by decide, noTrailingZeros := by decide} : (Numeral'' 10 (by decide)))
-#check ({digits := [1], allDigitsLtBase := by decide, noTrailingZeros := by decide} : (Numeral'' 10 (by decide)))
-#check ({digits := [9,0,8], allDigitsLtBase := by decide, noTrailingZeros := by decide} : (Numeral'' 10 (by decide)))
 
 end AlternativeTypes
 

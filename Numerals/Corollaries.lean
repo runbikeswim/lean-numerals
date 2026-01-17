@@ -12,10 +12,6 @@ def ifEqLtElse {α β : Type} [DecidableEq α] [LT α] [DecidableLT α] (a b : �
   | false, true => lt
   | false, false => el
 
-#eval (ifEqLtElse 1 1 "eq" "lt" "else")
-#eval (ifEqLtElse 1 2 "eq" "lt" "else")
-#eval (ifEqLtElse 2 1 "eq" "lt" "else")
-
 @[simp]
 theorem or_elim_of_not {p q : Prop} (h : p ∨ q) (g : ¬ p) : q :=
   Or.elim h (fun t : p => False.elim (g t)) id
