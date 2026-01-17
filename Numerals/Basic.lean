@@ -208,28 +208,31 @@ def toNatAux (a : List Nat) (base factor acc : Nat) : Nat × Nat :=
   | [] => (factor, acc)
   | x::xs => toNatAux xs base (factor * base) (x * factor + acc)
 
-/-
-  invariants:
-  (toNatAux (x::xs) base factor acc).snd = acc + factor * x + base * (toNatAux xs base factor 0).snd
--/
+def toNatAux' (a : List Nat) (base : Nat) : Nat :=
+  (helper a base 1 0).snd where
+  helper (a : List Nat) (base factor acc : Nat) : Nat × Nat :=
+    match a with
+    | [] => (factor, acc)
+    | x::xs => helper xs base (factor * base) (x * factor + acc)
 
 /-
 not tail recursive
 -/
-def toNatAux' (a : List Nat) (base : Nat) : Nat  :=
+def toNatAux'' (a : List Nat) (base : Nat) : Nat  :=
   match a with
   | [] => 0
-  | x::xs => x + base * (toNatAux' xs base)
+  | x::xs => x + base * (toNatAux'' xs base)
 
-#eval toNatAux' [0,1,2,3,4] 10
-
-/-
-  invariants:
-  toNatAux' (x::xs) base = x + base * (toNatAux' xs base)
--/
-
-theorem toNatAux_nil {base factor acc : Nat} : (toNatAux [] base factor acc) = (factor, acc) := by
+theorem toNatAux_nil {base factor acc : Nat} : toNatAux [] base factor acc = (factor, acc) := by
   unfold toNatAux
+  rfl
+
+theorem toNatAux'_helper_nil {base factor acc : Nat} : toNatAux'.helper [] base factor acc  = (factor, acc) := by
+  unfold toNatAux'.helper
+  rfl
+
+theorem toNatAux'_nil_eq_zero {base : Nat} : toNatAux' [] base = 0 := by
+  unfold toNatAux'
   rfl
 
 theorem toNatAux_factor_acc {a : List Nat} {base factor acc : Nat} :
@@ -254,10 +257,34 @@ theorem toNatAux_cons {a : List Nat} {n base : Nat} :
   simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
   exact toNatAux_factor_acc
 
+theorem toNatAux'_helper_factor_acc {a : List Nat} {base factor acc : Nat} :
+  (toNatAux'.helper a base factor acc).snd = acc + factor * (toNatAux'.helper a base 1 0).snd := by
+  induction a generalizing factor acc with
+  | nil => simp_all only [toNatAux'_helper_nil, Nat.mul_zero, Nat.add_zero]
+  | cons head tail ih =>
+    unfold toNatAux'.helper
+    simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
+    rw [ih, Nat.add_comm (head * factor) acc]
+    rw (occs := .pos [2]) [ih]
+    rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
+
+theorem toNatAux'_cons {xs : List Nat} {x base : Nat} :
+  toNatAux' (x::xs) base = x + base * toNatAux' xs base := by
+  rw [toNatAux'.eq_def, toNatAux'.helper.eq_def]
+  simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
+  rw [toNatAux'.eq_def]
+  exact toNatAux'_helper_factor_acc
+
 theorem toNatAux_cons_factor_acc {a : List Nat} {n base factor acc : Nat} :
   (toNatAux (n::a) base factor acc).snd =
     acc + factor * n + factor * base * (toNatAux a base 1 0).snd := by
   rw [toNatAux_factor_acc, toNatAux_cons, Nat.mul_add, Nat.add_assoc, Nat.mul_assoc]
+
+theorem toNatAux'_cons_eq {xs : List Nat} {x base : Nat} :
+  toNatAux' (x::xs) base  = x + base * (toNatAux' xs base) := by
+  rw [toNatAux'.eq_def, toNatAux'.helper.eq_def]
+  simp only []
+  rw [toNatAux'.eq_def, toNatAux'_helper_factor_acc, Nat.mul_one, Nat.one_mul, Nat.add_zero]
 
 end ToNatAux
 
@@ -280,7 +307,23 @@ def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   | x::xs, n => ((x + n) % base)::(prune xs ((x + n) / base) base hb)
   termination_by (a.length, n)
 
-#eval (prune [10,10,10] 0 10 (by decide))
+theorem toNatAux'_prune_eq_add_toNatAux' {a : List Nat} {n base : Nat} (hb : 1 < base) :
+  toNatAux' (prune a n base hb) base = n + toNatAux' a base := by
+  induction a generalizing n with
+  | nil =>
+    induction n using Nat.strongRecOn with
+    | _ l ihl =>
+      match gl : l with
+      | 0 =>
+        rw [prune.eq_def, toNatAux'.eq_def, toNatAux'.helper.eq_def]
+        simp_all only [Nat.not_lt_zero, false_implies, implies_true, Nat.add_zero]
+      | k + 1 =>
+        have h1 : (k + 1) / base < k + 1 := Nat.div_lt_self (Nat.succ_pos k) hb
+        rw [prune.eq_def, toNatAux'_cons_eq, ihl ((k + 1) / base) h1, Nat.mul_add, ← Nat.add_assoc]
+        rw [Nat.mod_add_div (k + 1) base, toNatAux'_nil_eq_zero, Nat.mul_zero]
+  | cons x xs iha =>
+    rw [prune.eq_def]
+    simp only [toNatAux'_cons, iha, Nat.mul_add, ← Nat.add_assoc, Nat.mod_add_div (x + n) base, Nat.add_comm]
 
 end Prune
 
@@ -293,15 +336,6 @@ def addDigits : List Nat → List Nat → List Nat
   | x::xs, y::ys => (x + y)::(addDigits xs ys)
 
 end AddDigits
-
-section AddAux'
-
-def addAux' (a b : List Nat) (base : Nat) (hb : 1 < base) : List Nat := prune (addDigits a b) 0 base hb
-
-#eval (addAux' [7,2,3] [3,2,1,7] 10 (by decide))
-#eval 327 + 7123
-
-end AddAux'
 
 section AddAux
 
@@ -329,11 +363,11 @@ theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base
         if hl : l = 0 then
           rw [hl, addDigits.eq_def, addAux.eq_def, prune.eq_def]
         else
+          rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
           have h1 : 0 < l := Nat.zero_lt_of_ne_zero hl
           have h2 : l / base < l := Nat.div_lt_self h1 hb
           have h3 : addAux [] [] (l / base) base hb = prune [] (l / base) base hb := by
             rw [ihk (l / base) h2, addDigits.eq_def]
-          rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
           match hl : l with
           | 0 => simp only []
           | k + 1 => simp only [h3]
@@ -351,26 +385,23 @@ theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base
       rw [List.cons.injEq]
       exact And.intro rfl h2
   | cons x xs ihx =>
-    induction b with
-    | nil =>
+    match hb : b with
+    | [] =>
       rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
       simp only []
       have h1 : addDigits xs [] = xs := by
-          rw [addDigits.eq_def]
-          match hxs : xs with
-          | [] => simp only []
-          | x'::xs' => simp only []
-      have h2 : addAux xs [] ((x + n) / base) base hb =
-                  prune (addDigits xs []) ((x + n) / base) base hb := ihx
+        rw [addDigits.eq_def]
+        match hxs : xs with
+        | [] => simp only []
+        | x'::xs' => simp only []
       rw [List.cons.injEq]
-      exact And.intro rfl (by rwa [h1] at h2)
-    | cons y ys ihy =>
+      rw (occs := .pos [2]) [← h1]
+      exact And.intro rfl ihx
+    | y::ys  =>
       rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
       simp only []
       rw [List.cons.injEq]
-      apply And.intro
-      · case left => rfl
-      · case right => exact ihx
+      exact And.intro rfl ihx
 
 theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = [] ↔ n = 0 ∧ a = [] ∧ b = [] := by
@@ -682,9 +713,6 @@ def hb : 1 < bs := by decide
 def acc : Nat := 15
 def n : Nat := 12
 def m : Nat := 13
-
-#eval toNatAux (n % bs::(addAux a b (n / bs) bs hb)) bs 1 (m + acc)
-#eval toNatAux ((n + m) % bs::(addAux a b ((n + m) / bs) bs hb)) bs 1 acc
 
 theorem tbd02 {xs ys : List Nat} {x y n base : Nat} (hb : 1 < base) :
   (toNatAux (addAux (x::xs) (y::ys) n base hb) base 1 0).snd = (toNatAux (addAux (x::xs) (y::ys) 0 base hb) base 1 n).snd := by
