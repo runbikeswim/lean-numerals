@@ -1,3 +1,3 @@
-import Numerals.Basic
 import Numerals.Lemmas
-import Numerals.Corollaries
+-- import Numerals.Corollaries
+-- import Numerals.Basic

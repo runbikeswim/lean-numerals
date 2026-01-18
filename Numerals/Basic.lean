@@ -468,7 +468,7 @@ theorem addAux_nil_zero_eq {a b : List Nat} {n base : Nat} (hn : n = 0) (hb : 1 
   | case5 => contradiction
 
 theorem all_addAux_digits_lt_base {a b : List Nat} (n : Nat) {base : Nat} (hb : 1 < base) :
-  (addAux a b n base hb ).all (· < base) := by
+  (addAux a b n base hb).all (· < base) := by
   have hb0 : 0 < base := Nat.lt_trans (by decide) hb
   fun_induction addAux with
   | case1 => exact List.all_nil

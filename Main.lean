@@ -1,5 +1,8 @@
 import Numerals
 
+/-
+TODO: uncomment
+
 open Numeral
 
 def nilBase10 : Numeral := {
@@ -100,3 +103,8 @@ def main : IO Unit := do
 
   for (b, a) in numerals.tail.zip numerals do
     println! s!"{a} + {b}: {a + b}"
+
+-/
+
+def main : IO Unit := do
+  println! "done!"
