@@ -1,7 +1,3 @@
-
-theorem or_elim_of_not {p q : Prop} (h : p ∨ q) (g : ¬ p) : q :=
-  Or.elim h (fun t : p => False.elim (g t)) id
-
 theorem iff_iff_iff_not_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
   constructor
   · intro h
@@ -18,7 +14,7 @@ theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)
 theorem eq_zero_of_lt_of_mod_eq_zero {a b : Nat}
   (h1 : 1 < b) (h2 : a % b = 0) (h3 : a < b) : a = 0 := by
   have h4 : b ∣ a  := Nat.dvd_iff_mod_eq_zero.mpr h2
-  have h5 : a < b := or_elim_of_not (.inr h3) (Nat.ne_zero_of_lt h1)
+  have h5 : a < b := Or.resolve_left (.inr h3) (Nat.ne_zero_of_lt h1)
   exact Nat.eq_zero_of_dvd_of_lt h4 h5
 
 theorem ne_zero_mod_of_ne_zero {a b : Nat}
@@ -97,7 +93,7 @@ theorem noTrailingZeros_cons_of (x : Nat) {xs : List Nat}
     rw [List.getLast_cons_cons]
     exact (hntz (List.cons_ne_nil x xs)) hnz
 
-theorem tail_ne_zero_of_noTrailingZeros_cons (x : Nat) {xs : List Nat}
+theorem tail_ne_zero_of (x : Nat) {xs : List Nat}
   (hntz : noTrailingZeros (x::xs)) : xs ≠ [0] := by
   rw [noTrailingZeros.eq_def] at hntz
   have h1 : x :: xs ≠ [] := List.cons_ne_nil x xs
@@ -113,7 +109,7 @@ theorem tail_ne_zero_of_noTrailingZeros_cons (x : Nat) {xs : List Nat}
     have h8 : xs.getLast h5 = 0 := by simp only [h4, List.getLast_singleton]
     contradiction
 
-theorem noTrailingZeros_of_noTrailingZeros_cons (x : Nat) {xs : List Nat}
+theorem noTrailingZeros_of (x : Nat) {xs : List Nat}
   (hntz : noTrailingZeros (x::xs)) : noTrailingZeros xs := by
   intro h1 h2
   have h3 : x::xs ≠ [] := by simp only [ne_eq, reduceCtorEq, not_false_eq_true]
@@ -200,7 +196,7 @@ theorem prune_ne_zero_of_nil {a : List Nat} {n base : Nat} (ha : a = []) (hb : 1
     rw [List.cons.injEq] at h1
     have : ((k + 1) / base) = 0 := ((prune_eq_nil_iff hb).mp h1.right).right
     have : base = 0 ∨ k + 1 < base := Nat.div_eq_zero_iff.mp this
-    have : k + 1 < base := or_elim_of_not this (Nat.ne_zero_of_lt hb)
+    have : k + 1 < base := Or.resolve_left this (Nat.ne_zero_of_lt hb)
     have : ¬ base ≤ k + 1 := Nat.not_le_of_lt this
     have h2 : (k + 1) % base = k + 1 := by
       rw [Nat.mod_eq]
@@ -295,9 +291,9 @@ theorem noTrailingZeros_prune_of_noTrailingZeros {a : List Nat} {n base : Nat}
   | cons x xs iha =>
     rw [prune.eq_def]
     simp only []
-    have h1 : noTrailingZeros xs := noTrailingZeros_of_noTrailingZeros_cons x hntz
+    have h1 : noTrailingZeros xs := noTrailingZeros_of x hntz
     have h2 : noTrailingZeros (prune xs ((x + n) / base) base hb) := iha h1
-    have h3 : xs ≠ [0] := tail_ne_zero_of_noTrailingZeros_cons x hntz
+    have h3 : xs ≠ [0] := tail_ne_zero_of x hntz
     have h4 : prune xs ((x + n) / base) base hb ≠ [0] := prune_ne_zero_of_ne_zero h3 hb
     exact noTrailingZeros_cons_of ((x + n) % base) h4 h2
 
@@ -334,11 +330,21 @@ def addDigits : List Nat → List Nat → List Nat
   | [], y::ys => y::ys
   | x::xs, y::ys => (x + y)::(addDigits xs ys)
 
+theorem addDigits_eq_nil_iff {a b : List Nat} : addDigits a b = [] ↔ a = [] ∧ b = [] := by
+  constructor
+  · intro h
+    match ga : a, gb : b with
+    | [], [] => exact And.intro rfl rfl
+    | x::xs, [] | [], y::ys | x::xs, y::ys => contradiction
+  . intro h
+    match a, b with | [], [] => rfl
+
 theorem addDigits_nil_eq {a : List Nat} : addDigits a [] = a := by
   rw [addDigits.eq_def]
   match ha : a with
-  | [] => simp only []
-  | x::xs => simp only []
+  | [] | x::xs => rfl
+
+theorem addDigits_cons_cons_eq {x y : Nat} {xs ys : List Nat} : addDigits (x::xs) (y::ys) = (x + y)::addDigits xs ys := rfl
 
 theorem addDigits_comm {a b : List Nat} : addDigits a b = addDigits b a := by
   induction a generalizing b with
@@ -351,24 +357,55 @@ theorem addDigits_comm {a b : List Nat} : addDigits a b = addDigits b a := by
       rw [List.cons.injEq, Nat.add_comm u v]
       exact And.intro rfl iha
 
+theorem addDigits_eq_zero_iff {a b : List Nat} :
+  addDigits a b = [0] ↔ a = [0] ∧ b = [] ∨ a = [] ∧ b = [0] ∨ a = [0] ∧ b = [0] := by
+  constructor
+  · intro h
+    match ga : a, gb : b with
+    | [], [] => contradiction
+    | x::xs, [] =>
+      have h1 : x::xs = [0] := by rwa [addDigits_nil_eq] at h
+      exact .inl (And.intro h1 rfl)
+    | [], y::ys =>
+      have h1 : y::ys = [0] := by rwa [addDigits_comm, addDigits_nil_eq] at h
+      exact .inr (.inl (And.intro rfl h1))
+    | x::xs, y::ys =>
+      rw [addDigits_cons_cons_eq] at h
+      have h1 : x + y = 0 ∧ addDigits xs ys = [] := List.cons.inj h
+      have h2 : x = 0 ∧ y = 0 := Nat.add_eq_zero_iff.mp h1.left
+      have h3 : xs = [] ∧ ys = [] := addDigits_eq_nil_iff.mp h1.right
+      have h4 : x::xs = [0] := by rw [h2.left, h3.left]
+      have h5 : y::ys = [0] := by rw [h2.right, h3.right]
+      exact .inr (.inr (And.intro h4 h5))
+  · intro h
+    match ga : a, gb : b with | [0], [] | [], [0] | [0], [0] => decide
+
 end AddDigits
 
 section NoTrailingZeros_AddDigits
 
-theorem noTrailingZeros_addDigits_of_noTrailingZeros {a b : List Nat} {base : Nat} (hb : 1 < base)
+theorem noTrailingZeros_addDigits_of_noTrailingZeros {a b : List Nat}
   (hantz : noTrailingZeros a) (hbntz : noTrailingZeros b) :
   noTrailingZeros (addDigits a b) := by
-  rw [noTrailingZeros.eq_def]
-  intro h1 h2
   induction a generalizing b with
   | nil =>
-    induction b with
-    | nil => sorry
-    | cons y ys ihb => sorry
-  | cons x xs iha =>
-    induction b with
-    | nil => sorry
-    | cons y ys ihb => sorry
+    match b with
+    | [] => intro _ ; contradiction
+    | y::ys =>
+      simp only [addDigits_comm, addDigits_nil_eq]
+      exact hbntz
+  | cons x xs ih =>
+    match b with
+    | [] => simp only [addDigits_nil_eq]; exact hantz
+    | y::ys =>
+      have h1 : xs ≠ [0] := tail_ne_zero_of x hantz
+      have h2 : ys ≠ [0] := tail_ne_zero_of y hbntz
+      have h3 : addDigits xs ys ≠ [0] := by
+        false_or_by_contra; rename _ => h4
+        rcases addDigits_eq_zero_iff.mp h4 with ⟨_, _⟩ | ⟨_, _⟩ | ⟨_, _⟩ <;> contradiction
+      have h4 : noTrailingZeros (addDigits xs ys) := ih (noTrailingZeros_of x hantz) (noTrailingZeros_of y hbntz)
+      rw [addDigits_cons_cons_eq]
+      exact noTrailingZeros_cons_of (x + y) h3 h4
 
 end NoTrailingZeros_AddDigits
 
@@ -455,37 +492,35 @@ theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base
     | nil =>
       induction n using Nat.strongRecOn with
       | _ l ihk =>
+        rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
         if hl : l = 0 then
-          rw [hl, addDigits.eq_def, addAux.eq_def, prune.eq_def]
+          rw [hl]
         else
-          rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
-          have h1 : 0 < l := Nat.zero_lt_of_ne_zero hl
-          have h2 : l / base < l := Nat.div_lt_self h1 hb
-          have h3 : addAux [] [] (l / base) base hb = prune [] (l / base) base hb := by
-            rw [ihk (l / base) h2, addDigits.eq_def]
+          have h1 : l / base < l := Nat.div_lt_self (Nat.zero_lt_of_ne_zero hl) hb
+          have h2 : addAux [] [] (l / base) base hb = prune [] (l / base) base hb := by
+            rw [ihk (l / base) h1, addDigits.eq_def]
           match hl : l with
           | 0 => simp only []
-          | k + 1 => simp only [h3]
+          | k + 1 => simp only [h2]
     | cons y ys ihy =>
       rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
       simp only []
+      rw [List.cons.injEq]
       have h1 : addDigits [] ys = ys := by rw [addDigits_comm]; exact addDigits_nil_eq
       have h2 : addAux [] ys ((y + n) / base) base hb = prune ys ((y + n) / base) base hb := by
         rw [h1] at ihy
         exact ihy
-      rw [List.cons.injEq]
       exact And.intro rfl h2
   | cons x xs ihx =>
+    rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
     match hb : b with
     | [] =>
-      rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
       simp only []
       rw [List.cons.injEq]
       have h1 : addDigits xs [] = xs := addDigits_nil_eq
       rw (occs := .pos [2]) [← h1]
       exact And.intro rfl ihx
     | y::ys  =>
-      rw [addDigits.eq_def, addAux.eq_def, prune.eq_def]
       simp only []
       rw [List.cons.injEq]
       exact And.intro rfl ihx
@@ -513,7 +548,7 @@ section NoTrailingZeros_AddAux
 theorem noTrailingZeros_addAux_of_noTrailingZeros {a b : List Nat} {n base : Nat}
   (hantz : noTrailingZeros a) (hbntz : noTrailingZeros b) (hb : 1 < base) :
   noTrailingZeros (addAux a b n base hb) := by
-  have h1 : noTrailingZeros (addDigits a b) := noTrailingZeros_addDigits_of_noTrailingZeros hb hantz hbntz
+  have h1 : noTrailingZeros (addDigits a b) := noTrailingZeros_addDigits_of_noTrailingZeros hantz hbntz
   rw [addAux_eq_prune_addDigits hb]
   exact noTrailingZeros_prune_of_noTrailingZeros h1 hb
 
