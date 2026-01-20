@@ -37,11 +37,40 @@ theorem cons_ne_singleton_iff_or_ne_ne {α : Type} {a b : α} {as : List α} :
   rw [iff_iff_iff_not_not, Classical.not_and_iff_not_or_not] at this
   simp_all only [cons.injEq, not_and, ne_eq]
 
+def mapWithAll {α β : Type} (a: List α) (p : α → Bool) (ha : a.all p) (f : (x : α) → (hp : p x) → β): List β :=
+  match a with
+  | [] => []
+  | x::xs =>
+    have : p x ∧ xs.all p = true := by rwa [all_cons, Bool.and_eq_true] at ha
+    (f x this.left)::(mapWithAll xs p this.right f)
+
 end List
 
 section AllDigitsLtBase
 
 def allDigitsLtBase (a : List Nat) (base : Nat) : Prop := a.all (· < base)
+
+def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) :=
+  match ga : a with
+  | [] =>
+    have : [].all (· < base) := List.all_nil
+    isTrue this
+  | x::xs =>
+    have h1 : x < base ∧ xs.all (· < base) → (x::xs).all (· < base) := by
+      intro g
+      rwa [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
+    have h2 : ¬ x < base ∨ ¬ xs.all (· < base) → ¬ (x::xs).all (· < base) := by
+      intro g
+      rwa [List.all_cons, Bool.and_eq_true, decide_eq_true_eq, Classical.not_and_iff_not_or_not]
+    if hx : x < base then
+      if hxs : xs.all (· < base) then
+        isTrue (h1 (And.intro hx hxs))
+      else
+        isFalse (h2 (.inr hxs))
+    else
+      isFalse (h2 (.inl hx))
+
+instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) := decAllDigitsLtBase a base
 
 theorem allDigitsLtBase_of_nil {a : List Nat} {base : Nat} (ha : a = []) :
   allDigitsLtBase a base := by
@@ -53,13 +82,46 @@ theorem allDigitsLtBase_cons_iff {x base : Nat} {xs : List Nat} :
   unfold allDigitsLtBase
   simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
 
-#check allDigitsLtBase_cons_iff
+theorem allDigitsLtBase_of_zero {a : List Nat} {base : Nat} (ha : a = [0]) (hb : 1 < base) :
+  allDigitsLtBase a base := by
+  rw [allDigitsLtBase.eq_def, ha]
+  exact allDigitsLtBase_cons_iff.mpr (And.intro (Nat.pos_of_one_lt hb) (allDigitsLtBase_of_nil rfl))
 
 end AllDigitsLtBase
 
 section NoTrailingZeros
 
 def noTrailingZeros (a : List Nat) : Prop := (h : a ≠ []) → a ≠ [0] → a.getLast h ≠ 0
+
+def decNoTrailingZeros (a : List Nat) : Decidable (noTrailingZeros a) :=
+  if h1 : a = [] then
+    have : noTrailingZeros a := by
+      rw [noTrailingZeros.eq_def]
+      intro _
+      contradiction
+    isTrue this
+  else
+    if h2 : a = [0] then
+      have : noTrailingZeros a := by
+        rw [noTrailingZeros.eq_def]
+        intro _ _
+        contradiction
+      isTrue this
+    else
+      if h3 : a.getLast h1 = 0 then
+        have : ¬ noTrailingZeros a := by
+          rw [noTrailingZeros.eq_def]
+          intro h4
+          exact absurd h3 (h4 h1 h2)
+        isFalse this
+      else
+        have : noTrailingZeros a := by
+          rw [noTrailingZeros.eq_def]
+          intro _ _
+          exact h3
+        isTrue this
+
+instance instNoTrailingZeros (a : List Nat) : Decidable (noTrailingZeros a) := decNoTrailingZeros a
 
 theorem noTrailingZeros_of_nil {a : List Nat} (ha : a = []) : noTrailingZeros a := by
   rw [noTrailingZeros.eq_def]
@@ -122,6 +184,58 @@ theorem noTrailingZeros_of (x : Nat) {xs : List Nat}
 
 end NoTrailingZeros
 
+section ToHexDigit
+
+/-!
+returns the hexadecimal digit of a number between 0 and 15 (including)
+
+The use of `decide (digit < 16)` as type of `h` - instead of the
+more straightforward `digit < 16` - is motivated by
+https://github.com/leanprover/lean4/issues/9292.
+-/
+def toHexDigit (digit : Nat) (h : decide (digit < 16)) : String :=
+  match digit with
+  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 => s!"{digit}"
+  | 10 => "a"
+  | 11 => "b"
+  | 12 => "c"
+  | 13 => "d"
+  | 14 => "e"
+  | 15 => "f"
+
+end ToHexDigit
+
+section NormalizeDigits
+
+/-!
+maps an empty list of digits to `[0]` or reverses them otherwise
+-/
+def normalizeDigits (a : List Nat) : List Nat := if a = [] then [0] else a.reverse
+
+/-!
+asserts that `normalizeDigits` only returns `[0]` or the reversed input
+-/
+theorem normalizeDigits_eq_or {a : List Nat} :
+  normalizeDigits a = [0] ∨ (normalizeDigits a) = a.reverse := by
+  by_cases ha : a = [] <;> simp only [normalizeDigits, ha, reduceIte, true_or, or_true]
+
+end NormalizeDigits
+
+section NormalizeDigits_AllDigitsLtBase
+
+/-!
+asserts that all digits returned by `normalizeDigits_allLtBase_of_allLtBase` are less than
+`base` if this holds true for the input
+-/
+theorem normalizeDigits_allLtBase_of_allLtBase {a : List Nat} {base : Nat} (hb : 1 < base)
+  (haa : allDigitsLtBase a base): allDigitsLtBase (normalizeDigits a) base := by
+  have g : normalizeDigits a = [0] ∨ (normalizeDigits a) = a.reverse := normalizeDigits_eq_or
+  cases g with
+  | inl gl => exact allDigitsLtBase_of_zero gl hb
+  | inr gr => rwa [gr, allDigitsLtBase.eq_def, List.all_reverse, ← allDigitsLtBase.eq_def]
+
+end NormalizeDigits_AllDigitsLtBase
+
 section ToNatAux
 
 def toNatAux (a : List Nat) (base : Nat) : Nat :=
@@ -150,11 +264,31 @@ theorem toNatAux_nil_eq_zero {base : Nat} : toNatAux [] base = 0 := by
   unfold toNatAux
   rfl
 
+theorem toNatAux_zero_eq_zero {base : Nat} : toNatAux [0] base = 0 := by
+  unfold toNatAux
+  rfl
+
 theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
   toNatAux (x::xs) base = x + base * (toNatAux xs base) := by
   rw [toNatAux.eq_def, toNatAux.helper.eq_def]
   simp only []
   rw [toNatAux.eq_def, toNatAux_helper_eq, Nat.mul_one, Nat.one_mul, Nat.add_zero]
+
+theorem toNatAux_eq_zero_iff {a : List Nat} {base : Nat} :
+  toNatAux a base = 0 ↔ a = [] ∨ a = [0] := by
+  constructor
+  · intro h
+    unfold toNatAux toNatAux.helper at h
+    match a with
+    | [] => simp only [true_or]
+    | x::xs =>
+      simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero] at h
+      rw [toNatAux_helper_eq, Nat.add_eq_zero_iff] at h
+      sorry
+  · intro h
+    cases h with
+    | inl hl => rw [hl, toNatAux_nil_eq_zero]
+    | inr hr => rw [hr, toNatAux_zero_eq_zero]
 
 end ToNatAux
 
@@ -216,7 +350,7 @@ theorem and_nil_zero_of_cons_prune_eq_zero {a : List Nat} {n base : Nat} (hb : 1
   have h5 : n = 0 := Nat.eq_zero_of_lt_of_mod_eq_zero hb h1.left h4
   exact And.intro h3 h5
 
-theorem prune_zero_iff {a : List Nat} {n base : Nat} (hb : 1 < base) :
+theorem prune_eq_zero_iff {a : List Nat} {n base : Nat} (hb : 1 < base) :
   prune a n base hb = [0] ↔ a = [0] ∧ n = 0 := by
   constructor
   · intro h
@@ -241,14 +375,14 @@ theorem prune_zero_iff {a : List Nat} {n base : Nat} (hb : 1 < base) :
 theorem prune_ne_zero_of_ne_zero {a : List Nat} {n base : Nat} (ha : a ≠ [0]) (hb : 1 < base) :
   prune a n base hb ≠ [0] := by
   false_or_by_contra; rename _ => h1
-  have h2 : a = [0] := ((prune_zero_iff hb).mp h1).left
+  have h2 : a = [0] := ((prune_eq_zero_iff hb).mp h1).left
   contradiction
 
 end Prune
 
 section AllDigitsLtBase_Prune
 
-theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} (hb : 1 < base) :
+theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} {hb : 1 < base} :
   allDigitsLtBase (prune a n base hb) base := by
   induction a generalizing n with
   | nil =>
@@ -272,8 +406,7 @@ end AllDigitsLtBase_Prune
 
 section NoTrailingZeros_Prune
 
-theorem noTrailingZeros_prune_of_noTrailingZeros {a : List Nat} {n base : Nat}
-  (hntz : noTrailingZeros a) (hb : 1 < base) :
+theorem noTrailingZeros_prune_of {a : List Nat} {n base : Nat} {hb : 1 < base} (hntz : noTrailingZeros a) :
   noTrailingZeros (prune a n base hb) := by
   induction a generalizing n with
   | nil =>
@@ -301,7 +434,7 @@ end NoTrailingZeros_Prune
 
 section ToNatAux_Prune
 
-theorem toNatAux_prune_eq_add_toNatAux {a : List Nat} {n base : Nat} (hb : 1 < base) :
+theorem toNatAux_prune_eq {a : List Nat} {n base : Nat} (hb : 1 < base) :
   toNatAux (prune a n base hb) base = n + toNatAux a base := by
   induction a generalizing n with
   | nil =>
@@ -384,7 +517,7 @@ end AddDigits
 
 section NoTrailingZeros_AddDigits
 
-theorem noTrailingZeros_addDigits_of_noTrailingZeros {a b : List Nat}
+theorem noTrailingZeros_addDigits_of {a b : List Nat}
   (hantz : noTrailingZeros a) (hbntz : noTrailingZeros b) :
   noTrailingZeros (addDigits a b) := by
   induction a generalizing b with
@@ -411,7 +544,7 @@ end NoTrailingZeros_AddDigits
 
 section ToNatAux_addDigits
 
-theorem toNatAux_addDigits_eq_add_toNatAux_toNatAux {a b : List Nat} {base : Nat} :
+theorem toNatAux_addDigits_eq {a b : List Nat} {base : Nat} :
   toNatAux (addDigits a b) base = (toNatAux a base) + (toNatAux b base) := by
   have h2 : toNatAux [] base = 0 := by rw [toNatAux.eq_def, toNatAux.helper.eq_def]
   induction a generalizing b with
@@ -536,10 +669,10 @@ end AddAux_Prune_AddDigits
 
 section AllDigitsLtBase_AddAux
 
-theorem allDigitsLtBase_addAux {a b : List Nat} (n : Nat) {base : Nat} (hb : 1 < base) :
+theorem allDigitsLtBase_addAux {a b : List Nat} (n : Nat) {base : Nat} {hb : 1 < base} :
   allDigitsLtBase (addAux a b n base hb) base := by
   rw [addAux_eq_prune_addDigits hb]
-  exact allDigitsLtBase_prune hb
+  exact allDigitsLtBase_prune
 
 end AllDigitsLtBase_AddAux
 
@@ -548,8 +681,50 @@ section NoTrailingZeros_AddAux
 theorem noTrailingZeros_addAux_of_noTrailingZeros {a b : List Nat} {n base : Nat}
   (hantz : noTrailingZeros a) (hbntz : noTrailingZeros b) (hb : 1 < base) :
   noTrailingZeros (addAux a b n base hb) := by
-  have h1 : noTrailingZeros (addDigits a b) := noTrailingZeros_addDigits_of_noTrailingZeros hantz hbntz
+  have h1 : noTrailingZeros (addDigits a b) := noTrailingZeros_addDigits_of hantz hbntz
   rw [addAux_eq_prune_addDigits hb]
-  exact noTrailingZeros_prune_of_noTrailingZeros h1 hb
+  exact noTrailingZeros_prune_of h1
 
 end NoTrailingZeros_AddAux
+
+section SubAux
+
+def subAuxCarry (x y base carry: Nat) (hb : 1 < base) : Nat × Nat :=
+  if h : y ≤ x then
+    (x - y, carry)
+  else
+    have h1 : x < y := Nat.lt_of_not_le h
+    have h2 : x < x + base := Nat.lt_add_of_pos_right (Nat.lt_trans (by decide) hb)
+    have : y - (x + base) < y - x := Nat.sub_lt_sub_left h1 h2
+    subAuxCarry (x + base) y base (carry + 1) hb
+  termination_by y - x
+
+def cons? {α : Type} (a : α) (b : Option (List α)) : Option (List α) :=
+  match b with
+  | none => none
+  | some l => some (a::l)
+
+def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :=
+  match a, b, n with
+  | [], [], 0 => some []
+  | [], [], _ + 1 => none
+  | x::xs, [], n =>
+    let (s, carry) := subAuxCarry x n base 0 hb
+    cons? s (subAux xs [] carry base hb)
+  | [], y::ys, n =>
+    let (s, carry) := subAuxCarry y n base 0 hb
+    cons? s (subAux ys [] carry base hb)
+  | x::xs, y::ys, n =>
+    let (s, carry) := subAuxCarry x (y + n) base 0 hb
+    cons? s (subAux xs ys carry base hb)
+  termination_by a.length + b.length
+
+def discardTrailingZeros (a : List Nat) :=
+  (helper a.reverse).reverse where
+    helper : List Nat → List Nat
+    | [] => []
+    | [0] => [0]
+    | 0::r => helper r
+    | r => r
+
+end SubAux
