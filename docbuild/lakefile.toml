@@ -1,0 +1,27 @@
+name = "docbuild"
+reservoir = false
+version = "0.1.0"
+packagesDir = "../.lake/packages"
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+autoImplicit = false
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+[[require]]
+name = "lean-numerals"
+path = "../"
+
+[[require]]
+scope = "leanprover"
+name = "doc-gen4"
+rev = "v4.26.0"
+
+# run via 
+# cd docbuild
+# rm -rf .lake
+# MATHLIB_NO_CACHE_ON_UPDATE=1 lake update lean-numerals
+# MATHLIB_NO_CACHE_ON_UPDATE=1 lake update doc-gen4
+# DOCGEN_SRC="github" lake build Numerals:docs
