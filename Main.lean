@@ -78,12 +78,15 @@ def numerals : List NumeralWithBase := [
     threeHundredSixtyBase60.toWithBase
   ]
 
+def fibonacci (n : Nat) : Numeral10 :=
+  (helper n zeroBase10 oneBase10).fst where
+  helper (n : Nat) (a b : Numeral10) : Numeral10 × Numeral10 :=
+  match n with
+  | 0 => (a, b)
+  | k + 1 => helper k b (a + b)
+
 def main : IO Unit := do
   for n in numerals do
     println! s!"{repr n.val}: {n.val} : {n.val.rebase 10 (by decide)}"
 
-  for i in [0:15] do
-    for j in [i:15] do
-      let a : Numeral10 := ofNat i 10 (by decide)
-      let b : Numeral10 := ofNat j 10 (by decide)
-      println! s!"{i} + {j}: {a + b}"
+  println! s!"fibonacci 100: {fibonacci 100}"

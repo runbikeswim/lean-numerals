@@ -12,6 +12,14 @@ TODO: remove and resolve
 -/
 set_option linter.missingDocs false
 
+/-!
+# Numerals
+
+`Numeral` provides theorems and algorithms for the representation of natural numbers in a
+[positional numeral system](https://en.wikipedia.org/wiki/List_of_numeral_systems#Standard_positional_numeral_systems)
+for an arbitrary basis larger than one.
+-/
+
 section Numerals
 
 /--
@@ -28,16 +36,80 @@ structure Numeral (base : Nat) (hb : 1 < base) where
   noTrailingZeros : noTrailingZeros digits
   deriving Repr
 
+/--
+Numbers in binary representation
+-/
 abbrev Numeral2 := Numeral 2 (by decide)
+
+/--
+Numbers in octal representation
+-/
 abbrev Numeral8 := Numeral 8 (by decide)
+
+/--
+Numbers in decimal representation
+-/
 abbrev Numeral10 := Numeral 10 (by decide)
+
+/--
+Numbers in hexadecimal representation
+-/
 abbrev Numeral16 := Numeral 16 (by decide)
 
 namespace Numeral
 
+section AdditionalConstructors
+
+def singleDigit (n base : Nat) (h : n < base) (hb : 1 < base) : Numeral base hb where
+  digits := [n]
+  allDigitsLtBase := by
+    rw [allDigitsLtBase.eq_def, List.all, List.all_nil, Bool.and_true, decide_eq_true h]
+  noTrailingZeros := by
+    rw [noTrailingZeros.eq_def]
+    intro h1 h2
+    if g : n = 0 then
+      have : n ≠ 0 := Or.resolve_right (List.cons_ne_singleton_iff_or_ne_ne.mp h2) (by rw [ne_eq, Classical.not_not])
+      contradiction
+    else
+      rwa [List.getLast_singleton]
+
+def consDigit (head : Nat) {base : Nat} {hb : 1 < base} (h : head < base) (tail : Numeral base hb) : Numeral base hb :=
+  if g : tail.digits = [] ∨ tail.digits = [0] then
+    singleDigit head base h hb
+  else {
+      digits := head::tail.digits,
+      allDigitsLtBase := by
+        have : tail.digits.all (· < base) := tail.allDigitsLtBase
+        rwa [allDigitsLtBase.eq_def, List.all_cons, decide_eq_true h, Bool.true_and]
+      noTrailingZeros := by
+        rw [noTrailingZeros.eq_def]
+        let tnt := tail.noTrailingZeros
+        have h2 : tail.digits ≠ [] ∧ tail.digits ≠ [0] := not_or.mp g
+        have h3 : (htnn : tail.digits ≠ []) → tail.digits ≠ [0] → tail.digits.getLast htnn ≠ 0 := by
+          rwa [noTrailingZeros.eq_def] at tnt
+        have h4 : tail.digits.getLast h2.left ≠ 0 := h3 h2.left h2.right
+        intro _ _
+        rwa [List.getLast_cons h2.left]
+    }
+
+def a := singleDigit 3 10 (by decide) (by decide)
+#eval a
+
+def b := consDigit 0 (by decide) a
+#eval b
+
+def c := singleDigit 0 10 (by decide) (by decide)
+#eval c
+
+def d := consDigit 3 (by decide) c
+#eval d
+
+end AdditionalConstructors
+
 section Base
 
 /--
+returns the base of the provided numeral
 -/
 def base {base' : Nat} {hb' : 1 < base'} (_ : Numeral base' hb') : Nat := base'
 
@@ -50,19 +122,22 @@ covers the two representations of zero as `Numeral`
 -/
 def isZero {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Prop := isZeroAux a.digits
 
-/-!
+/--
+makes `isZero` decidable
 -/
 def decIsZero {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Decidable a.isZero := decIsZeroAux a.digits
 
-/-!
+/--
+instance of class `Decidable` for `isZero`
 -/
-instance instIstZeroNumeral {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Decidable (isZero a) := decIsZero a
+instance instIsZeroNumeral {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Decidable (isZero a) := decIsZero a
 
 end IsZero
 
 section Default
 
-/-!
+/--
+zero (represented as `[0]`) is the default `Numeral` - for any base
 -/
 instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
     digits := [0],
@@ -110,7 +185,7 @@ end ToString
 
 section toNat
 
-/-!
+/--
 -/
 def toNat {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := toNatAux n.digits base
 
@@ -125,14 +200,14 @@ end toNat
 
 section OfNat
 
-/-!
+/--
 -/
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   digits := prune [] n base hb
   allDigitsLtBase := allDigitsLtBase_prune
   noTrailingZeros := noTrailingZeros_prune_of (noTrailingZeros_of_nil rfl)
 
-/-!
+/--
 -/
 theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
   (ofNat n base hb).isZero ↔ n = 0 := by
@@ -150,7 +225,7 @@ theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
     simp only [h, ofNat, isZero, prune_of_nil_zero rfl rfl hb]
     exact isZeroAux_of_nil
 
-/-!
+/--
 -/
 theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
   rw [toNat, ofNat, toNatAux_prune_eq, toNatAux_nil_eq_zero, Nat.add_zero]

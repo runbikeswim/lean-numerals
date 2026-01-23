@@ -45,12 +45,12 @@ end Nat
 
 namespace List
 
-/-!
+/--
 -/
 theorem cons_singleton_iff_and_eq_nil {α : Type} {a b : α} {as : List α} :
   (a::as = [b]) ↔ (a = b ∧ as = []) := by simp only [cons.injEq]
 
-/-!
+/--
 -/
 theorem cons_ne_singleton_iff_or_ne_ne {α : Type} {a b : α} {as : List α} :
   (a::as ≠ [b]) ↔ (a ≠ b ∨ as ≠ []) := by
@@ -58,7 +58,7 @@ theorem cons_ne_singleton_iff_or_ne_ne {α : Type} {a b : α} {as : List α} :
   rw [iff_iff_iff_not_not, Classical.not_and_iff_not_or_not] at this
   simp_all only [cons.injEq, not_and, ne_eq]
 
-/-!
+/--
 -/
 def mapWithAll {α β : Type} (a: List α) (p : α → Bool) (ha : a.all p) (f : (x : α) → (hp : p x) → β): List β :=
   match a with
@@ -71,11 +71,11 @@ end List
 
 section isZeroAux
 
-/-!
+/--
 -/
 def isZeroAux (a : List Nat) : Prop := a = [] ∨ a = [0]
 
-/-!
+/--
 -/
 def decIsZeroAux (a : List Nat) : Decidable (isZeroAux a) :=
   if h : a = [] ∨ a = [0] then
@@ -83,11 +83,11 @@ def decIsZeroAux (a : List Nat) : Decidable (isZeroAux a) :=
   else
     isFalse h
 
-/-!
+/--
 -/
 theorem isZeroAux_of_nil : isZeroAux [] := .inl rfl
 
-/-!
+/--
 -/
 theorem isZeroAux_of_zero : isZeroAux [0] := .inr rfl
 
@@ -95,11 +95,11 @@ end isZeroAux
 
 section AllDigitsLtBase
 
-/-!
+/--
 -/
 def allDigitsLtBase (a : List Nat) (base : Nat) : Prop := a.all (· < base)
 
-/-!
+/--
 -/
 def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) :=
   match ga : a with
@@ -121,7 +121,7 @@ def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase 
     else
       isFalse (h2 (.inl hx))
 
-/-!
+/--
 -/
 instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) := decAllDigitsLtBase a base
 
