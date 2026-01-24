@@ -385,10 +385,38 @@ theorem toNatAux_eq_zero_iff {a : List Nat} {base : Nat} (ha : noTrailingZeros a
 
 end ToNatAux
 
+section LessThan
+
+def ltAux (a b : List Nat) : Bool :=
+  match a, b with
+  | _, [] => false
+  | [], y::ys => y ≠ 0 || ltAux [] ys
+  | x::xs, y::ys => xs == ys && x < y || ltAux xs ys
+
+theorem ltAux_irreflexiv {a : List Nat} : ltAux a a = false := by
+  induction a with
+  | nil => rfl
+  | cons x xs ih =>
+    rw [ltAux.eq_def]
+    simp only [BEq.rfl, Nat.lt_irrefl, decide_false, Bool.and_false, Bool.false_or, ih]
+
+theorem ltAux_asymetric {a b : List Nat} (h : ltAux a b) : ltAux b a = false := by
+  induction a generalizing b with
+  | nil => rfl
+  | cons x xs ih =>
+    match b with
+    | [] => contradiction
+    | y::ys =>
+      simp only [ltAux, Bool.or_eq_true_iff, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
+      simp only [ltAux, Bool.or_eq_false_iff, Bool.and_eq_false_imp, beq_iff_eq, decide_eq_false_iff_not,
+        Nat.not_lt]
+      sorry
+
+end LessThan
+
 section Prune
 
-/-!
--/
+/-- -/
 def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   match a, n with
   | [], 0 => []
@@ -400,15 +428,13 @@ def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   | x::xs, n => ((x + n) % base)::(prune xs ((x + n) / base) base hb)
   termination_by (a.length, n)
 
-/-!
--/
+/-- -/
 theorem prune_of_nil_zero {a : List Nat} {n base : Nat} (ha : a = []) (hn : n = 0) (hb : 1 < base) :
   prune a n base hb = [] := by
   rw [prune.eq_def]
   match a, n with | [], 0 => simp only []
 
-/-!
--/
+/-- -/
 theorem prune_eq_nil_iff {a : List Nat} {n base : Nat}  (hb : 1 < base) :
   prune a n base hb = [] ↔ a = [] ∧ n = 0 := by
   constructor
@@ -418,8 +444,7 @@ theorem prune_eq_nil_iff {a : List Nat} {n base : Nat}  (hb : 1 < base) :
   · intro h
     exact prune_of_nil_zero h.left h.right hb
 
-/-!
--/
+/-- -/
 theorem prune_ne_zero_of_nil {a : List Nat} {n base : Nat} (ha : a = []) (hb : 1 < base) :
   prune a n base hb ≠ [0] := by
   rw [prune.eq_def]
@@ -441,8 +466,7 @@ theorem prune_ne_zero_of_nil {a : List Nat} {n base : Nat} (ha : a = []) (hb : 1
     rw [h2] at h3
     contradiction
 
-/-!
--/
+/-- -/
 theorem and_nil_zero_of_cons_prune_eq_zero {a : List Nat} {n base : Nat} (hb : 1 < base)
   (h : n % base :: prune a (n / base) base hb = [0]) : a = [] ∧ n = 0 := by
   have h1 : n % base = 0 ∧ prune a (n / base) base hb = [] :=
@@ -453,8 +477,7 @@ theorem and_nil_zero_of_cons_prune_eq_zero {a : List Nat} {n base : Nat} (hb : 1
   have h5 : n = 0 := Nat.eq_zero_of_lt_of_mod_eq_zero hb h1.left h4
   exact And.intro h3 h5
 
-/-!
--/
+/-- -/
 theorem prune_eq_zero_iff {a : List Nat} {n base : Nat} (hb : 1 < base) :
   prune a n base hb = [0] ↔ a = [0] ∧ n = 0 := by
   constructor
@@ -477,8 +500,7 @@ theorem prune_eq_zero_iff {a : List Nat} {n base : Nat} (hb : 1 < base) :
     rw [h.left, h.right, prune.eq_def]
     simp only [Nat.add_zero, Nat.zero_mod, Nat.zero_div, h1]
 
-/-!
--/
+/-- -/
 theorem prune_ne_zero_of_ne_zero {a : List Nat} {n base : Nat} (ha : a ≠ [0]) (hb : 1 < base) :
   prune a n base hb ≠ [0] := by
   false_or_by_contra; rename _ => h1
@@ -545,8 +567,7 @@ end NoTrailingZeros_Prune
 
 section ToNatAux_Prune
 
-/-!
--/
+/-- -/
 theorem toNatAux_prune_eq {a : List Nat} {n base : Nat} (hb : 1 < base) :
   toNatAux (prune a n base hb) base = n + toNatAux a base := by
   induction a generalizing n with
@@ -570,16 +591,14 @@ end ToNatAux_Prune
 
 section AddDigits
 
-/-!
--/
+/-- -/
 def addDigits : List Nat → List Nat → List Nat
   | [], [] => []
   | x::xs, [] => x::xs
   | [], y::ys => y::ys
   | x::xs, y::ys => (x + y)::(addDigits xs ys)
 
-/-!
--/
+/-- -/
 theorem addDigits_eq_nil_iff {a b : List Nat} : addDigits a b = [] ↔ a = [] ∧ b = [] := by
   constructor
   · intro h
@@ -589,19 +608,16 @@ theorem addDigits_eq_nil_iff {a b : List Nat} : addDigits a b = [] ↔ a = [] �
   . intro h
     match a, b with | [], [] => rfl
 
-/-!
--/
+/-- -/
 theorem addDigits_nil_eq {a : List Nat} : addDigits a [] = a := by
   rw [addDigits.eq_def]
   match ha : a with
   | [] | x::xs => rfl
 
-/-!
--/
+/-- -/
 theorem addDigits_cons_cons_eq {x y : Nat} {xs ys : List Nat} : addDigits (x::xs) (y::ys) = (x + y)::addDigits xs ys := rfl
 
-/-!
--/
+/-- -/
 theorem addDigits_comm {a b : List Nat} : addDigits a b = addDigits b a := by
   induction a generalizing b with
   | nil => match b with | [] | v::vs => rfl
@@ -613,8 +629,7 @@ theorem addDigits_comm {a b : List Nat} : addDigits a b = addDigits b a := by
       rw [List.cons.injEq, Nat.add_comm u v]
       exact And.intro rfl iha
 
-/-!
--/
+/-- -/
 theorem addDigits_eq_zero_iff {a b : List Nat} :
   addDigits a b = [0] ↔ a = [0] ∧ b = [] ∨ a = [] ∧ b = [0] ∨ a = [0] ∧ b = [0] := by
   constructor
@@ -642,8 +657,7 @@ end AddDigits
 
 section NoTrailingZeros_AddDigits
 
-/-!
--/
+/-- -/
 theorem noTrailingZeros_addDigits_of {a b : List Nat}
   (hantz : noTrailingZeros a) (hbntz : noTrailingZeros b) :
   noTrailingZeros (addDigits a b) := by
@@ -671,8 +685,7 @@ end NoTrailingZeros_AddDigits
 
 section ToNatAux_addDigits
 
-/-!
--/
+/-- -/
 theorem toNatAux_addDigits_eq {a b : List Nat} {base : Nat} :
   toNatAux (addDigits a b) base = (toNatAux a base) + (toNatAux b base) := by
   have h2 : toNatAux [] base = 0 := by rw [toNatAux.eq_def, toNatAux.helper.eq_def]
@@ -697,8 +710,7 @@ end ToNatAux_addDigits
 
 section AddAux
 
-/-!
--/
+/-- -/
 def addAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   match a, b, hn: n with
   | [], [], 0 => []
@@ -712,8 +724,7 @@ def addAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   | x::xs, y::ys, n => ((x + y + n) % base)::(addAux xs ys ((x + y + n) / base) base hb)
   termination_by (a.length + b.length, n)
 
-/-!
--/
+/-- -/
 theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = [] ↔ n = 0 ∧ a = [] ∧ b = [] := by
   constructor
@@ -727,8 +738,7 @@ theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   · intro h
     simp only [h.right.left, h.right.right, h.left, addAux]
 
-/-!
--/
+/-- -/
 theorem addAux_eq_singleton {a b : List Nat} (n : Nat) {base : Nat}
   (han : a = []) (hbn : b = []) (hb : 1 < base) (hn : 0 < n ∧ n < base) :
   addAux a b n base hb = [n] := by
@@ -739,8 +749,7 @@ theorem addAux_eq_singleton {a b : List Nat} (n : Nat) {base : Nat}
   match ga : a, gb : b, gn: n with
   | [], [], k + 1 => simp only [List.cons.injEq, h1, true_and, h3, addAux_eq_nil_iff hb]
 
-/-!
--/
+/-- -/
 theorem addAux_comm {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = addAux b a n base hb := by
   fun_induction addAux a b n base hb with
@@ -754,8 +763,7 @@ end AddAux
 
 section AddAux_Prune_AddDigits
 
-/-!
--/
+/-- -/
 theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = prune (addDigits a b) n base hb := by
   induction a generalizing b n with
@@ -797,7 +805,7 @@ theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base
       rw [List.cons.injEq]
       exact And.intro rfl ihx
 
-/-!
+/--
 alternative proof for `addAux_comm`
 -/
 example {a b : List Nat} {n base : Nat} (hb : 1 < base) :
@@ -808,7 +816,7 @@ end AddAux_Prune_AddDigits
 
 section AllDigitsLtBase_AddAux
 
-/-!
+/--
 -/
 theorem allDigitsLtBase_addAux {a b : List Nat} (n : Nat) {base : Nat} {hb : 1 < base} :
   allDigitsLtBase (addAux a b n base hb) base := by
@@ -819,8 +827,7 @@ end AllDigitsLtBase_AddAux
 
 section NoTrailingZeros_AddAux
 
-/-!
--/
+/-- -/
 theorem noTrailingZeros_addAux_of_noTrailingZeros {a b : List Nat} {n base : Nat}
   (hantz : noTrailingZeros a) (hbntz : noTrailingZeros b) (hb : 1 < base) :
   noTrailingZeros (addAux a b n base hb) := by
@@ -832,8 +839,7 @@ end NoTrailingZeros_AddAux
 
 section ToNatAux_AddAux
 
-/-!
--/
+/-- -/
 theorem toNatAux_addAux_left_distrib {a b : List Nat} {base : Nat} {hb : 1 < base} :
   toNatAux (addAux a b 0 base hb) base = (toNatAux a base) + (toNatAux b base) := by
   rw [addAux_eq_prune_addDigits hb, toNatAux_prune_eq hb, toNatAux_addDigits_eq, Nat.zero_add]
@@ -842,8 +848,7 @@ end ToNatAux_AddAux
 
 section SubAux
 
-/-!
--/
+/-- -/
 def subAuxCarry (x y base carry: Nat) (hb : 1 < base) : Nat × Nat :=
   if h : y ≤ x then
     (x - y, carry)
@@ -854,15 +859,13 @@ def subAuxCarry (x y base carry: Nat) (hb : 1 < base) : Nat × Nat :=
     subAuxCarry (x + base) y base (carry + 1) hb
   termination_by y - x
 
-/-!
--/
+/-- -/
 def cons? {α : Type} (a : α) (b : Option (List α)) : Option (List α) :=
   match b with
   | none => none
   | some l => some (a::l)
 
-/-!
--/
+/-- -/
 def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :=
   match a, b, n with
   | [], [], 0 => some []
@@ -878,8 +881,7 @@ def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :
     cons? s (subAux xs ys carry base hb)
   termination_by a.length + b.length
 
-/-!
--/
+/-- -/
 def discardTrailingZeros (a : List Nat) :=
   (helper a.reverse).reverse where
     helper : List Nat → List Nat
