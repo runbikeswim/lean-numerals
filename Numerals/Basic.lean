@@ -58,54 +58,6 @@ abbrev Numeral16 := Numeral 16 (by decide)
 
 namespace Numeral
 
-section AdditionalConstructors
-
-def singleDigit (n base : Nat) (h : n < base) (hb : 1 < base) : Numeral base hb where
-  digits := [n]
-  allDigitsLtBase := by
-    rw [allDigitsLtBase.eq_def, List.all, List.all_nil, Bool.and_true, decide_eq_true h]
-  noTrailingZeros := by
-    rw [noTrailingZeros.eq_def]
-    intro h1 h2
-    if g : n = 0 then
-      have : n ≠ 0 := Or.resolve_right (List.cons_ne_singleton_iff_or_ne_ne.mp h2) (by rw [ne_eq, Classical.not_not])
-      contradiction
-    else
-      rwa [List.getLast_singleton]
-
-def consDigit (head : Nat) {base : Nat} {hb : 1 < base} (h : head < base) (tail : Numeral base hb) : Numeral base hb :=
-  if g : tail.digits = [] ∨ tail.digits = [0] then
-    singleDigit head base h hb
-  else {
-      digits := head::tail.digits,
-      allDigitsLtBase := by
-        have : tail.digits.all (· < base) := tail.allDigitsLtBase
-        rwa [allDigitsLtBase.eq_def, List.all_cons, decide_eq_true h, Bool.true_and]
-      noTrailingZeros := by
-        rw [noTrailingZeros.eq_def]
-        let tnt := tail.noTrailingZeros
-        have h2 : tail.digits ≠ [] ∧ tail.digits ≠ [0] := not_or.mp g
-        have h3 : (htnn : tail.digits ≠ []) → tail.digits ≠ [0] → tail.digits.getLast htnn ≠ 0 := by
-          rwa [noTrailingZeros.eq_def] at tnt
-        have h4 : tail.digits.getLast h2.left ≠ 0 := h3 h2.left h2.right
-        intro _ _
-        rwa [List.getLast_cons h2.left]
-    }
-
-def a := singleDigit 3 10 (by decide) (by decide)
-#eval a
-
-def b := consDigit 0 (by decide) a
-#eval b
-
-def c := singleDigit 0 10 (by decide) (by decide)
-#eval c
-
-def d := consDigit 3 (by decide) c
-#eval d
-
-end AdditionalConstructors
-
 section Base
 
 /--
@@ -134,62 +86,13 @@ instance instIsZeroNumeral {base : Nat} {hb : 1 < base} (a : Numeral base hb) : 
 
 end IsZero
 
-section Default
-
-/--
-zero (represented as `[0]`) is the default `Numeral` - for any base
--/
-instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
-    digits := [0],
-    allDigitsLtBase := by
-      have : 0 < base := Nat.pos_of_one_lt hb
-      rwa [allDigitsLtBase.eq_def, List.all, List.all_nil, Bool.and_true, decide_eq_true],
-    noTrailingZeros := by
-      rw [noTrailingZeros.eq_def]
-      intro _ _
-      contradiction,
-  }⟩
-
-end Default
-
-section ToString
-
-/--
-If the base is 10, the sequence of digits in [decimal notation](https://en.wikipedia.org/wiki/Decimal#Decimal_notation)
-is returned.
-
-For base 2, 8 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
-[octal](https://en.wikipedia.org/wiki/Octal) or [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal)
-representation of `n` followed by the value of `base` (in decimal notation) is returned.
-
-For all other values of base, the list of digits - starting with the most significant - is
-returned as sequence of natural numbers, separated by "," and succeeded by the
-the value of `base` (all in decimal notation).
--/
-def toString {base : Nat} {hb : 1 < base} (n : Numeral base hb) : String :=
-  helper (normalizeDigits n.digits) base
-    (normalizeDigits_allLtBase_of_allLtBase hb n.allDigitsLtBase) where
-  helper (digits : List Nat) (base : Nat) (ha : digits.all (· < base)) :=
-    match base with
-    | 2
-    | 8  => s!"{String.join (digits.map (s!"{·}"))}({base})"
-    | 10 => s!"{String.join (digits.map (s!"{·}"))}"
-    | 16 => s!"{String.join (digits.mapWithAll (· < 16) ha toHexDigit)}(16)"
-    | _  => ",".intercalate (digits.map (fun d : Nat => s!"{d}")) ++ s!"({base})"
-
-/-!
--/
-instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) := ⟨toString⟩
-
-end ToString
-
 section toNat
 
 /--
 -/
 def toNat {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := toNatAux n.digits base
 
-/-!
+/--
 -/
 theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : Numeral base hb) :
   toNat n = 0 ↔ n.isZero := by
@@ -231,6 +134,97 @@ theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n 
   rw [toNat, ofNat, toNatAux_prune_eq, toNatAux_nil_eq_zero, Nat.add_zero]
 
 end OfNat
+
+
+section Default
+
+/--
+zero (represented as `[0]`) is the default `Numeral` - for any base
+-/
+instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
+    digits := [0],
+    allDigitsLtBase := by
+      have : 0 < base := Nat.pos_of_one_lt hb
+      rwa [allDigitsLtBase.eq_def, List.all, List.all_nil, Bool.and_true, decide_eq_true],
+    noTrailingZeros := by
+      rw [noTrailingZeros.eq_def]
+      intro _ _
+      contradiction,
+  }⟩
+
+end Default
+
+section Induction
+
+def cons : {base : Nat} → {hb : 1 < base} → Numeral base hb → (n : Nat) → (hn : n < base) → Numeral base hb :=
+  fun a n hn => {
+      digits := if a.digits = [0] then [n] else n::a.digits
+      allDigitsLtBase := by
+        rename 1 < _ => hb
+        let hlt := a.allDigitsLtBase
+        rw [allDigitsLtBase.eq_def] at ⊢ hlt
+        if h : a.digits = [0] then
+          simp only [h, reduceIte, List.all_cons, List.all_nil, Bool.and_true, hn, decide_true]
+        else
+          simp only [h, reduceIte, List.all_cons, Bool.and, hn, decide_true, hlt]
+      noTrailingZeros := by
+        rename 1 < _ => hb
+        let hnt := a.noTrailingZeros
+        if h : a.digits = [0] then
+          rw [noTrailingZeros.eq_def]
+          simp only [h, reduceIte, ne_eq, List.cons_ne_self, not_false_eq_true, List.cons.injEq, and_true,
+            List.getLast_singleton, imp_self]
+        else
+          simp only [h, reduceIte]
+          have h' : a.digits ≠ [0] := by simp only [ne_eq, h, not_false_eq_true]
+          exact noTrailingZeros_cons_of n h' hnt
+    }
+
+#eval cons (ofNat 1234 10 (by decide)) 3 (by decide)
+#eval cons (cons (ofNat 0 10 (by decide)) 0 (by decide)) 0 (by decide)
+
+-- https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Vector/Snoc.html#List.Vector.revInductionOn
+
+end Induction
+
+
+
+
+
+
+
+section ToString
+
+/--
+If the base is 10, the sequence of digits in [decimal notation](https://en.wikipedia.org/wiki/Decimal#Decimal_notation)
+is returned.
+
+For base 2, 8 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
+[octal](https://en.wikipedia.org/wiki/Octal) or [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal)
+representation of `n` followed by the value of `base` (in decimal notation) is returned.
+
+For all other values of base, the list of digits - starting with the most significant - is
+returned as sequence of natural numbers, separated by "," and succeeded by the
+the value of `base` (all in decimal notation).
+-/
+def toString {base : Nat} {hb : 1 < base} (n : Numeral base hb) : String :=
+  helper (normalizeDigits n.digits) base
+    (normalizeDigits_allLtBase_of_allLtBase hb n.allDigitsLtBase) where
+  helper (digits : List Nat) (base : Nat) (ha : digits.all (· < base)) :=
+    match base with
+    | 2
+    | 8  => s!"{String.join (digits.map (s!"{·}"))}({base})"
+    | 10 => s!"{String.join (digits.map (s!"{·}"))}"
+    | 16 => s!"{String.join (digits.mapWithAll (· < 16) ha toHexDigit)}(16)"
+    | _  => ",".intercalate (digits.map (fun d : Nat => s!"{d}")) ++ s!"({base})"
+
+/-!
+-/
+instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) := ⟨toString⟩
+
+end ToString
+
+
 
 section Rebase
 

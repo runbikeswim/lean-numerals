@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
-/-!
--/
+/-- -/
 theorem iff_iff_iff_not_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
   constructor
   · intro h
@@ -17,23 +16,17 @@ theorem iff_iff_iff_not_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
 
 namespace Nat
 
-/-!
--/
-
+/-- -/
 theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
 
-/-!
--/
-
+/-- -/
 theorem eq_zero_of_lt_of_mod_eq_zero {a b : Nat}
   (h1 : 1 < b) (h2 : a % b = 0) (h3 : a < b) : a = 0 := by
   have h4 : b ∣ a  := Nat.dvd_iff_mod_eq_zero.mpr h2
   have h5 : a < b := Or.resolve_left (.inr h3) (Nat.ne_zero_of_lt h1)
   exact Nat.eq_zero_of_dvd_of_lt h4 h5
 
-/-!
--/
-
+/-- -/
 theorem ne_zero_mod_of_ne_zero {a b : Nat}
   (h1 : 1 < b) (h2 : a / b = 0) (h3 : a ≠ 0) : a % b ≠ 0 := by
   have h4 : a < b := Nat.lt_of_div_eq_zero (Nat.pos_of_one_lt h1) h2
@@ -45,8 +38,7 @@ end Nat
 
 namespace List
 
-/--
--/
+/-- -/
 theorem cons_singleton_iff_and_eq_nil {α : Type} {a b : α} {as : List α} :
   (a::as = [b]) ↔ (a = b ∧ as = []) := by simp only [cons.injEq]
 
@@ -214,7 +206,7 @@ theorem noTrailingZeros_of_singleton {a : List Nat} {n : Nat} (ha : a = [n]) : n
     rw [List.getLast_singleton]
     exact hn
 
-/-!
+/--
 -/
 theorem noTrailingZeros_cons_of (x : Nat) {xs : List Nat}
   (hnz : xs ≠ [0]) (hntz : noTrailingZeros xs) : noTrailingZeros (x::xs) := by
@@ -228,7 +220,7 @@ theorem noTrailingZeros_cons_of (x : Nat) {xs : List Nat}
     rw [List.getLast_cons_cons]
     exact (hntz (List.cons_ne_nil x xs)) hnz
 
-/-!
+/--
 -/
 theorem tail_ne_zero_of (x : Nat) {xs : List Nat}
   (hntz : noTrailingZeros (x::xs)) : xs ≠ [0] := by
