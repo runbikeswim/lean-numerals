@@ -88,12 +88,10 @@ end IsZero
 
 section toNat
 
-/--
--/
+/-- -/
 def toNat {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := toNatAux n.digits base
 
-/--
--/
+/-- -/
 theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : Numeral base hb) :
   toNat n = 0 ↔ n.isZero := by
   rw [toNat.eq_def]
@@ -103,15 +101,13 @@ end toNat
 
 section OfNat
 
-/--
--/
+/-- -/
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   digits := prune [] n base hb
   allDigitsLtBase := allDigitsLtBase_prune
   noTrailingZeros := noTrailingZeros_prune_of (noTrailingZeros_of_nil rfl)
 
-/--
--/
+/-- -/
 theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
   (ofNat n base hb).isZero ↔ n = 0 := by
   constructor
@@ -128,8 +124,7 @@ theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
     simp only [h, ofNat, isZero, prune_of_nil_zero rfl rfl hb]
     exact isZeroAux_of_nil
 
-/--
--/
+/-- -/
 theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
   rw [toNat, ofNat, toNatAux_prune_eq, toNatAux_nil_eq_zero, Nat.add_zero]
 
@@ -187,12 +182,6 @@ def cons : {base : Nat} → {hb : 1 < base} → Numeral base hb → (n : Nat) �
 
 end Induction
 
-
-
-
-
-
-
 section ToString
 
 /--
@@ -218,18 +207,14 @@ def toString {base : Nat} {hb : 1 < base} (n : Numeral base hb) : String :=
     | 16 => s!"{String.join (digits.mapWithAll (· < 16) ha toHexDigit)}(16)"
     | _  => ",".intercalate (digits.map (fun d : Nat => s!"{d}")) ++ s!"({base})"
 
-/-!
--/
+/-- -/
 instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) := ⟨toString⟩
 
 end ToString
 
-
-
 section Rebase
 
-/-!
--/
+/-- -/
 def rebase {base : Nat} {hb : 1 < base} (n : Numeral base hb) (toBase : Nat) (htb : 1 < toBase) : Numeral toBase htb :=
   ofNat (n.toNat) toBase htb
 
@@ -243,37 +228,31 @@ end Rebase
 
 section Add
 
-/-!
--/
+/-- -/
 def hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : Numeral base hb where
   digits := addAux a.digits b.digits 0 base hb
   allDigitsLtBase := allDigitsLtBase_addAux 0
   noTrailingZeros := noTrailingZeros_addAux_of_noTrailingZeros a.noTrailingZeros b.noTrailingZeros hb
 
-/-!
--/
+/-- -/
 theorem hAdd_nil_iff_and_nil_nil {base : Nat} {hb : 1 < base} {a b : Numeral base hb}  :
   (hAdd a b).digits = [] ↔ a.digits = [] ∧ b.digits = [] := by
   unfold hAdd
   simp only [addAux_eq_nil_iff, true_and]
 
-/-!
--/
+/-- -/
 theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : hAdd a b = hAdd b a := by
   unfold hAdd
   simp only [addAux_comm hb]
 
-/-!
--/
+/-- -/
 instance instCommutativeHAddNumerals {base : Nat} {hb : 1 < base} : Std.Commutative (α := Numeral base hb) hAdd :=
   ⟨hAdd_comm⟩
 
-/-!
--/
+/-- -/
 instance instHAddNumerals {base : Nat} {hb : 1 < base} : HAdd (Numeral base hb) (Numeral base hb) (Numeral base hb) := ⟨hAdd⟩
 
-/-!
--/
+/-- -/
 theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} {a b : Numeral base hb} :
   toNat (hAdd a b) = a.toNat + b.toNat := by
   unfold toNat hAdd
@@ -287,8 +266,7 @@ end Numerals
 
 section NumeralsWithBase
 
-/-!
--/
+/-- -/
 structure NumeralWithBase  where
   base : Nat
   oneLtBase : 1 < base
@@ -297,8 +275,7 @@ structure NumeralWithBase  where
 
 namespace Numeral
 
-/-!
--/
+/-- -/
 def toWithBase {base : Nat} {hb : 1 < base} (a : Numeral base hb) : NumeralWithBase where
   base := base
   oneLtBase := hb

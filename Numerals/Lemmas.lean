@@ -391,26 +391,50 @@ def ltAux (a b : List Nat) : Bool :=
   match a, b with
   | _, [] => false
   | [], y::ys => y ≠ 0 || ltAux [] ys
-  | x::xs, y::ys => xs == ys && x < y || ltAux xs ys
+  | x::xs, y::ys => x < y && xs == ys || ltAux xs ys
 
 theorem ltAux_irreflexiv {a : List Nat} : ltAux a a = false := by
   induction a with
   | nil => rfl
   | cons x xs ih =>
     rw [ltAux.eq_def]
-    simp only [BEq.rfl, Nat.lt_irrefl, decide_false, Bool.and_false, Bool.false_or, ih]
+    simp only [BEq.rfl, Nat.lt_irrefl, decide_false, Bool.false_and, Bool.false_or, ih]
 
-theorem ltAux_asymetric {a b : List Nat} (h : ltAux a b) : ltAux b a = false := by
+theorem ltAux_asymmetric {a b : List Nat} (h : ltAux a b = true) : ltAux b a = false := by
   induction a generalizing b with
   | nil => rfl
   | cons x xs ih =>
     match b with
     | [] => contradiction
     | y::ys =>
-      simp only [ltAux, Bool.or_eq_true_iff, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
-      simp only [ltAux, Bool.or_eq_false_iff, Bool.and_eq_false_imp, beq_iff_eq, decide_eq_false_iff_not,
-        Nat.not_lt]
-      sorry
+      false_or_by_contra; rename _ => hc
+      simp only [ne_eq, Bool.not_eq_false] at hc
+      simp [ltAux] at h hc
+      cases hc with
+      | inl hcl =>
+        have h1 : ¬ (ltAux xs ys = true) := by
+          rw [hcl.right, Bool.not_eq_true]
+          exact ltAux_irreflexiv
+        have h2 : ¬ (x < y ∧ xs = ys) := by
+          rw [Classical.not_and_iff_not_or_not]
+          simp [hcl.right]
+          exact Nat.le_of_lt hcl.left
+        have h3 : ltAux xs ys = true := by simp [Or.resolve_left h h2]
+        contradiction
+      | inr hcr =>
+        have h1 : ¬ (y < x ∧ ys = xs) := sorry
+        have h2 : ¬ (x < y ∧ xs = ys) := sorry
+        have h3 : ltAux xs ys = true := sorry
+        have h4 : ltAux ys xs = false := sorry
+        /-
+          → ¬ (ys = xs ∧ y < x)
+          → ¬ (xs = ys ∧ x < y) → ltAux xs ys = true → ltAux ys xs = false 🌩️
+        -/
+        rw [hcr] at h4
+        contradiction
+
+theorem ltAux_transitive {a b c : List Nat} (hab : ltAux a b = true) (hbc : ltAux b c = true) : ltAux a c = true := by
+  sorry
 
 end LessThan
 
