@@ -117,21 +117,21 @@ def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase 
 -/
 instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) := decAllDigitsLtBase a base
 
-/-!
+/--
 -/
 theorem allDigitsLtBase_of_nil {a : List Nat} {base : Nat} (ha : a = []) :
   allDigitsLtBase a base := by
   rw [allDigitsLtBase.eq_def, ha]
   exact List.all_nil
 
-/-!
+/--
 -/
 theorem allDigitsLtBase_cons_iff {x base : Nat} {xs : List Nat} :
   allDigitsLtBase (x::xs) base ↔ x < base ∧ allDigitsLtBase xs base := by
   unfold allDigitsLtBase
   simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
 
-/-!
+/--
 -/
 theorem allDigitsLtBase_of_zero {a : List Nat} {base : Nat} (ha : a = [0]) (hb : 1 < base) :
   allDigitsLtBase a base := by
@@ -142,11 +142,11 @@ end AllDigitsLtBase
 
 section NoTrailingZeros
 
-/-!
+/--
 -/
 def noTrailingZeros (a : List Nat) : Prop := (h : a ≠ []) → a ≠ [0] → a.getLast h ≠ 0
 
-/-!
+/--
 -/
 def decNoTrailingZeros (a : List Nat) : Decidable (noTrailingZeros a) :=
   if h1 : a = [] then
@@ -176,25 +176,25 @@ def decNoTrailingZeros (a : List Nat) : Decidable (noTrailingZeros a) :=
           exact h3
         isTrue this
 
-/-!
+/--
 -/
 instance instNoTrailingZeros (a : List Nat) : Decidable (noTrailingZeros a) := decNoTrailingZeros a
 
-/-!
+/--
 -/
 theorem noTrailingZeros_of_nil {a : List Nat} (ha : a = []) : noTrailingZeros a := by
   rw [noTrailingZeros.eq_def]
   intro hnn
   contradiction
 
-/-!
+/--
 -/
 theorem noTrailingZeros_of_zero {a : List Nat} (ha : a = [0]) : noTrailingZeros a := by
   rw [noTrailingZeros.eq_def]
   intro _ hnz
   contradiction
 
-/-!
+/--
 -/
 theorem noTrailingZeros_of_singleton {a : List Nat} {n : Nat} (ha : a = [n]) : noTrailingZeros a := by
   if hn : n = 0 then
@@ -238,7 +238,7 @@ theorem tail_ne_zero_of (x : Nat) {xs : List Nat}
     have h8 : xs.getLast h5 = 0 := by simp only [h4, List.getLast_singleton]
     contradiction
 
-/-!
+/--
 -/
 theorem noTrailingZeros_tail_of (x : Nat) {xs : List Nat}
   (hntz : noTrailingZeros (x::xs)) : noTrailingZeros xs := by
@@ -255,7 +255,7 @@ end NoTrailingZeros
 
 section ToHexDigit
 
-/-!
+/--
 returns the hexadecimal digit of a number between 0 and 15 (including)
 
 The use of `decide (digit < 16)` as type of `h` - instead of the
@@ -276,12 +276,12 @@ end ToHexDigit
 
 section NormalizeDigits
 
-/-!
+/--
 maps an empty list of digits to `[0]` or reverses them otherwise
 -/
 def normalizeDigits (a : List Nat) : List Nat := if a = [] then [0] else a.reverse
 
-/-!
+/--
 asserts that `normalizeDigits` only returns `[0]` or the reversed input
 -/
 theorem normalizeDigits_eq_or {a : List Nat} :
@@ -292,7 +292,7 @@ end NormalizeDigits
 
 section NormalizeDigits_AllDigitsLtBase
 
-/-!
+/--
 asserts that all digits returned by `normalizeDigits_allLtBase_of_allLtBase` are less than
 `base` if this holds true for the input
 -/
@@ -307,7 +307,7 @@ end NormalizeDigits_AllDigitsLtBase
 
 section ToNatAux
 
-/-!
+/--
 -/
 def toNatAux (a : List Nat) (base : Nat) : Nat :=
   (helper a base 1 0).snd where
@@ -316,13 +316,13 @@ def toNatAux (a : List Nat) (base : Nat) : Nat :=
     | [] => (factor, acc)
     | x::xs => helper xs base (factor * base) (x * factor + acc)
 
-/-!
+/--
 -/
 theorem toNatAux_helper_nil_eq {base factor acc : Nat} : toNatAux.helper [] base factor acc = (factor, acc) := by
   unfold toNatAux.helper
   rfl
 
-/-!
+/--
 -/
 theorem toNatAux_helper_eq {a : List Nat} {base factor acc : Nat} :
   (toNatAux.helper a base factor acc).snd = acc + factor * (toNatAux.helper a base 1 0).snd := by
@@ -335,19 +335,19 @@ theorem toNatAux_helper_eq {a : List Nat} {base factor acc : Nat} :
     rw (occs := .pos [2]) [ih]
     rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
 
-/-!
+/--
 -/
 theorem toNatAux_nil_eq_zero {base : Nat} : toNatAux [] base = 0 := by
   unfold toNatAux
   rfl
 
-/-!
+/--
 -/
 theorem toNatAux_zero_eq_zero {base : Nat} : toNatAux [0] base = 0 := by
   unfold toNatAux
   rfl
 
-/-!
+/--
 -/
 theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
   toNatAux (x::xs) base = x + base * (toNatAux xs base) := by
@@ -355,7 +355,7 @@ theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
   simp only []
   rw [toNatAux.eq_def, toNatAux_helper_eq, Nat.mul_one, Nat.one_mul, Nat.add_zero]
 
-/-!
+/--
 -/
 theorem toNatAux_eq_zero_iff {a : List Nat} {base : Nat} (ha : noTrailingZeros a) (hb : 1 < base) :
   toNatAux a base = 0 ↔ isZeroAux a := by
@@ -390,11 +390,9 @@ section LessThan
 def ltAux (a b : List Nat) : Prop :=
   match a, b with
   | _, [] => False
-  | [], y::ys => 0 < y ∧ ltAux [] ys
-  | x::xs, y::ys => x < y ∧ xs = ys ∨ ltAux xs ys
-
-
-#check ltAux
+  | [], y::ys => 0 < y ∨ ltAux [] ys
+  | x::xs, y::ys => x < y ∧ ¬ ltAux ys xs ∨ ltAux xs ys
+  termination_by a.length + b.length
 
 theorem ltAux_irrefl {a : List Nat} : ¬ ltAux a a  := by
   induction a with
@@ -407,94 +405,108 @@ theorem ltAux_irrefl {a : List Nat} : ¬ ltAux a a  := by
     | u::us, v::vs =>
       have : xs = vs := (List.cons.inj gb).right
       intro h
-      simp only [← this, Nat.lt_irrefl, and_true, false_or] at h
+      simp only [← this, Nat.lt_irrefl, false_and, false_or] at h
       contradiction
 
-/-
-TODO: rename
--/
-theorem of_hbl_01 {x y : Nat} {xs ys : List Nat}
-  (hbl : y < x ∧ ys = xs) : ¬ ltAux xs ys := by
-  rw [hbl.right]
-  exact ltAux_irrefl
+theorem lt_of {x y : Nat} {xs ys : List Nat}
+  (ha : x < y ∧ ¬ltAux ys xs ∨ ltAux xs ys) (hbl : y < x ∧ ¬ltAux xs ys) : x < y := by
+  have : ¬ltAux xs ys := hbl.right
+  have : x < y ∧ ¬ltAux ys xs := Or.resolve_right ha this
+  exact this.left
 
-/-
-TODO: rename
--/
-theorem of_hbl_02 {x y : Nat} {xs ys : List Nat}
-  (hbl : y < x ∧ ys = xs) : ¬ (x < y ∧ xs = ys) := by
-  rw [Classical.not_and_iff_not_or_not]
-  simp [hbl.right]
-  exact Nat.le_of_lt hbl.left
-
-/-
-TODO: rename
--/
-theorem of_hbl_of_ha {x y : Nat} {xs ys : List Nat}
-  (ha : x < y ∧ xs = ys ∨ ltAux xs ys) (hbl : y < x ∧ ys = xs) : ltAux xs ys :=
-  Or.resolve_left ha (of_hbl_02 hbl)
-
-/-
-TODO: rename
--/
-theorem of_ha_of_ih_of_hbr_01 {x y : Nat} {xs ys : List Nat}
-  (ha : x < y ∧ xs = ys ∨ ltAux xs ys)
-  (ih : ∀ {b : List Nat}, ltAux xs b → ¬ltAux b xs)
-  (hbr : ltAux ys xs) : ¬ (y < x ∧ ys = xs) := by
-  intro hbl
-  have : ¬ (x < y ∧ xs = ys) := of_hbl_02 hbl
-  have : ltAux xs ys := Or.resolve_left ha this
-  have : ¬ ltAux ys xs := ih this
-  contradiction
-
-/-
-TODO: rename
--/
-theorem of_hbr_02 {x y : Nat} {xs ys : List Nat}
-  (ha : x < y ∧ xs = ys ∨ ltAux xs ys)
-  (ih : ∀ {b : List Nat}, ltAux xs b → ¬ltAux b xs)
-  (hbr : ltAux ys xs) : ¬ (x < y ∧ xs = ys) := by
-  intro hal
-  cases ha with
-  | inr har =>
-    have : ¬ ltAux ys xs := ih har
-    contradiction
-  | inl _ =>
-    have : ¬ (y < x ∧ ys = xs) := of_hbl_02 hal
-    have : ¬ ltAux ys xs := of_hbl_01 hal
-    contradiction
-
-/-
-TODO: rename
--/
-theorem of_hbr_03 {x y : Nat} {xs ys : List Nat}
-  (ha : x < y ∧ xs = ys ∨ ltAux xs ys)
-  (ih : ∀ {b : List Nat}, ltAux xs b → ¬ltAux b xs)
-  (hbr : ltAux ys xs) : ltAux xs ys := by
-  have : ¬ (x < y ∧ xs = ys) := of_hbr_02 ha ih hbr
-  exact Or.resolve_left ha this
+theorem not_ltAux_of {x y : Nat} {xs ys : List Nat} (ha : x < y ∧ ¬ltAux ys xs ∨ ltAux xs ys)
+  (ih: ∀ {b : List Nat}, ltAux xs b → ¬ ltAux b xs) (hbr : ltAux ys xs) : ¬ ltAux ys xs := by
+  have : ¬ ltAux xs ys := by
+    intro h
+    exact absurd hbr (ih h)
+  have : x < y ∧ ¬ltAux ys xs := Or.resolve_right ha this
+  exact this.right
 
 theorem ltAux_asymm {a b : List Nat} (ha : ltAux a b) : ¬ ltAux b a := by
   induction a generalizing b with
-  | nil => rw [ltAux.eq_def]; simp only [not_false_eq_true]
+  | nil => simp only [ltAux, not_false_eq_true]
   | cons x xs ih =>
     match b with
-    | [] => contradiction
+    | [] => simp only [ltAux] at ⊢ ha
     | y::ys =>
       intro hb
-      simp [ltAux] at ha hb -- ha : x < y ∧ xs = ys ∨ ltAux xs ys, hb : y < x ∧ ys = xs ∨ ltAux ys xs
+      simp [ltAux] at ha hb
+      -- ha : x < y ∧ ¬ltAux ys xs ∨ ltAux xs ys
+      -- hb : y < x ∧ ¬ltAux xs ys ∨ ltAux ys xs
       cases hb with
-      | inl hbl =>
-        have : ¬ ltAux xs ys := of_hbl_01 hbl
-        have : ltAux xs ys := of_hbl_of_ha ha hbl
-        contradiction
-      | inr hbr =>
-        have : ltAux xs ys := of_hbr_03 ha ih hbr
-        have : ¬ ltAux ys xs := ih this
-        contradiction
+      | inl hbl => exact absurd (lt_of ha hbl) (Nat.not_lt_of_lt hbl.left)
+      | inr hbr => exact absurd hbr (not_ltAux_of ha ih hbr)
 
-theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b = true) (hbc : ltAux b c = true) : ltAux a c = true := by
-  sorry
+theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b) (hbc : ltAux b c ) : ltAux a c := by
+  induction a generalizing b with
+  | nil =>
+    sorry
+  | cons x xs ih =>
+    sorry
+
+def decLtAux (a b : List Nat) : Decidable (ltAux a b) :=
+  match ga : a, gb : b with
+  | x, [] =>
+    have : ¬ ltAux x [] := by rw [ltAux.eq_def]; simp only [not_false_eq_true]
+    isFalse this
+  | [], y::ys =>
+    if g : 0 < y then
+        have : ltAux [] (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [g, true_or]
+        isTrue this
+    else
+      match decLtAux [] ys with
+      | isFalse p =>
+        have : ¬ ltAux [] (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [g, p, false_or, not_false_eq_true]
+        isFalse this
+      | isTrue p =>
+        have : ltAux [] (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [g, p, false_or]
+        isTrue this
+  | x::xs, y::ys =>
+    if gxy : x < y then
+      match gxsys : decLtAux ys xs with
+      | isFalse p =>
+        have : ltAux (x::xs) (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [gxy, p, not_false_eq_true, true_and, true_or]
+        isTrue this
+      | isTrue p =>
+        have : ¬ ltAux (x::xs) (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [gxy, p, not_true_eq_false, and_false, false_or]
+          exact ltAux_asymm p
+        isFalse this
+    else
+      match decLtAux xs ys with
+      | isFalse p =>
+        have : ¬ ltAux (x::xs) (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [gxy, false_and, false_or, p, not_false_eq_true]
+        isFalse this
+      | isTrue p =>
+        have : ltAux (x::xs) (y::ys) := by
+          rw [ltAux.eq_def]
+          simp only [gxy, false_and, false_or, p]
+        isTrue this
+  termination_by a.length + b.length
+
+instance instLtAux (a b : List Nat) : Decidable (ltAux a b) := decLtAux a b
+
+#eval ltAux [] [] -- false
+#eval ltAux [0] [] -- false
+#eval ltAux [] [0] -- false
+#eval ltAux [0] [1] -- true
+#eval ltAux [] [1] -- true
+#eval ltAux [0, 0] [1] -- true
+#eval ltAux [0, 1] [1] -- false
+#eval ltAux [0, 1] [1, 0] -- false
+#eval ltAux [1, 1] [1, 1] -- false
+#eval ltAux [1, 1] [1, 2] -- true
 
 end LessThan
 
