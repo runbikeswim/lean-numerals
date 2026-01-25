@@ -387,53 +387,113 @@ end ToNatAux
 
 section LessThan
 
-def ltAux (a b : List Nat) : Bool :=
+def ltAux (a b : List Nat) : Prop :=
   match a, b with
-  | _, [] => false
-  | [], y::ys => y ≠ 0 || ltAux [] ys
-  | x::xs, y::ys => x < y && xs == ys || ltAux xs ys
+  | _, [] => False
+  | [], y::ys => 0 < y ∧ ltAux [] ys
+  | x::xs, y::ys => x < y ∧ xs = ys ∨ ltAux xs ys
 
-theorem ltAux_irreflexiv {a : List Nat} : ltAux a a = false := by
+
+#check ltAux
+
+theorem ltAux_irrefl {a : List Nat} : ¬ ltAux a a  := by
   induction a with
-  | nil => rfl
+  | nil => simp only [ltAux, not_false_eq_true]
   | cons x xs ih =>
     rw [ltAux.eq_def]
-    simp only [BEq.rfl, Nat.lt_irrefl, decide_false, Bool.false_and, Bool.false_or, ih]
+    match ga: x::xs, gb : x::xs with
+    | _, [] => simp only [not_false_eq_true]
+    | [], v::vs => rw [← gb]; simp only [not_or, ih, not_false_eq_true, and_true, Nat.lt_irrefl]
+    | u::us, v::vs =>
+      have : xs = vs := (List.cons.inj gb).right
+      intro h
+      simp only [← this, Nat.lt_irrefl, and_true, false_or] at h
+      contradiction
 
-theorem ltAux_asymmetric {a b : List Nat} (h : ltAux a b = true) : ltAux b a = false := by
+/-
+TODO: rename
+-/
+theorem of_hbl_01 {x y : Nat} {xs ys : List Nat}
+  (hbl : y < x ∧ ys = xs) : ¬ ltAux xs ys := by
+  rw [hbl.right]
+  exact ltAux_irrefl
+
+/-
+TODO: rename
+-/
+theorem of_hbl_02 {x y : Nat} {xs ys : List Nat}
+  (hbl : y < x ∧ ys = xs) : ¬ (x < y ∧ xs = ys) := by
+  rw [Classical.not_and_iff_not_or_not]
+  simp [hbl.right]
+  exact Nat.le_of_lt hbl.left
+
+/-
+TODO: rename
+-/
+theorem of_hbl_of_ha {x y : Nat} {xs ys : List Nat}
+  (ha : x < y ∧ xs = ys ∨ ltAux xs ys) (hbl : y < x ∧ ys = xs) : ltAux xs ys :=
+  Or.resolve_left ha (of_hbl_02 hbl)
+
+/-
+TODO: rename
+-/
+theorem of_ha_of_ih_of_hbr_01 {x y : Nat} {xs ys : List Nat}
+  (ha : x < y ∧ xs = ys ∨ ltAux xs ys)
+  (ih : ∀ {b : List Nat}, ltAux xs b → ¬ltAux b xs)
+  (hbr : ltAux ys xs) : ¬ (y < x ∧ ys = xs) := by
+  intro hbl
+  have : ¬ (x < y ∧ xs = ys) := of_hbl_02 hbl
+  have : ltAux xs ys := Or.resolve_left ha this
+  have : ¬ ltAux ys xs := ih this
+  contradiction
+
+/-
+TODO: rename
+-/
+theorem of_hbr_02 {x y : Nat} {xs ys : List Nat}
+  (ha : x < y ∧ xs = ys ∨ ltAux xs ys)
+  (ih : ∀ {b : List Nat}, ltAux xs b → ¬ltAux b xs)
+  (hbr : ltAux ys xs) : ¬ (x < y ∧ xs = ys) := by
+  intro hal
+  cases ha with
+  | inr har =>
+    have : ¬ ltAux ys xs := ih har
+    contradiction
+  | inl _ =>
+    have : ¬ (y < x ∧ ys = xs) := of_hbl_02 hal
+    have : ¬ ltAux ys xs := of_hbl_01 hal
+    contradiction
+
+/-
+TODO: rename
+-/
+theorem of_hbr_03 {x y : Nat} {xs ys : List Nat}
+  (ha : x < y ∧ xs = ys ∨ ltAux xs ys)
+  (ih : ∀ {b : List Nat}, ltAux xs b → ¬ltAux b xs)
+  (hbr : ltAux ys xs) : ltAux xs ys := by
+  have : ¬ (x < y ∧ xs = ys) := of_hbr_02 ha ih hbr
+  exact Or.resolve_left ha this
+
+theorem ltAux_asymm {a b : List Nat} (ha : ltAux a b) : ¬ ltAux b a := by
   induction a generalizing b with
-  | nil => rfl
+  | nil => rw [ltAux.eq_def]; simp only [not_false_eq_true]
   | cons x xs ih =>
     match b with
     | [] => contradiction
     | y::ys =>
-      false_or_by_contra; rename _ => hc
-      simp only [ne_eq, Bool.not_eq_false] at hc
-      simp [ltAux] at h hc
-      cases hc with
-      | inl hcl =>
-        have h1 : ¬ (ltAux xs ys = true) := by
-          rw [hcl.right, Bool.not_eq_true]
-          exact ltAux_irreflexiv
-        have h2 : ¬ (x < y ∧ xs = ys) := by
-          rw [Classical.not_and_iff_not_or_not]
-          simp [hcl.right]
-          exact Nat.le_of_lt hcl.left
-        have h3 : ltAux xs ys = true := by simp [Or.resolve_left h h2]
+      intro hb
+      simp [ltAux] at ha hb -- ha : x < y ∧ xs = ys ∨ ltAux xs ys, hb : y < x ∧ ys = xs ∨ ltAux ys xs
+      cases hb with
+      | inl hbl =>
+        have : ¬ ltAux xs ys := of_hbl_01 hbl
+        have : ltAux xs ys := of_hbl_of_ha ha hbl
         contradiction
-      | inr hcr =>
-        have h1 : ¬ (y < x ∧ ys = xs) := sorry
-        have h2 : ¬ (x < y ∧ xs = ys) := sorry
-        have h3 : ltAux xs ys = true := sorry
-        have h4 : ltAux ys xs = false := sorry
-        /-
-          → ¬ (ys = xs ∧ y < x)
-          → ¬ (xs = ys ∧ x < y) → ltAux xs ys = true → ltAux ys xs = false 🌩️
-        -/
-        rw [hcr] at h4
+      | inr hbr =>
+        have : ltAux xs ys := of_hbr_03 ha ih hbr
+        have : ¬ ltAux ys xs := ih this
         contradiction
 
-theorem ltAux_transitive {a b c : List Nat} (hab : ltAux a b = true) (hbc : ltAux b c = true) : ltAux a c = true := by
+theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b = true) (hbc : ltAux b c = true) : ltAux a c = true := by
   sorry
 
 end LessThan
