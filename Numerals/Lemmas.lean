@@ -440,7 +440,52 @@ theorem ltAux_asymm {a b : List Nat} (ha : ltAux a b) : ¬ ltAux b a := by
 theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b) (hbc : ltAux b c ) : ltAux a c := by
   induction a generalizing b with
   | nil =>
-    sorry
+    match gb : b, gc : c with
+    | [], [] | [], z::zs =>
+      have : ¬ ltAux [] [] := ltAux_irrefl
+      contradiction
+    | y::ys, [] =>
+      have : ¬ ltAux (y :: ys) [] := ltAux_asymm hab
+      contradiction
+    | y::ys, z::zs =>
+      have h1 : 0 < y ∨ ltAux [] ys := by
+        rw [ltAux.eq_def] at hab
+        simp only [] at hab
+        exact hab
+      have h2 : y < z ∧ ¬ ltAux zs ys ∨ ltAux ys zs := by
+        rw [ltAux.eq_def] at hbc
+        simp only [] at hbc
+        exact hbc
+      cases h1 with
+      | inl h1l =>
+        cases h2 with
+        | inl h2l =>
+          have g1 : 0 < z := Nat.lt_trans h1l h2l.left
+          have g2 : 0 < z ∨ ltAux [] zs := .inl g1
+          simp only [ltAux, g2]
+        | inr h2r =>
+          simp only [ltAux] at ⊢ hbc
+          induction ys generalizing zs with
+          | nil =>
+            cases hbc with
+            | inl hbcl => exact .inl (Nat.lt_trans h1l hbcl.left)
+            | inr hbcr => exact .inr hbcr
+          | cons v vs ih =>
+            cases hbc with
+            | inl hbcl => exact .inl (Nat.lt_trans h1l hbcl.left)
+            | inr hbcr =>
+              let := ih (v :: vs)
+              /-
+                ltAux vs (v :: vs)
+                y < z ∧ ¬ltAux (v :: vs) vs ∨ ltAux vs (v :: vs)
+              -/
+              sorry
+      | inr h1r =>
+        cases h2 with
+        | inl h2l =>
+          sorry
+        | inr h2r =>
+          sorry
   | cons x xs ih =>
     sorry
 
