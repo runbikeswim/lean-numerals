@@ -124,34 +124,49 @@ theorem eqValue_trans {a b c : List Nat} (hab : eqValue a b) (hbc :  eqValue b c
       rw [hab.left, ← hbc.left]
       exact And.intro rfl (ihx hab.right hbc.right)
 
+def decEqValue_nil (a : List Nat) : Decidable (eqValue [] a)  :=
+  match a with
+  | [] =>
+    have : eqValue [] [] := by simp only [eqValue]
+    isTrue this
+  | x::xs =>
+    if gx : x = 0 then
+      match ge : decEqValue_nil xs with
+      | isTrue p =>
+        have : eqValue [] (x::xs) := by
+          unfold eqValue
+          exact And.intro gx p
+        isTrue this
+      | isFalse p =>
+        have : ¬ eqValue [] (x::xs) := by
+          unfold eqValue
+          rw [not_and]
+          exact fun _ : x = 0 => p
+        isFalse this
+    else
+      have : ¬ eqValue [] (x::xs) := by
+        unfold eqValue
+        rw [not_and]
+        intro gx'
+        contradiction
+      isFalse this
+
 def decEqValue (a b : List Nat) : Decidable (eqValue a b)  :=
   match a, b with
   | [], [] =>
     have : eqValue [] [] := by simp only [eqValue]
     isTrue this
   | x::xs, [] =>
-    if gx : x = 0 then
-      match ge : decEqValue xs [] with
-      | isTrue p =>
-        have : eqValue (x::xs) [] := by
-          unfold eqValue
-          exact And.intro gx p
-        isTrue this
-      | isFalse p =>
-        have : ¬ eqValue (x::xs) [] := by
-          unfold eqValue
-          rw [not_and]
-          exact fun _ : x = 0 => p
-        isFalse this
-    else
+    match decEqValue_nil (x::xs) with
+    | isFalse p =>
       have : ¬ eqValue (x::xs) [] := by
-        unfold eqValue
-        rw [not_and]
-        intro gx'
-        contradiction
+        intro h
+        exact  absurd  (eqValue_symm h) p
       isFalse this
-  | [], y::ys =>
-    sorry
+    | isTrue p =>
+      have :  eqValue (x::xs) [] := eqValue_symm p
+      isTrue this
+  | [], y::ys => decEqValue_nil (y::ys)
   | x::xs, y::ys =>
     sorry
 
