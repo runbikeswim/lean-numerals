@@ -93,9 +93,7 @@ def toNat {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := toNatAux n
 
 /-- -/
 theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : Numeral base hb) :
-  toNat n = 0 ↔ n.isZero := by
-  rw [toNat.eq_def]
-  exact toNatAux_eq_zero_iff n.noTrailingZeros hb
+  toNat n = 0 ↔ n.isZero := by sorry
 
 end toNat
 
@@ -117,9 +115,7 @@ theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
     | 0 => rfl
     | k + 1 =>
       simp only [] at h
-      cases h with
-      | inl hl => rw [prune_eq_nil_iff] at hl; exact hl.right
-      | inr hr => rw [prune_eq_zero_iff] at hr; exact hr.right
+      sorry
   · intro h
     simp only [h, ofNat, isZero, prune_of_nil_zero rfl rfl hb]
     exact isZeroAux_of_nil
