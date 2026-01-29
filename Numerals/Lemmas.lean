@@ -501,8 +501,32 @@ def leAux (a b : List Nat) : Prop :=
   | x::xs, [] => x = 0 ∧ leAux xs []
   | x::xs, y::ys => x ≤ y ∧ leAux xs ys
 
+theorem leAux_refl {a : List Nat} : leAux a a := by
+  induction a with
+  | nil => simp only [leAux]
+  | cons x xs ih => simp only [leAux]; exact And.intro (Nat.le_refl x) ih
+
+theorem leAux_nil {a : List Nat} : leAux [] a := by
+  induction a with
+  | nil => exact leAux_refl
+  | cons x xs ih => simp only [leAux]
+
 theorem leAux_cons_iff {x y : Nat} {xs ys : List Nat} : leAux (x::xs) (y::ys) ↔ x ≤ y ∧ leAux xs ys := by
   rw [leAux.eq_def]
+
+theorem leAux_of_eqValue {a b : List Nat} (h : eqValue a b) : leAux a b := by
+  induction a generalizing b with
+  | nil => exact leAux_nil
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      simp only [eqValue] at h
+      simp only [leAux]
+      exact And.intro h.left (ih h.right)
+    | y::ys =>
+      simp only [eqValue] at h
+      simp only [leAux]
+      exact And.intro (Nat.le_of_eq h.left) (ih h.right)
 
 theorem eqValue_nil_of_leAux_nil {a : List Nat} (h : leAux a []) : eqValue [] a  := by
   induction a with
@@ -513,17 +537,13 @@ theorem eqValue_nil_of_leAux_nil {a : List Nat} (h : leAux a []) : eqValue [] a 
     simp only [] at ih h ⊢
     exact And.intro h.left (ih h.right)
 
-theorem leAux_refl {a : List Nat} : leAux a a := by
-  induction a with
-  | nil => simp only [leAux]
-  | cons x xs ih => simp only [leAux]; exact And.intro (Nat.le_refl x) ih
-
 theorem leAux_antiysmm_of {a b : List Nat}:
   eqValue a b ↔ leAux a b ∧ leAux b a := by
   constructor
   · intro h
-
-    sorry
+    have h1 : leAux a b := leAux_of_eqValue h
+    have h2 : leAux b a := leAux_of_eqValue (eqValue_symm h)
+    exact And.intro h1 h2
   · intro h
     induction a generalizing b with
     | nil => sorry
