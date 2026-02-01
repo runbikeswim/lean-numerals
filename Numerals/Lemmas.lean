@@ -541,6 +541,13 @@ theorem leAux_cons_iff {x y : Nat} {xs ys : List Nat} :
   leAux (x::xs) (y::ys) ↔ if eqValue xs ys then x ≤ y else leAux xs ys := by
   rw [leAux.eq_def]
 
+theorem eqValue_of_leAux_cons_cons_of_ne_le {x y : Nat} {xs ys : List Nat}
+  (hl : leAux (x::xs) (y::ys)) (hn : ¬ x ≤ y) : ¬ eqValue xs ys := by
+  have : if eqValue xs ys then x ≤ y else leAux xs ys := leAux_cons_iff.mp hl
+  false_or_by_contra; rename _ => hc
+  simp only [hc, reduceIte] at this
+  contradiction
+
 theorem leAux_of_eqValue {a b : List Nat} (h : eqValue a b) : leAux a b := by
   induction a generalizing b with
   | nil => exact leAux_nil
@@ -606,6 +613,58 @@ theorem leAux_nil_of_leAux {a b : List Nat} (h : leAux a b) : leAux [] b := by
     | [] => exact ihx h.right
     | y::ys => unfold leAux; simp_all only
 
+theorem leAux_of_leAux_of_eqValue {a b c : List Nat} (hab : leAux a b) (hbc : eqValue b c): leAux a c := by
+  induction a generalizing b c with
+  | nil => exact leAux_nil
+  | cons x xs ih =>
+    match b, c with
+    | [], [] => simp_all only
+    | y::ys, [] =>
+      unfold leAux at hab ⊢
+      unfold eqValue at hbc
+      if g : eqValue xs ys then
+        simp only [g, reduceIte, hbc.left] at hab
+        have h1 : x = 0 := Nat.eq_zero_of_le_zero hab
+        have h2 : leAux xs ys := leAux_of_eqValue g
+        have h3 : leAux xs [] := ih  h2 hbc.right
+        exact And.intro h1 h3
+      else
+        simp only [g, reduceIte, hbc.left] at hab
+        have h1 : leAux xs [] := ih hab hbc.right
+        have h2 : eqValue xs [] := eqValue_symm (eqValue_nil_of_leAux_nil h1)
+        have h3 : eqValue xs ys := eqValue_trans h2 (eqValue_symm hbc.right)
+        contradiction
+    | [], z::zs =>
+      have : eqValue (x :: xs) [] := eqValue_symm (eqValue_nil_of_leAux_nil hab)
+      have : eqValue (x :: xs) (z :: zs) := eqValue_trans this hbc
+      exact leAux_of_eqValue this
+    | y::ys, z::zs =>
+      unfold leAux at hab ⊢
+      unfold eqValue at hbc
+      if g1 : eqValue xs ys then
+        simp only [g1, reduceIte, hbc.left] at hab
+        if g2 : eqValue xs zs then
+          simp only [g2, reduceIte]
+          exact hab
+        else
+          simp only [g2, reduceIte]
+          have : eqValue xs zs := eqValue_trans g1 hbc.right
+          contradiction
+      else
+        simp only [g1, reduceIte] at hab
+        if g2 : eqValue xs zs then
+          simp only [g2, reduceIte]
+          have : eqValue xs ys := eqValue_trans g2 (eqValue_symm hbc.right)
+          contradiction
+        else
+          simp only [g2, reduceIte]
+          exact ih hab hbc.right
+
+theorem leAux_of_eqValue_of_leAux {a b c : List Nat} (hab : eqValue a b) (hbc : leAux b c): leAux a c := by
+  induction a generalizing b c with
+  | nil => sorry
+  | cons x xs ih => sorry
+
 theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leAux a c := by
   induction a generalizing b c with
   | nil => exact leAux_nil_of_leAux hbc
@@ -623,6 +682,59 @@ theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leA
     | y::ys, z::zs =>
       unfold leAux at hab hbc ⊢
       sorry
+
+def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
+    match a, b with
+  | [], [] =>
+    have : leAux [] [] := leAux_refl
+    isTrue this
+  | x::xs, [] =>
+    if g : x = 0 then
+      match decLeAux xs [] with
+      | isFalse p =>
+        have : ¬ leAux (x::xs) [] := by
+          simp only [leAux, not_and]
+          intro _
+          exact p
+        isFalse this
+      | isTrue p =>
+        have : leAux (x::xs) [] := by
+          simp only [leAux, g, p, true_and]
+        isTrue this
+    else
+      have : ¬ leAux (x::xs) [] := by
+        simp only [leAux, not_and]
+        intro _
+        contradiction
+      isFalse this
+  | [], y::ys =>
+    have : leAux [] (y::ys) := by simp only [leAux]
+    isTrue this
+  | x::xs, y::ys =>
+    /-
+    TODO: use match decEqValue xs ys with instead of if g : x ≤ y then
+    -/
+    if g : x ≤ y then
+      match decLeAux xs ys with
+      | isFalse p =>
+        have : ¬ eqValue xs ys := by
+          false_or_by_contra; rename _ => hc
+          exact absurd (leAux_of_eqValue hc) p
+        have : ¬ leAux (x::xs) (y::ys) := by
+          simp only [leAux, this, reduceIte, p, not_false_eq_true]
+        isFalse this
+      | isTrue p =>
+        have : leAux (x::xs) (y::ys) := by
+          simp only [leAux, g]
+          if ge : eqValue xs ys then
+            simp only [ge, reduceIte]
+          else
+            simp only [ge, reduceIte, p]
+        isTrue this
+    else
+      match decLeAux xs ys with
+      | isFalse p => sorry
+      | isTrue p => sorry
 
 end LessThenOrEqual
 
@@ -1379,6 +1491,21 @@ end ToNatAux_AddAux
 
 section SubAux
 
+/-
+TODO: finish
+def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
+  if h : leAux b a then
+    []
+  else
+    match a, b with
+    | [], [] => []
+    | x::xs, [] =>
+      have : leAux [] (x::xs) := leAux_nil
+      absurd this h
+    | [], y::ys => y::ys
+    | x::xs, y::ys => sorry
+-/
+
 /-- -/
 def subAuxCarry (x y base carry: Nat) (hb : 1 < base) : Nat × Nat :=
   if h : y ≤ x then
@@ -1397,19 +1524,19 @@ def cons? {α : Type} (a : α) (b : Option (List α)) : Option (List α) :=
   | some l => some (a::l)
 
 /-- -/
-def subAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :=
+def subAux' (a b : List Nat) (n base : Nat) (hb : 1 < base) : Option (List Nat) :=
   match a, b, n with
   | [], [], 0 => some []
   | [], [], _ + 1 => none
   | x::xs, [], n =>
     let (s, carry) := subAuxCarry x n base 0 hb
-    cons? s (subAux xs [] carry base hb)
+    cons? s (subAux' xs [] carry base hb)
   | [], y::ys, n =>
     let (s, carry) := subAuxCarry y n base 0 hb
-    cons? s (subAux ys [] carry base hb)
+    cons? s (subAux' ys [] carry base hb)
   | x::xs, y::ys, n =>
     let (s, carry) := subAuxCarry x (y + n) base 0 hb
-    cons? s (subAux xs ys carry base hb)
+    cons? s (subAux' xs ys carry base hb)
   termination_by a.length + b.length
 
 /-- -/
