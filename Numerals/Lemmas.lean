@@ -400,6 +400,29 @@ theorem noTrailingZeros_tail_of (x : Nat) {xs : List Nat}
   have h7 : (x::xs).getLast h3 ≠ 0 := hntz h3 h4
   rwa [h6] at h7
 
+def discardTrailingZeros (a : List Nat) :=
+  match a with
+  | [] => []
+  | x::xs =>
+    let r := discardTrailingZeros xs
+    match x, r with
+    | 0, [] => []
+    | k + 1, [] => [k + 1]
+    | k, l => k::l
+
+#eval discardTrailingZeros [1, 2, 0, 0]
+
+def discardTrailingZeros' (a : List Nat) :=
+  (helper a []).snd.reverse where
+    helper (a b: List Nat) : List Nat × List Nat :=
+      match a, b with
+      | [], [] => ([], [])
+      | [], 0::ys => helper [] (ys)
+      | [], (k + 1)::ys => ([], (k + 1)::ys)
+      | x::xs, ys => helper xs (x::ys)
+
+#eval discardTrailingZeros' [1, 2, 0, 0]
+
 end NoTrailingZeros
 
 section ToHexDigit
@@ -459,10 +482,10 @@ section ToNatAux
 /-- -/
 def toNatAux (a : List Nat) (base : Nat) : Nat :=
   (helper a base 1 0).snd where
-  helper (a : List Nat) (base factor acc : Nat) : Nat × Nat :=
-    match a with
-    | [] => (factor, acc)
-    | x::xs => helper xs base (factor * base) (x * factor + acc)
+    helper (a : List Nat) (base factor acc : Nat) : Nat × Nat :=
+      match a with
+      | [] => (factor, acc)
+      | x::xs => helper xs base (factor * base) (x * factor + acc)
 
 /-- -/
 theorem toNatAux_helper_nil_eq {base factor acc : Nat} : toNatAux.helper [] base factor acc = (factor, acc) := by
@@ -1525,54 +1548,19 @@ section SubAux
 
 #check true == true
 
-def subAux (a b : List Nat) (base : Nat) (hb : 1 < base) (carry : Bool)
-  (halb : allDigitsLtBase a base) (hblb : allDigitsLtBase b base) : List Nat :=
-  if h : leAux a b then
-    []
-  else
-    match a, b with
-    | [], [] => if carry = true then panic! "carry is true!" else []
-    | x::xs, [] =>
-      if carry = false then
-        x::xs
-      else if 0 < x then
-        (x - 1)::xs
-      else
-        have h1 : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halb
-        have h2 : allDigitsLtBase [] base := List.all_nil
-        0::(subAux xs [] base hb true h1.right h2)
-    | [], y::ys =>
-      have : leAux [] (y::ys) := leAux_nil
-      absurd this h
-    | x::xs, y::ys =>
-      have h1 : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halb
-      have h2 : y < base ∧ allDigitsLtBase ys base := allDigitsLtBase_cons_iff.mp hblb
-      if carry = false then
-        if _ : y ≤ x then
-          (x - y)::(subAux xs ys base hb false h1.right h2.right)
-        else
-          have : y ≤ base + x := Nat.le_add_right_of_le (Nat.le_of_lt h2.left)
-          (base + x - y)::(subAux xs ys base hb true h1.right h2.right)
-      else
-        if g : y < x then
-          have : y + 1 ≤ x := Nat.succ_le_iff.mp g
-          (x - y - 1)::(subAux xs ys base hb false h1.right h2.right)
-        else
-          have : y < base + x := Nat.lt_add_right x h2.left
-          have : y + 1 ≤ base + x := Nat.succ_le_iff.mp this
-          (base + x - y - 1)::(subAux xs ys base hb true h1.right h2.right)
+def subAux (a b : List Nat) (n base : Nat) : List Nat :=
+  let rec helper (x y n base : Nat) (xs ys : List Nat) :=
+    if y + n ≤ x then
+      (x - y - n)::(subAux xs ys 0 base)
+    else
+      (base + x - y - n)::(subAux xs ys 1 base)
+  match a, b with
+  | [], _ => []
+  | x::xs, [] => helper x 0 n base xs []
+  | x::xs, y::ys => helper x y n base xs ys
 
-#eval subAux [0, 0, 0, 1] [9, 9, 9] 10 (by decide) false (by decide) (by decide)
+#eval subAux [0, 0, 1] [2] 0 10
 
-/-- -/
-def discardTrailingZeros (a : List Nat) :=
-  (helper a.reverse).reverse where
-    helper : List Nat → List Nat
-    | [] => []
-    | [0] => [0]
-    | 0::r => helper r
-    | r => r
-
-#eval discardTrailingZeros (subAux [0, 0, 0, 1] [9, 9, 9] 10 (by decide) false (by decide) (by decide))
+#eval discardTrailingZeros (subAux [0, 0, 1] [2] 0 10)
 
 end SubAux
