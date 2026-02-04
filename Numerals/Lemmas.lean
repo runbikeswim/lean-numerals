@@ -723,25 +723,31 @@ theorem leAux_of_eqValue_of_leAux {a b c : List Nat} (hab : eqValue a b) (hbc : 
         simp only [leAux, this, reduceIte, ih hab.right hbc]
 
 theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leAux a c := by
-  induction a generalizing b c with
-  | nil => exact leAux_nil_of_leAux hbc
-  | cons x xs ihx =>
-    match b, c with
-    | [], [] => simp_all only
-    | y::ys, [] =>
-      unfold leAux at hab hbc ⊢
-      simp_all only
-      sorry
-    | [], z::zs =>
-      unfold leAux at hab hbc ⊢
-      simp_all only
-      sorry
-    | y::ys, z::zs =>
-      unfold leAux at hab hbc ⊢
-      sorry
+  if habe : eqValue a b then
+    exact leAux_of_eqValue_of_leAux habe hbc
+  else
+    if hbce : eqValue b c then
+      exact leAux_of_leAux_of_eqValue hab hbce
+    else
+      induction a generalizing b c with
+      | nil => exact leAux_nil
+      | cons  x xs ihx =>
+        unfold eqValue at habe
+        unfold leAux at hab ⊢
+        match b, c with
+        | [], [] => simp_all only [true_and]
+        | y::ys, [] =>
+          simp_all only [eqValue];
+          sorry
+        | [], z::zs =>
+          simp_all only
+          sorry
+        | y::ys, z::zs =>
+          simp_all only
+          sorry
 
 def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
-    match a, b with
+  match a, b with
   | [], [] =>
     have : leAux [] [] := leAux_refl
     isTrue this
