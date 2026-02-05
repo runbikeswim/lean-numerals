@@ -722,55 +722,56 @@ theorem leAux_of_eqValue_of_leAux {a b c : List Nat} (hab : eqValue a b) (hbc : 
         have : ¬ eqValue xs zs := not_eqValue_of_eqValue_of_not_eqValue hab.right h
         simp only [leAux, this, reduceIte, ih hab.right hbc]
 
+theorem and_eqValue_eqValue_of_leAux_of_leAux_of_eqValue {a b c : List Nat}
+  (hab : leAux a b) (hbc : leAux b c) (hac : eqValue a c) : eqValue a b ∧ eqValue b c := by
+  have : leAux b a := leAux_of_leAux_of_eqValue hbc (eqValue_symm hac)
+  have h1 : eqValue a b := leAux_antiysmm.mpr (And.intro hab this)
+  have : leAux c b := leAux_of_eqValue_of_leAux (eqValue_symm hac) hab
+  have h2 : eqValue b c := leAux_antiysmm.mpr (And.intro hbc this)
+  exact And.intro h1 h2
+
 theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leAux a c := by
-  if habe : eqValue a b then
-    exact leAux_of_eqValue_of_leAux habe hbc
-  else
-    if hbce : eqValue b c then
-      exact leAux_of_leAux_of_eqValue hab hbce
-    else
-      induction a generalizing b c with
-      | nil => exact leAux_nil
-      | cons  x xs ihx =>
-        unfold eqValue at habe
-        unfold leAux at hab ⊢
-        match b, c with
-        | [], [] => simp_all only [true_and]
-        | y::ys, [] =>
-          simp_all only [eqValue]
-          simp only [leAux] at hbc
-          have : eqValue ys [] := eqValue_symm (eqValue_nil_of_leAux_nil hbc.right)
-          have : y = 0 ∧ eqValue ys [] := And.intro hbc.left this
-          contradiction
-        | [], z::zs =>
-          simp_all only [eqValue]
-          simp only [Classical.not_and_iff_not_or_not, not_true_eq_false, false_or] at habe
-          have : eqValue xs [] := eqValue_symm (eqValue_nil_of_leAux_nil hab.right)
-          contradiction
-        | y::ys, z::zs =>
-          simp_all only [eqValue]
-          simp only [leAux] at hbc
-          simp only [Classical.not_and_iff_not_or_not] at habe hbce
-          if gxy : eqValue xs ys then
-            if gyz : eqValue ys zs then
-              have : eqValue xs zs := eqValue_trans gxy gyz
-              simp only [gxy, reduceIte] at hab
-              simp only [gyz, reduceIte] at hbc
-              simp only [this, reduceIte]
-              exact Nat.le_trans hab hbc
-            else
-              simp only [gxy, reduceIte] at hab
-              simp only [gyz, reduceIte] at hbc
-              sorry
-          else
-            if gyz : eqValue ys zs then
-              simp only [gxy, reduceIte] at hab
-              simp only [gyz, reduceIte] at hbc
-              sorry
-            else
-              simp only [gxy, reduceIte] at hab
-              simp only [gyz, reduceIte] at hbc
-              sorry
+  induction a generalizing b c with
+  | nil => exact leAux_nil
+  | cons x xs ihx =>
+    match b, c with
+    | [], [] => unfold leAux at hab ⊢; simp_all only [and_true]
+    | y::ys, [] =>
+      have : eqValue (y::ys) [] := eqValue_symm (eqValue_nil_of_leAux_nil hbc)
+      exact leAux_of_leAux_of_eqValue hab this
+    | [], z::zs =>
+      have : eqValue (x::xs) [] := eqValue_symm (eqValue_nil_of_leAux_nil hab)
+      exact leAux_of_eqValue_of_leAux this hbc
+    | y::ys, z::zs =>
+      unfold leAux at hab hbc ⊢
+      if gxy : eqValue xs ys then
+        if gyz : eqValue ys zs then
+          have : eqValue xs zs := eqValue_trans gxy gyz
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          simp only [this, reduceIte]
+          exact Nat.le_trans hab hbc
+        else
+          have : ¬ eqValue xs zs := not_eqValue_of_eqValue_of_not_eqValue gxy gyz
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          simp only [this, reduceIte]
+          exact ihx (leAux_of_eqValue gxy) hbc
+      else
+        if gyz : eqValue ys zs then
+          have : ¬ eqValue xs zs := not_eqValue_of_not_eqValue_of_eqValue gxy gyz
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          simp only [this, reduceIte]
+          exact ihx hab (leAux_of_eqValue gyz)
+        else
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          have : ¬ eqValue xs zs := by
+            false_or_by_contra; rename _ => hc
+            exact absurd (and_eqValue_eqValue_of_leAux_of_leAux_of_eqValue hab hbc hc).left gxy
+          simp only [this, reduceIte]
+          exact ihx hab hbc
 
 def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
   match a, b with
@@ -822,6 +823,9 @@ def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
         isFalse this
 
 instance instLeAux (a b : List Nat) : Decidable (leAux a b) := decLeAux a b
+
+#eval leAux [3,7] [0,7,1,0]
+#eval leAux [3,7] []
 
 end LessThenOrEqual
 
