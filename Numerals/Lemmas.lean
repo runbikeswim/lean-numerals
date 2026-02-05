@@ -737,14 +737,40 @@ theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leA
         match b, c with
         | [], [] => simp_all only [true_and]
         | y::ys, [] =>
-          simp_all only [eqValue];
-          sorry
+          simp_all only [eqValue]
+          simp only [leAux] at hbc
+          have : eqValue ys [] := eqValue_symm (eqValue_nil_of_leAux_nil hbc.right)
+          have : y = 0 ∧ eqValue ys [] := And.intro hbc.left this
+          contradiction
         | [], z::zs =>
-          simp_all only
-          sorry
+          simp_all only [eqValue]
+          simp only [Classical.not_and_iff_not_or_not, not_true_eq_false, false_or] at habe
+          have : eqValue xs [] := eqValue_symm (eqValue_nil_of_leAux_nil hab.right)
+          contradiction
         | y::ys, z::zs =>
-          simp_all only
-          sorry
+          simp_all only [eqValue]
+          simp only [leAux] at hbc
+          simp only [Classical.not_and_iff_not_or_not] at habe hbce
+          if gxy : eqValue xs ys then
+            if gyz : eqValue ys zs then
+              have : eqValue xs zs := eqValue_trans gxy gyz
+              simp only [gxy, reduceIte] at hab
+              simp only [gyz, reduceIte] at hbc
+              simp only [this, reduceIte]
+              exact Nat.le_trans hab hbc
+            else
+              simp only [gxy, reduceIte] at hab
+              simp only [gyz, reduceIte] at hbc
+              sorry
+          else
+            if gyz : eqValue ys zs then
+              simp only [gxy, reduceIte] at hab
+              simp only [gyz, reduceIte] at hbc
+              sorry
+            else
+              simp only [gxy, reduceIte] at hab
+              simp only [gyz, reduceIte] at hbc
+              sorry
 
 def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
   match a, b with
