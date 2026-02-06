@@ -722,7 +722,7 @@ theorem leAux_of_eqValue_of_leAux {a b c : List Nat} (hab : eqValue a b) (hbc : 
         have : ¬ eqValue xs zs := not_eqValue_of_eqValue_of_not_eqValue hab.right h
         simp only [leAux, this, reduceIte, ih hab.right hbc]
 
-theorem and_eqValue_eqValue_of_leAux_of_leAux_of_eqValue {a b c : List Nat}
+theorem and_eqValue_eqValue_of {a b c : List Nat}
   (hab : leAux a b) (hbc : leAux b c) (hac : eqValue a c) : eqValue a b ∧ eqValue b c := by
   have : leAux b a := leAux_of_leAux_of_eqValue hbc (eqValue_symm hac)
   have h1 : eqValue a b := leAux_antiysmm.mpr (And.intro hab this)
@@ -769,7 +769,7 @@ theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leA
           simp only [gyz, reduceIte] at hbc
           have : ¬ eqValue xs zs := by
             false_or_by_contra; rename _ => hc
-            exact absurd (and_eqValue_eqValue_of_leAux_of_leAux_of_eqValue hab hbc hc).left gxy
+            exact absurd (and_eqValue_eqValue_of hab hbc hc).left gxy
           simp only [this, reduceIte]
           exact ihx hab hbc
 
@@ -1070,6 +1070,10 @@ theorem ltAux_iff_and_leAux_not_eqValue {a b : List Nat} : ltAux a b ↔ leAux a
     have : ¬ ltAux b a := leAux_iff_not_ltAux.mp h.left
     exact ltAux_of_not_eqValue_of_not_ltAux h.right this
 
+theorem ltAux_of_ltAux_of_leAux {a b c : List Nat} (hab : ltAux a b) (hbc : leAux b c) : ltAux a c := by sorry
+
+theorem ltAux_of_leAux_of_ltAux {a b c : List Nat} (hab : leAux a b) (hbc : ltAux b c) : ltAux a c := by sorry
+
 theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b) (hbc : ltAux b c) : ltAux a c := by
   induction a generalizing b c with
   | nil => exact ltAux_nil_of_ltAux hbc
@@ -1078,9 +1082,21 @@ theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b) (hbc : ltAux b c) : ltA
     match b, c with
     | [], [] | y::ys, [] | [], z::zs => simp_all only
     | y::ys, z::zs =>
-      simp_all only
-      -- ¬ltAux ys xs → leAux xs ys then leAux_trans
-      sorry
+      simp only at hab hbc ⊢
+      rw [← leAux_iff_not_ltAux] at hab hbc ⊢
+      if gxy : ltAux xs ys then
+        if gyz : ltAux ys zs then
+          exact .inr (ihx gxy gyz)
+        else
+          simp only [gyz, or_false] at hbc
+          exact .inr (ltAux_of_ltAux_of_leAux gxy hbc.right)
+      else
+        if gyz : ltAux ys zs then
+          simp only [gxy, or_false] at hab
+          exact .inr (ltAux_of_leAux_of_ltAux hab.right gyz)
+        else
+          simp only [gxy, gyz, or_false] at hab hbc
+          exact .inl (And.intro (Nat.lt_trans hab.left hbc.left) (leAux_trans hab.right hbc.right))
 
 def decLtAux (a b : List Nat) : Decidable (ltAux a b) :=
   match ga : a, gb : b with
