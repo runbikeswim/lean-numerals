@@ -1070,9 +1070,27 @@ theorem ltAux_iff_and_leAux_not_eqValue {a b : List Nat} : ltAux a b ↔ leAux a
     have : ¬ ltAux b a := leAux_iff_not_ltAux.mp h.left
     exact ltAux_of_not_eqValue_of_not_ltAux h.right this
 
-theorem ltAux_of_ltAux_of_leAux {a b c : List Nat} (hab : ltAux a b) (hbc : leAux b c) : ltAux a c := by sorry
+theorem ltAux_of_ltAux_of_leAux {a b c : List Nat} (hab : ltAux a b) (hbc : leAux b c) : ltAux a c := by
+  have h1 : leAux a c := leAux_trans (leAux_of_ltAux hab) hbc
+  have h2 : eqValue a c → eqValue a b ∧ eqValue b c := by
+    intro h
+    exact and_eqValue_eqValue_of (leAux_of_ltAux hab) hbc h
+  have h3 : eqValue a c → ¬ ltAux a b := by
+    intro h
+    exact not_ltAux_of_eqValue (h2 h).left
+  have h4 : ¬ eqValue a c := fun h : eqValue a c => absurd hab (h3 h)
+  exact ltAux_iff_and_leAux_not_eqValue.mpr (And.intro h1 h4)
 
-theorem ltAux_of_leAux_of_ltAux {a b c : List Nat} (hab : leAux a b) (hbc : ltAux b c) : ltAux a c := by sorry
+theorem ltAux_of_leAux_of_ltAux {a b c : List Nat} (hab : leAux a b) (hbc : ltAux b c) : ltAux a c := by
+  have h1 : leAux a c := leAux_trans hab (leAux_of_ltAux hbc)
+  have h2 : eqValue a c → eqValue a b ∧ eqValue b c := by
+    intro h
+    exact and_eqValue_eqValue_of hab (leAux_of_ltAux hbc) h
+  have h3 : eqValue a c → ¬ ltAux b c := by
+    intro h
+    exact not_ltAux_of_eqValue (h2 h).right
+  have h4 : ¬ eqValue a c := fun h : eqValue a c => absurd hbc (h3 h)
+  exact ltAux_iff_and_leAux_not_eqValue.mpr (And.intro h1 h4)
 
 theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b) (hbc : ltAux b c) : ltAux a c := by
   induction a generalizing b c with
