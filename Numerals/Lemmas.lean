@@ -4,6 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
+
+theorem eq_symm {α : Type} { a b : α} : a = b ↔ b = a := by
+  constructor
+  · intro h
+    exact Eq.symm h
+  · intro h
+    exact Eq.symm h
+
 namespace  Classical
 
 /-- -/
@@ -40,6 +48,40 @@ theorem ne_zero_mod_of_ne_zero {a b : Nat}
   false_or_by_contra; rename _ => h5
   have h6 : a = 0 := Nat.eq_zero_of_lt_of_mod_eq_zero h1 h5 h4
   contradiction
+
+theorem add_mul_mod {a b base : Nat} (halt : a < base) : (a + base * b) % base = a := by
+  rw [Nat.add_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt halt]
+
+theorem add_mul_mod_eq_iff_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
+  (a + base * b) % base = (c + base * d) % base ↔ a = c := by
+  rw [add_mul_mod halt, add_mul_mod hclt]
+
+theorem add_mul_div_eq_iff_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
+  (a + base * b) / base = (c + base * d) / base ↔ b = d := by
+  have : 0 < base := Nat.lt_of_le_of_lt (Nat.zero_le a) halt
+  rw [Nat.add_mul_div_left a b this, Nat.add_mul_div_left c d this]
+  rw [(Nat.div_eq_zero_iff_lt this).mpr halt, Nat.zero_add]
+  rw [(Nat.div_eq_zero_iff_lt this).mpr hclt, Nat.zero_add]
+
+theorem add_mod_div_mul {a base : Nat} : a % base + a / base * base = a := by
+  rw [Nat.mul_comm]
+  exact Nat.mod_add_div a base
+
+theorem eq_mod_of_eq {a b base : Nat} (h: a = b) : a % base = b % base := by
+  rw [h]
+
+theorem eq_div_of_eq {a b base : Nat} (h: a = b) : a / base = b / base := by
+  rw [h]
+
+theorem add_mul_eq_iff_and_eq_eq {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
+  a + base * b = c + base * d ↔ a = c ∧ b = d := by
+  constructor
+  · intro h
+    have h1 : (a + base * b) % base = (c + base * d) % base := eq_mod_of_eq h
+    have h2 : (a + base * b) / base = (c + base * d) / base := eq_div_of_eq h
+    exact And.intro ((add_mul_mod_eq_iff_eq_of halt hclt).mp h1) ((add_mul_div_eq_iff_eq_of halt hclt).mp h2)
+  · intro h
+    rw [h.left, h.right]
 
 end Nat
 
@@ -521,6 +563,7 @@ theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
   simp only
   rw [toNatAux.eq_def, toNatAux_helper_eq, Nat.mul_one, Nat.one_mul, Nat.add_zero]
 
+
 /-- -/
 theorem toNatAux_eq_zero_iff {a : List Nat} {base : Nat} (hb : 1 < base) :
   toNatAux a base = 0 ↔ isZeroAux a := by
@@ -545,6 +588,29 @@ theorem toNatAux_eq_zero_iff {a : List Nat} {base : Nat} (hb : 1 < base) :
       rw [toNatAux_cons_eq]
       have : toNatAux xs base = 0 := ih h.right
       rw [this, h.left, Nat.zero_add, Nat.mul_zero]
+
+#eval toNatAux [11] 10 = toNatAux [1,1] 10
+#eval eqValue [11] [1,1]
+
+theorem toNatAux_eq_iff {a b : List Nat} {base : Nat}
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
+  toNatAux a base = toNatAux b base ↔ eqValue a b := by
+  induction a generalizing b with
+  | nil =>
+    have : toNatAux b base = 0 ↔ isZeroAux b := toNatAux_eq_zero_iff hb
+    rw [isZeroAux.eq_def, eq_symm] at this
+    simp only [toNatAux_nil_eq_zero, this]
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      have : toNatAux (x::xs) base = 0 ↔ isZeroAux (x::xs) := toNatAux_eq_zero_iff hb
+      rw [isZeroAux.eq_def,  eqValue_iff] at this
+      simp only [toNatAux_nil_eq_zero, this]
+    | y::ys =>
+      have halt' : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halt
+      have hblt' : y < base ∧ allDigitsLtBase ys base := allDigitsLtBase_cons_iff.mp hblt
+      rw [toNatAux_cons_eq, toNatAux_cons_eq, eqValue_cons_cons_iff, ← ih halt'.right hblt'.right]
+      exact Nat.add_mul_eq_iff_and_eq_eq halt'.left hblt'.left
 
 end ToNatAux
 
@@ -598,6 +664,13 @@ theorem eqValue_nil_of_leAux_nil {a : List Nat} (h : leAux a []) : eqValue [] a 
     rw [leAux.eq_def] at h
     simp only at ih h ⊢
     exact And.intro h.left (ih h.right)
+
+theorem leAux_nil_iff_eqValue_nil {a : List Nat} : leAux a [] ↔ eqValue [] a := by
+  constructor
+  · intro h
+    exact eqValue_nil_of_leAux_nil h
+  · intro h
+    exact leAux_of_eqValue (eqValue_symm h)
 
 theorem leAux_antiysmm {a b : List Nat}:
   eqValue a b ↔ leAux a b ∧ leAux b a := by
@@ -826,6 +899,20 @@ instance instLeAux (a b : List Nat) : Decidable (leAux a b) := decLeAux a b
 
 #eval leAux [3,7] [0,7,1,0]
 #eval leAux [3,7] []
+
+theorem leAux_iff_le_toNat {a b : List Nat} {base : Nat} (hb : 1 < base) :
+  leAux a b ↔ (toNatAux a base) ≤ (toNatAux b base) := by
+  induction a generalizing b with
+  | nil => simp only [leAux_nil, toNatAux_nil_eq_zero, Nat.zero_le]
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      have : toNatAux (x :: xs) base = 0 ↔ isZeroAux (x::xs) := toNatAux_eq_zero_iff hb
+      rw [isZeroAux] at this
+      simp only [leAux_nil_iff_eqValue_nil, toNatAux_nil_eq_zero, Nat.le_zero, this]
+    | y::ys =>
+      simp only [leAux, toNatAux_cons_eq]
+      sorry
 
 end LessThenOrEqual
 
