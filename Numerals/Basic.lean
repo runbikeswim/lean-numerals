@@ -122,10 +122,9 @@ theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
 
 /-- -/
 theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
-  rw [toNat, ofNat, toNatAux_prune_eq, toNatAux_nil_eq_zero, Nat.add_zero]
+  rw [toNat, ofNat, toNatAux_prune_eq, toNatAux_nil, Nat.add_zero]
 
 end OfNat
-
 
 section Default
 
