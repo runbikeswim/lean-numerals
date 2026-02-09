@@ -95,7 +95,6 @@ theorem add_mul_le_iff_le_of {a b x y base : Nat} (hab: a ≠ b) (hx : x < base)
   constructor
   · intro h
     false_or_by_contra; rename _ => hc
-    -- Nat.lt_of_not_le hc
     have : y + base * b < x + base * a := lt_of_lt_of_ltBase (Nat.lt_of_not_le hc) hy
     exact absurd h (Nat.not_le_of_lt this)
   · intro h
@@ -426,7 +425,7 @@ end AllDigitsLtBase
 
 section ToNatAuxEquiv
 
-theorem toNatAux_eq_of_equiv {a b : List Nat} {base : Nat} (hb : 1 < base) (h : equiv a b):
+theorem toNatAux_eq_of_equiv {a b : List Nat} {base : Nat} (h : equiv a b) (hb : 1 < base) :
   toNatAux a base = toNatAux b base := by
   induction a generalizing b with
   | nil =>
@@ -444,8 +443,8 @@ theorem toNatAux_eq_of_equiv {a b : List Nat} {base : Nat} (hb : 1 < base) (h : 
       simp only [toNatAux_cons, h.left, ih h.right]
 
 theorem equiv_of_toNatAux_eq {a b : List Nat} {base : Nat}
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base)
-  (h : toNatAux a base = toNatAux b base)  :
+  (h : toNatAux a base = toNatAux b base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
   equiv a b := by
   induction a generalizing b with
   | nil =>
@@ -467,16 +466,16 @@ theorem equiv_of_toNatAux_eq {a b : List Nat} {base : Nat}
       simp only [equiv]
       have : x = y ∧ toNatAux xs base = toNatAux ys base :=
         (Nat.add_mul_eq_iff_and_eq_eq_of halt'.left hblt'.left).mp h
-      exact And.intro this.left (ih halt'.right hblt'.right this.right)
+      exact And.intro this.left (ih this.right halt'.right hblt'.right)
 
 theorem toNatAux_eq_iff {a b : List Nat} {base : Nat}
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
   toNatAux a base = toNatAux b base ↔ equiv a b := by
   constructor
   · intro h
-    exact equiv_of_toNatAux_eq halt hblt hb h
+    exact equiv_of_toNatAux_eq h halt hblt hb
   · intro h
-    exact toNatAux_eq_of_equiv hb h
+    exact toNatAux_eq_of_equiv h hb
 
 example {a b : List Nat} {base : Nat} (ha : a = [11]) (hb : b = [1,1]) (hbase : base = 10) :
   toNatAux a base = toNatAux b base ∧ ¬ equiv a b := by
@@ -952,7 +951,7 @@ def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
 
 instance instLeAux (a b : List Nat) : Decidable (leAux a b) := decLeAux a b
 
-theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (hb : 1 < base) (h : leAux a b)
+theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (h : leAux a b) (hb : 1 < base)
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
   toNatAux a base ≤ toNatAux b base := by
   induction a generalizing b with
@@ -968,7 +967,7 @@ theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (hb : 1 < base) (h : 
       simp only [toNatAux_cons]
       if g : equiv xs ys then
         simp only [g, reduceIte] at h
-        simp only [toNatAux_eq_of_equiv hb g, Nat.add_le_add_right h (base * toNatAux ys base)]
+        simp only [toNatAux_eq_of_equiv g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
       else
         simp only [g, reduceIte] at h
         have halt' : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
@@ -980,9 +979,9 @@ theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (hb : 1 < base) (h : 
         exact Nat.le_of_lt (Nat.lt_of_lt_of_ltBase h3 halt'.left)
 
 theorem leAux_of_toNatAux_le {a b : List Nat} {base : Nat}
-  (hb : 1 < base) (h : toNatAux a base ≤ toNatAux b base)
+  (h : toNatAux a base ≤ toNatAux b base) (hb : 1 < base)
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) : leAux a b := by
-    induction a generalizing b with
+  induction a generalizing b with
   | nil => exact leAux_nil
   | cons x xs ih =>
     match b with
@@ -995,13 +994,18 @@ theorem leAux_of_toNatAux_le {a b : List Nat} {base : Nat}
       simp only [leAux]
       if g : equiv xs ys then
         simp only [g, reduceIte]
-        rw [toNatAux_eq_of_equiv hb g] at h
+        rw [toNatAux_eq_of_equiv g hb] at h
         exact Nat.le_of_add_le_add_right h
       else
         have halt' : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
         have hblt' : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
         simp only [g, reduceIte]
-        sorry
+        have : toNatAux xs base ≠ toNatAux ys base := by
+          false_or_by_contra; rename _ => hc
+          exact absurd (equiv_of_toNatAux_eq hc halt'.right hblt'.right hb) g
+        have : toNatAux xs base ≤ toNatAux ys base :=
+          (Nat.add_mul_le_iff_le_of this halt'.left hblt'.left).mp h
+        exact ih this halt'.right hblt'.right
 
 theorem leAux_iff_le_toNat {a b : List Nat} {base : Nat} (hb : 1 < base) :
   leAux a b ↔ (toNatAux a base) ≤ (toNatAux b base) := by
@@ -1015,7 +1019,7 @@ theorem leAux_iff_le_toNat {a b : List Nat} {base : Nat} (hb : 1 < base) :
       simp only [leAux_nil_iff_equiv_nil, toNatAux_nil, Nat.le_zero, this]
     | y::ys =>
       if g : equiv xs ys then
-        simp only [leAux, toNatAux_cons, g, reduceIte, toNatAux_eq_of_equiv hb g]
+        simp only [leAux, toNatAux_cons, g, reduceIte, toNatAux_eq_of_equiv g hb]
         constructor
         · intro h
           exact Nat.add_le_add_right h (base * toNatAux ys base)
