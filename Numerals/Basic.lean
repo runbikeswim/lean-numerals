@@ -170,8 +170,6 @@ def cons : {base : Nat} → {hb : 1 < base} → Numeral base hb → (n : Nat) �
           exact noTrailingZeros_cons_of n h' hnt
     }
 
-#eval cons (ofNat 1234 10 (by decide)) 3 (by decide)
-#eval cons (cons (ofNat 0 10 (by decide)) 0 (by decide)) 0 (by decide)
 
 -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Vector/Snoc.html#List.Vector.revInductionOn
 
@@ -180,27 +178,17 @@ end Induction
 section ToString
 
 /--
-If the base is 10, the sequence of digits in [decimal notation](https://en.wikipedia.org/wiki/Decimal#Decimal_notation)
-is returned.
-
-For base 2, 8 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
+For base 2, 8, 10 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
 [octal](https://en.wikipedia.org/wiki/Octal) or [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal)
-representation of `n` followed by the value of `base` (in decimal notation) is returned.
+representation of `n` is returned in the format that Lean uses for binary, octal, decimal or hexadecimal
+constants.
 
 For all other values of base, the list of digits - starting with the most significant - is
 returned as sequence of natural numbers, separated by "," and succeeded by the
 the value of `base` (all in decimal notation).
 -/
 def toString {base : Nat} {hb : 1 < base} (n : Numeral base hb) : String :=
-  helper (normalizeDigits n.digits) base
-    (normalizeDigits_allLtBase_of_allLtBase hb n.allDigitsLtBase) where
-  helper (digits : List Nat) (base : Nat) (ha : digits.all (· < base)) :=
-    match base with
-    | 2
-    | 8  => s!"{String.join (digits.map (s!"{·}"))}({base})"
-    | 10 => s!"{String.join (digits.map (s!"{·}"))}"
-    | 16 => s!"{String.join (digits.mapWithAll (· < 16) ha toHexDigit)}(16)"
-    | _  => ",".intercalate (digits.map (fun d : Nat => s!"{d}")) ++ s!"({base})"
+  toStringAux n.digits base n.allDigitsLtBase
 
 /-- -/
 instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) := ⟨toString⟩

@@ -601,8 +601,6 @@ def discardTrailingZeros (a : List Nat) :=
     | k + 1, [] => [k + 1]
     | k, l => k::l
 
-#eval discardTrailingZeros [1, 2, 0, 0]
-
 def discardTrailingZeros' (a : List Nat) :=
   (helper a []).snd.reverse where
     helper (a b: List Nat) : List Nat × List Nat :=
@@ -612,30 +610,43 @@ def discardTrailingZeros' (a : List Nat) :=
       | [], (k + 1)::ys => ([], (k + 1)::ys)
       | x::xs, ys => helper xs (x::ys)
 
-#eval discardTrailingZeros' [1, 2, 0, 0]
-
 end NoTrailingZeros
 
-section ToHexDigit
+section ToStringAux
 
-/--
-returns the hexadecimal digit of a number between 0 and 15 (including)
+def digitToString (digit base : Nat) (hd : digit < base) : String :=
+  if g : base = 16 ∧ 10 ≤ digit then
+    /- needed for avoiding "Missing cases"-error in the following match -/
+    have : decide (digit < 16) := by
+      rw [g.left] at hd
+      simp only [hd, decide_true]
+    match digit with
+    | 10 => "a"
+    | 11 => "b"
+    | 12 => "c"
+    | 13 => "d"
+    | 14 => "e"
+    | 15 => "f"
+  else
+    s!"{digit}"
 
-The use of `decide (digit < 16)` as type of `h` - instead of the
-more straightforward `digit < 16` - is motivated by
-https://github.com/leanprover/lean4/issues/9292.
--/
-def toHexDigit (digit : Nat) (h : decide (digit < 16)) : String :=
-  match digit with
-  | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 => s!"{digit}"
-  | 10 => "a"
-  | 11 => "b"
-  | 12 => "c"
-  | 13 => "d"
-  | 14 => "e"
-  | 15 => "f"
+def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
+  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
+  let r := if s = [] then ["0"] else s.reverse
+  match base with
+  | 2 => s!"0b{String.join r}"
+  | 8 => s!"0o{String.join r}"
+  | 10 => s!"{ String.join r}"
+  | 16 => s!"0x{String.join r}"
+  | _ => s!"{",".intercalate r}({base})"
+  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
+    match digits with
+    | [] => []
+    | x::xs =>
+      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
+      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
 
-end ToHexDigit
+end ToStringAux
 
 section NormalizeDigits
 
@@ -1007,27 +1018,14 @@ theorem leAux_of_toNatAux_le {a b : List Nat} {base : Nat}
           (Nat.add_mul_le_iff_le_of this halt'.left hblt'.left).mp h
         exact ih this halt'.right hblt'.right
 
-theorem leAux_iff_le_toNat {a b : List Nat} {base : Nat} (hb : 1 < base) :
+theorem leAux_iff_le_toNat {a b : List Nat} {base : Nat} (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
   leAux a b ↔ (toNatAux a base) ≤ (toNatAux b base) := by
-  induction a generalizing b with
-  | nil => simp only [leAux_nil, toNatAux_nil, Nat.zero_le]
-  | cons x xs ih =>
-    match b with
-    | [] =>
-      have : toNatAux (x :: xs) base = 0 ↔ isZeroAux (x::xs) := toNatAux_eq_zero_iff hb
-      rw [isZeroAux] at this
-      simp only [leAux_nil_iff_equiv_nil, toNatAux_nil, Nat.le_zero, this]
-    | y::ys =>
-      if g : equiv xs ys then
-        simp only [leAux, toNatAux_cons, g, reduceIte, toNatAux_eq_of_equiv g hb]
-        constructor
-        · intro h
-          exact Nat.add_le_add_right h (base * toNatAux ys base)
-        · intro h
-          exact Nat.le_of_add_le_add_right h
-      else
-        simp only [leAux, toNatAux_cons, g, reduceIte]
-        sorry
+  constructor
+  · intro h
+    exact toNatAux_le_of_leAux h hb halt hblt
+  · intro h
+    exact leAux_of_toNatAux_le h hb halt hblt
 
 end leAux
 
@@ -1370,17 +1368,6 @@ def decLtAux (a b : List Nat) : Decidable (ltAux a b) :=
   termination_by a.length + b.length
 
 instance instLtAux (a b : List Nat) : Decidable (ltAux a b) := decLtAux a b
-
-#eval ltAux [] [] -- false
-#eval ltAux [0] [] -- false
-#eval ltAux [] [0] -- false
-#eval ltAux [0] [1] -- true
-#eval ltAux [] [1] -- true
-#eval ltAux [0, 0] [1] -- true
-#eval ltAux [0, 1] [1] -- false
-#eval ltAux [0, 1] [1, 0] -- false
-#eval ltAux [1, 1] [1, 1] -- false
-#eval ltAux [1, 1] [1, 2] -- true
 
 end ltAux
 
@@ -1828,9 +1815,5 @@ def subAux (a b : List Nat) (n base : Nat) : List Nat :=
   | [], _ => []
   | x::xs, [] => helper x 0 n base xs []
   | x::xs, y::ys => helper x y n base xs ys
-
-#eval subAux [0, 0, 1] [2] 0 10
-
-#eval discardTrailingZeros (subAux [0, 0, 1] [2] 0 10)
 
 end SubAux
