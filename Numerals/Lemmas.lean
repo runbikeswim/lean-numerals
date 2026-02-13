@@ -524,24 +524,49 @@ theorem noTrailingZero_of_nil {a : List Nat} (ha : a = []) : noTrailingZero a :=
   intro hnn
   contradiction
 
-/-- -/
-theorem noTrailingZero_singleton_of {n : Nat} (h : n ≠ 0) : noTrailingZero [n] := by
+theorem noTrailingZero_singleton_iff {n : Nat} : noTrailingZero [n] ↔ n ≠ 0 := by
   rw [noTrailingZero.eq_def]
-  intro _
-  rwa [List.getLast_singleton]
+  constructor
+  · intro h
+    have : [n] ≠ [] := List.cons_ne_nil n []
+    have : [n].getLast this ≠ 0 := h this
+    rwa [List.getLast_singleton] at this
+  · intro h _
+    rwa [List.getLast_singleton]
 
 /-- -/
-theorem noTrailingZero_cons_iff {x : Nat} {xs : List Nat}
-  (hxsnn : xs ≠ []) : noTrailingZero (x::xs) ↔ noTrailingZero xs := by
+theorem noTrailingZero_cons_iff {x : Nat} {xs : List Nat} :
+  noTrailingZero (x::xs) ↔ (x ≠ 0 ∧ xs = []) ∨ (noTrailingZero xs ∧ xs ≠ []) := by
   simp only [noTrailingZero]
   constructor
-  · intro h _
-    have : x::xs ≠ [] := List.cons_ne_nil x xs
-    have : (x :: xs).getLast this ≠ 0 := h this
-    rwa [← List.getLast_cons]
+  · intro h
+    if g : xs = [] then
+      have : x ≠ 0 := by
+        rw [g] at h
+        exact noTrailingZero_singleton_iff.mp h
+      exact .inl (And.intro this g)
+    else
+      rw [← ne_eq] at g
+      have : x::xs ≠ [] := List.cons_ne_nil x xs
+      have : (x::xs).getLast this ≠ 0 := h this
+      have : xs.getLast g ≠ 0 := by rwa [← List.getLast_cons g]
+      exact .inr (And.intro (fun _ : xs ≠ [] => this) g)
   · intro h1 h2
-    have : xs.getLast hxsnn ≠ 0 := h1 hxsnn
-    rwa [List.getLast_cons]
+    if g1 : x ≠ 0 then
+      if g2 : xs = [] then
+        have : (x::xs) = [x] := by rw [g2]
+        simp only [this, List.getLast_singleton]
+        exact g1
+      else
+        have : ¬(x ≠ 0 ∧ xs = []) := by intro h3; exact absurd h3.right g2
+        have : (∀ (h : xs ≠ []), xs.getLast h ≠ 0) ∧ xs ≠ [] := Or.resolve_left h1 this
+        have : xs.getLast g2 ≠ 0 := this.left g2
+        rwa [List.getLast_cons]
+    else
+      have : ¬(x ≠ 0 ∧ xs = []) := by intro h3; exact absurd h3.left g1
+      have : (∀ (h : xs ≠ []), xs.getLast h ≠ 0) ∧ xs ≠ [] := Or.resolve_left h1 this
+      have : xs.getLast this.right ≠ 0 := this.left this.right
+      rwa [List.getLast_cons]
 
 def discardTrailingZeros (a : List Nat) :=
   match a with
@@ -1453,17 +1478,16 @@ theorem noTrailingZero_prune_of {a : List Nat} {n base : Nat} {hb : 1 < base} (h
           have h1 : prune [] ((k + 1) / base) base hb = [] := (prune_eq_nil_iff hb).mpr (And.intro rfl g)
           have h2 : (k + 1) % base ≠ 0 := Nat.ne_zero_mod_of_ne_zero hb g (Nat.succ_ne_zero k)
           rw [h1]
-          exact noTrailingZero_singleton_of h2
+          exact noTrailingZero_singleton_iff.mpr h2
         else
           have h1 : prune [] ((k + 1) / base) base hb ≠ [] := by
             intro h
             exact absurd ((prune_eq_nil_iff hb).mp h).right g
           have h2 : (k + 1) / base < k + 1  := Nat.div_lt_self (Nat.succ_pos k) hb
           have h3 : noTrailingZero (prune [] ((k + 1) / base) base hb) := ihl ((k + 1) / base) h2
-          exact (noTrailingZero_cons_iff h1).mpr h3
+          exact noTrailingZero_cons_iff.mpr (.inr (And.intro h3 h1))
   | cons x xs iha =>
-    rw [prune.eq_def]
-    simp only
+    simp only [prune]
     have h1 : noTrailingZero xs := sorry -- noTrailingZeros_tail_of x hntz
     have h2 : noTrailingZero (prune xs ((x + n) / base) base hb) := iha h1
     have h3 : xs ≠ [0] := sorry -- tail_ne_zero_of x hntz
