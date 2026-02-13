@@ -1574,7 +1574,7 @@ theorem noTrailingZeros_addDigits_of {a b : List Nat}
     | [] => intro _ ; contradiction
     | y::ys =>
       simp only [addDigits_comm, addDigits_nil_eq]
-      exact h2
+      exact hbntz
   | cons x xs ih =>
     match b with
     | [] => simp only [addDigits_nil_eq]; exact hantz
