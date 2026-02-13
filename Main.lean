@@ -7,7 +7,7 @@ Author: Stefan Kusterer
 import Numerals.Basic
 
 open Numeral
-
+/-
 def nilBase10 : Numeral10 := {
     digits := [],
     allDigitsLtBase := by decide,
@@ -84,9 +84,13 @@ def fibonacci (n : Nat) : Numeral10 :=
   match n with
   | 0 => (a, b)
   | k + 1 => helper k b (a + b)
+-/
 
 def main : IO Unit := do
+  println! "work in progress"
+  /-
   for n in numerals do
     println! s!"{repr n.val}: {n.val} : {n.val.rebase 10 (by decide)}"
 
   println! s!"fibonacci 100: {fibonacci 100}"
+-/

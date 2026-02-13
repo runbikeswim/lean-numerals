@@ -33,8 +33,8 @@ number has a unique representation for the given `base`.
 structure Numeral (base : Nat) (hb : 1 < base) where
   digits : List Nat
   allDigitsLtBase : allDigitsLtBase digits base
-  noTrailingZeros : noTrailingZeros digits
-  deriving Repr
+  noTrailingZeros : sorry -- noTrailingZeros digits
+  -- deriving Repr
 
 /--
 Numbers in binary representation
@@ -103,7 +103,7 @@ section OfNat
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   digits := prune [] n base hb
   allDigitsLtBase := allDigitsLtBase_prune
-  noTrailingZeros := noTrailingZeros_prune_of (noTrailingZeros_of_nil rfl)
+  noTrailingZeros := sorry -- noTrailingZeros_prune_of (noTrailingZeros_of_nil rfl)
 
 /-- -/
 theorem ofNat_isZero_iff (n : Nat) {base : Nat} (hb : 1 < base) :
@@ -128,9 +128,9 @@ end OfNat
 
 section Default
 
-/--
+/-
 zero (represented as `[0]`) is the default `Numeral` - for any base
--/
+
 instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
     digits := [0],
     allDigitsLtBase := by
@@ -141,6 +141,7 @@ instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral 
       intro _ _
       contradiction,
   }⟩
+-/
 
 end Default
 
@@ -161,13 +162,19 @@ def cons : {base : Nat} → {hb : 1 < base} → Numeral base hb → (n : Nat) �
         rename 1 < _ => hb
         let hnt := a.noTrailingZeros
         if h : a.digits = [0] then
+          sorry
+          /-
           rw [noTrailingZeros.eq_def]
           simp only [h, reduceIte, ne_eq, List.cons_ne_self, not_false_eq_true, List.cons.injEq, and_true,
             List.getLast_singleton, imp_self]
+          -/
         else
+          sorry
+          /-
           simp only [h, reduceIte]
           have h' : a.digits ≠ [0] := by simp only [ne_eq, h, not_false_eq_true]
           exact noTrailingZeros_cons_of n h' hnt
+          -/
     }
 
 
@@ -190,8 +197,9 @@ the value of `base` (all in decimal notation).
 def toString {base : Nat} {hb : 1 < base} (n : Numeral base hb) : String :=
   toStringAux n.digits base n.allDigitsLtBase
 
-/-- -/
+/-
 instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) := ⟨toString⟩
+-/
 
 end ToString
 
@@ -215,7 +223,7 @@ section Add
 def hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : Numeral base hb where
   digits := addAux a.digits b.digits 0 base hb
   allDigitsLtBase := allDigitsLtBase_addAux 0
-  noTrailingZeros := noTrailingZeros_addAux_of_noTrailingZeros a.noTrailingZeros b.noTrailingZeros hb
+  noTrailingZeros := sorry -- noTrailingZeros_addAux_of_noTrailingZeros a.noTrailingZeros b.noTrailingZeros hb
 
 /-- -/
 theorem hAdd_nil_iff_and_nil_nil {base : Nat} {hb : 1 < base} {a b : Numeral base hb}  :
@@ -232,8 +240,9 @@ theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : hAdd a 
 instance instCommutativeHAddNumerals {base : Nat} {hb : 1 < base} : Std.Commutative (α := Numeral base hb) hAdd :=
   ⟨hAdd_comm⟩
 
-/-- -/
+/-
 instance instHAddNumerals {base : Nat} {hb : 1 < base} : HAdd (Numeral base hb) (Numeral base hb) (Numeral base hb) := ⟨hAdd⟩
+-/
 
 /-- -/
 theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} {a b : Numeral base hb} :
@@ -254,7 +263,7 @@ structure NumeralWithBase  where
   base : Nat
   oneLtBase : 1 < base
   val : Numeral base oneLtBase
-  deriving Repr
+  -- deriving Repr
 
 namespace Numeral
 
