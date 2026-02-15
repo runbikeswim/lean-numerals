@@ -103,4 +103,5 @@ def fibonacci (n : Nat) : Numeral10 :=
   | k + 1 => helper k b (a + b)
 
 def main : IO Unit := do
-  println! s!"fibonacci 100: {fibonacci 100}"
+  let n := 123
+  println! s!"fibonacci {n}: {fibonacci n}"
