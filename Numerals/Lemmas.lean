@@ -1434,7 +1434,7 @@ theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} {hb : 1 < base} :
 
 end AllDigitsLtBase_Prune
 
-section NoTrailingZeros_Prune
+section NoTrailingZero_Prune
 
 theorem noTrailingZero_prune_nil_of {n base : Nat} {hb : 1 < base} : noTrailingZero (prune [] n base hb) := by
   induction n using Nat.strongRecOn with
@@ -1479,7 +1479,7 @@ theorem noTrailingZero_prune_of {a : List Nat} {n base : Nat} {hb : 1 < base} (h
     have h6 : x + n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr h5
     exact Nat.ne_zero_mod_of_ne_zero hb h.right h6
 
-end NoTrailingZeros_Prune
+end NoTrailingZero_Prune
 
 section ToNatAux_Prune
 
@@ -1588,10 +1588,10 @@ theorem addDigits_eq_zero_iff {a b : List Nat} :
 
 end AddDigits
 
-section NoTrailingZeros_AddDigits
+section NoTrailingZero_AddDigits
 
 /-- -/
-theorem noTrailingZeros_addDigits_of {a b : List Nat}
+theorem noTrailingZero_addDigits_of {a b : List Nat}
   (hantz : noTrailingZero a) (hbntz : noTrailingZero b) :
   noTrailingZero (addDigits a b) := by
   induction a generalizing b with
@@ -1613,7 +1613,7 @@ theorem noTrailingZeros_addDigits_of {a b : List Nat}
       have h2 : 0 < x + y := Nat.add_pos_left h1 y
       exact Nat.pos_iff_ne_zero.mp h2
 
-end NoTrailingZeros_AddDigits
+end NoTrailingZero_AddDigits
 
 section ToNatAux_addDigits
 
@@ -1757,17 +1757,17 @@ theorem allDigitsLtBase_addAux {a b : List Nat} (n : Nat) {base : Nat} {hb : 1 <
 
 end AllDigitsLtBase_AddAux
 
-section NoTrailingZeros_AddAux
+section NoTrailingZero_AddAux
 
 /-- -/
 theorem noTrailingZero_addAux_of_noTrailingZero {a b : List Nat} {n base : Nat}
   (hantz : noTrailingZero a) (hbntz : noTrailingZero b) (hb : 1 < base) :
   noTrailingZero (addAux a b n base hb) := by
-  have h1 : noTrailingZero (addDigits a b) := noTrailingZeros_addDigits_of hantz hbntz
+  have h1 : noTrailingZero (addDigits a b) := noTrailingZero_addDigits_of hantz hbntz
   rw [addAux_eq_prune_addDigits hb]
   exact noTrailingZero_prune_of h1
 
-end NoTrailingZeros_AddAux
+end NoTrailingZero_AddAux
 
 section ToNatAux_AddAux
 
