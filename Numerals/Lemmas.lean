@@ -132,7 +132,7 @@ def mapWithAll {α β : Type} (a: List α) (p : α → Bool) (ha : a.all p) (f :
 
 end List
 
-section toNatAux
+section ToNatAux
 
 /-- -/
 def toNatAux (a : List Nat) (base : Nat) : Nat :=
@@ -171,7 +171,7 @@ theorem toNatAux_cons {xs : List Nat} {x base : Nat} :
   simp only
   rw [toNatAux.eq_def, toNatAux_helper_eq, Nat.mul_one, Nat.one_mul, Nat.add_zero]
 
-end toNatAux
+end ToNatAux
 
 section Equiv
 
@@ -407,9 +407,9 @@ def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase 
 instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) := decAllDigitsLtBase a base
 
 /-- -/
-theorem allDigitsLtBase_of_nil {a : List Nat} {base : Nat} (ha : a = []) :
-  allDigitsLtBase a base := by
-  rw [allDigitsLtBase.eq_def, ha]
+theorem allDigitsLtBase_nil {base : Nat}  :
+  allDigitsLtBase [] base := by
+  rw [allDigitsLtBase.eq_def]
   exact List.all_nil
 
 /-- -/
@@ -419,14 +419,49 @@ theorem allDigitsLtBase_cons_iff {x base : Nat} {xs : List Nat} :
   simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
 
 /-- -/
-theorem allDigitsLtBase_of_zero {a : List Nat} {base : Nat} (ha : a = [0]) (hb : 1 < base) :
-  allDigitsLtBase a base := by
-  rw [allDigitsLtBase.eq_def, ha]
-  exact allDigitsLtBase_cons_iff.mpr (And.intro (Nat.pos_of_one_lt hb) (allDigitsLtBase_of_nil rfl))
+theorem allDigitsLtBase_singleton {n : Nat} {base : Nat} (hn : n < base) :
+  allDigitsLtBase [n] base := by
+  exact allDigitsLtBase_cons_iff.mpr (And.intro hn allDigitsLtBase_nil)
 
 end AllDigitsLtBase
 
-section ToNatAuxEquiv
+section ToStringAux
+
+def digitToString (digit base : Nat) (hd : digit < base) : String :=
+  if g : base = 16 ∧ 10 ≤ digit then
+    /- needed for avoiding "Missing cases"-error in the following match -/
+    have : decide (digit < 16) := by
+      rw [g.left] at hd
+      simp only [hd, decide_true]
+    match digit with
+    | 10 => "a"
+    | 11 => "b"
+    | 12 => "c"
+    | 13 => "d"
+    | 14 => "e"
+    | 15 => "f"
+  else
+    s!"{digit}"
+
+def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
+  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
+  let r := if s = [] then ["0"] else s.reverse
+  match base with
+  | 2 => s!"0b{String.join r}"
+  | 8 => s!"0o{String.join r}"
+  | 10 => s!"{ String.join r}"
+  | 16 => s!"0x{String.join r}"
+  | _ => s!"{",".intercalate r}({base})"
+  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
+    match digits with
+    | [] => []
+    | x::xs =>
+      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
+      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
+
+end ToStringAux
+
+section ToNatAux_Equiv
 
 theorem toNatAux_eq_of_equiv {a b : List Nat} {base : Nat} (h : equiv a b) (hb : 1 < base) :
   toNatAux a base = toNatAux b base := by
@@ -489,7 +524,7 @@ example {a b : List Nat} {base : Nat} (ha : a = [11]) (hb : b = [1,1]) (hbase : 
     rw [ha, hb] at q
     simp only [equiv, Nat.succ_ne_self, false_and, and_false] at q
 
-end ToNatAuxEquiv
+end ToNatAux_Equiv
 
 section NoTrailingZero
 
@@ -596,7 +631,7 @@ def discardTrailingZeros' (a : List Nat) :=
 
 end NoTrailingZero
 
-section NoTrailingZero_isZeroAux
+section NoTrailingZero_IsZeroAux
 
 theorem isZeroAux_iff_of_noTrailingZero {a : List Nat} (hantz : noTrailingZero a) :
   isZeroAux a ↔ a = [] := by
@@ -612,76 +647,28 @@ theorem isZeroAux_iff_of_noTrailingZero {a : List Nat} (hantz : noTrailingZero a
     rw [h]
     exact isZeroAux_of_nil
 
-end NoTrailingZero_isZeroAux
+end NoTrailingZero_IsZeroAux
 
-section ToStringAux
+section ConsAux
 
-def digitToString (digit base : Nat) (hd : digit < base) : String :=
-  if g : base = 16 ∧ 10 ≤ digit then
-    /- needed for avoiding "Missing cases"-error in the following match -/
-    have : decide (digit < 16) := by
-      rw [g.left] at hd
-      simp only [hd, decide_true]
-    match digit with
-    | 10 => "a"
-    | 11 => "b"
-    | 12 => "c"
-    | 13 => "d"
-    | 14 => "e"
-    | 15 => "f"
-  else
-    s!"{digit}"
+def consAux (n : Nat) (a : List Nat) : List Nat :=
+  match n, a with
+  | 0, [] => []
+  | k + 1, [] => [k + 1]
+  | n, x::xs => n::x::xs
 
-def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
-  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
-  let r := if s = [] then ["0"] else s.reverse
-  match base with
-  | 2 => s!"0b{String.join r}"
-  | 8 => s!"0o{String.join r}"
-  | 10 => s!"{ String.join r}"
-  | 16 => s!"0x{String.join r}"
-  | _ => s!"{",".intercalate r}({base})"
-  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
-    match digits with
-    | [] => []
-    | x::xs =>
-      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
-      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
+theorem allDigitsLtBase_consAux_of {n base: Nat} {a : List Nat}
+  (hn : n < base) (ha : allDigitsLtBase a base) :
+  allDigitsLtBase (consAux n a) base := by
+  unfold consAux
+  match gn: n, ga: a with
+  | 0, [] => simp only; exact allDigitsLtBase_nil
+  | k + 1, [] => simp only; exact allDigitsLtBase_singleton hn
+  | n, x::xs => simp only; exact allDigitsLtBase_cons_iff.mpr (And.intro hn ha)
 
-end ToStringAux
+end ConsAux
 
-section NormalizeDigits
-
-/--
-maps an empty list of digits to `[0]` or reverses them otherwise
--/
-def normalizeDigits (a : List Nat) : List Nat := if a = [] then [0] else a.reverse
-
-/--
-asserts that `normalizeDigits` only returns `[0]` or the reversed input
--/
-theorem normalizeDigits_eq_or {a : List Nat} :
-  normalizeDigits a = [0] ∨ (normalizeDigits a) = a.reverse := by
-  by_cases ha : a = [] <;> simp only [normalizeDigits, ha, reduceIte, true_or, or_true]
-
-end NormalizeDigits
-
-section NormalizeDigits_AllDigitsLtBase
-
-/--
-asserts that all digits returned by `normalizeDigits_allLtBase_of_allLtBase` are less than
-`base` if this holds true for the input
--/
-theorem normalizeDigits_allLtBase_of_allLtBase {a : List Nat} {base : Nat} (hb : 1 < base)
-  (haa : allDigitsLtBase a base): allDigitsLtBase (normalizeDigits a) base := by
-  have g : normalizeDigits a = [0] ∨ (normalizeDigits a) = a.reverse := normalizeDigits_eq_or
-  cases g with
-  | inl gl => exact allDigitsLtBase_of_zero gl hb
-  | inr gr => rwa [gr, allDigitsLtBase.eq_def, List.all_reverse, ← allDigitsLtBase.eq_def]
-
-end NormalizeDigits_AllDigitsLtBase
-
-section leAux
+section LeAux
 
 def leAux (a b : List Nat) : Prop :=
   match a, b with
@@ -1029,9 +1016,9 @@ theorem leAux_iff_le_toNat {a b : List Nat} {base : Nat} (hb : 1 < base)
   · intro h
     exact leAux_of_toNatAux_le h hb halt hblt
 
-end leAux
+end LeAux
 
-section ltAux
+section LtAux
 
 def ltAux (a b : List Nat) : Prop :=
   match a, b with
@@ -1371,7 +1358,7 @@ def decLtAux (a b : List Nat) : Decidable (ltAux a b) :=
 
 instance instLtAux (a b : List Nat) : Decidable (ltAux a b) := decLtAux a b
 
-end ltAux
+end LtAux
 
 section Prune
 
@@ -1421,7 +1408,7 @@ theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} {hb : 1 < base} :
       match gl : l with
       | 0 =>
         rw [prune.eq_def]
-        simp only [allDigitsLtBase_of_nil]
+        simp only [allDigitsLtBase_nil]
       | k + 1 =>
         rw [prune.eq_def]
         simp only [allDigitsLtBase_cons_iff]
@@ -1615,7 +1602,7 @@ theorem noTrailingZero_addDigits_of {a b : List Nat}
 
 end NoTrailingZero_AddDigits
 
-section ToNatAux_addDigits
+section ToNatAux_AddDigits
 
 /-- -/
 theorem toNatAux_addDigits_eq {a b : List Nat} {base : Nat} :
@@ -1638,7 +1625,7 @@ theorem toNatAux_addDigits_eq {a b : List Nat} {base : Nat} :
       rw (occs := .pos [2]) [Nat.add_comm]
       rw [← Nat.add_assoc]
 
-end ToNatAux_addDigits
+end ToNatAux_AddDigits
 
 section AddAux
 

@@ -8,15 +8,6 @@ import Numerals.Basic
 
 open Numeral
 
-def nilBase10 : Numeral10 := {
-    digits := [],
-    allDigitsLtBase := by decide,
-    noTrailingZero := by decide
-  }
-
-#eval nilBase10
-#eval s!"{nilBase10}"
-
 def zeroBase10 : Numeral10 := default
 
 #eval zeroBase10

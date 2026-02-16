@@ -132,43 +132,6 @@ instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral 
 
 end Default
 
-section Induction
-
-def cons : {base : Nat} → {hb : 1 < base} → Numeral base hb → (n : Nat) → (hn : n < base) → Numeral base hb :=
-  fun a n hn => {
-      digits := if a.digits = [0] then [n] else n::a.digits
-      allDigitsLtBase := by
-        rename 1 < _ => hb
-        let hlt := a.allDigitsLtBase
-        rw [allDigitsLtBase.eq_def] at ⊢ hlt
-        if h : a.digits = [0] then
-          simp only [h, reduceIte, List.all_cons, List.all_nil, Bool.and_true, hn, decide_true]
-        else
-          simp only [h, reduceIte, List.all_cons, Bool.and, hn, decide_true, hlt]
-      noTrailingZero := by
-        rename 1 < _ => hb
-        let hnt := a.noTrailingZero
-        if h : a.digits = [0] then
-          sorry
-          /-
-          rw [noTrailingZero.eq_def]
-          simp only [h, reduceIte, ne_eq, List.cons_ne_self, not_false_eq_true, List.cons.injEq, and_true,
-            List.getLast_singleton, imp_self]
-          -/
-        else
-          sorry
-          /-
-          simp only [h, reduceIte]
-          have h' : a.digits ≠ [0] := by simp only [ne_eq, h, not_false_eq_true]
-          exact noTrailingZero_cons_of n h' hnt
-          -/
-    }
-
-
--- https://leanprover-community.github.io/mathlib4_docs/Mathlib/Data/Vector/Snoc.html#List.Vector.revInductionOn
-
-end Induction
-
 section ToString
 
 /--
