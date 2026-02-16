@@ -679,28 +679,7 @@ theorem noTrailingZero_discardTrailingZeros {a : List Nat} :
     unfold discardTrailingZeros
     exact noTrailingZero_consAux ih
 
-def discardTrailingZeros' (a : List Nat) :=
-  (helper a []).snd.reverse where
-    helper (a b: List Nat) : List Nat × List Nat :=
-      match a, b with
-      | [], [] => ([], [])
-      | [], 0::ys => helper [] (ys)
-      | [], (k + 1)::ys => ([], (k + 1)::ys)
-      | x::xs, ys => helper xs (x::ys)
-
-theorem discardTrailingZeros'_nil : discardTrailingZeros' [] = [] := by
-  unfold discardTrailingZeros' discardTrailingZeros'.helper
-  simp only [List.reverse_nil]
-
-theorem discardTrailingZeros_eq_discardTrailingZeros' {a : List Nat} :
-  discardTrailingZeros a = discardTrailingZeros' a := by
-  induction a with
-  | nil => simp only [discardTrailingZeros_nil, discardTrailingZeros'_nil]
-  | cons x xs ih =>
-    sorry
-
 end DiscardTrailingZeros
-
 
 section LeAux
 
