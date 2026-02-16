@@ -557,7 +557,7 @@ def decNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) :=
 instance instNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) := decNoTrailingZero a
 
 /-- -/
-theorem noTrailingZero_of_nil : noTrailingZero [] := by
+theorem noTrailingZero_nil : noTrailingZero [] := by
   rw [noTrailingZero.eq_def]
   intro hnn
   contradiction
@@ -610,25 +610,6 @@ theorem noTrailingZero_cons_iff {x : Nat} {xs : List Nat} :
   · intro h
     exact noTrailingZero_cons_of h
 
-def discardTrailingZeros (a : List Nat) :=
-  match a with
-  | [] => []
-  | x::xs =>
-    let r := discardTrailingZeros xs
-    match x, r with
-    | 0, [] => []
-    | k + 1, [] => [k + 1]
-    | k, l => k::l
-
-def discardTrailingZeros' (a : List Nat) :=
-  (helper a []).snd.reverse where
-    helper (a b: List Nat) : List Nat × List Nat :=
-      match a, b with
-      | [], [] => ([], [])
-      | [], 0::ys => helper [] (ys)
-      | [], (k + 1)::ys => ([], (k + 1)::ys)
-      | x::xs, ys => helper xs (x::ys)
-
 end NoTrailingZero
 
 section NoTrailingZero_IsZeroAux
@@ -666,7 +647,60 @@ theorem allDigitsLtBase_consAux_of {n base: Nat} {a : List Nat}
   | k + 1, [] => simp only; exact allDigitsLtBase_singleton hn
   | n, x::xs => simp only; exact allDigitsLtBase_cons_iff.mpr (And.intro hn ha)
 
+theorem noTrailingZero_consAux {n : Nat} {a : List Nat} (ha : noTrailingZero a) :
+  noTrailingZero (consAux n a) := by
+  unfold consAux
+  match gn: n, ga: a with
+  | 0, [] => simp only; exact noTrailingZero_nil
+  | k + 1, [] => simp only; exact noTrailingZero_singleton_iff.mpr (Nat.succ_ne_zero k)
+  | n, x::xs =>
+    simp only
+    have : x::xs = [] → n ≠ 0 := fun t : x::xs = [] => absurd t (List.cons_ne_nil x xs)
+    exact noTrailingZero_cons_of (And.intro ha this)
+
 end ConsAux
+
+section DiscardTrailingZeros
+
+def discardTrailingZeros (a : List Nat) :=
+  match a with
+  | [] => []
+  | x::xs => consAux x (discardTrailingZeros xs)
+
+theorem discardTrailingZeros_nil : discardTrailingZeros [] = [] := by
+  unfold discardTrailingZeros
+  rfl
+
+theorem noTrailingZero_discardTrailingZeros {a : List Nat} :
+  noTrailingZero (discardTrailingZeros a) := by
+  induction a with
+  | nil => simp only [discardTrailingZeros_nil, noTrailingZero_nil]
+  | cons x xs ih =>
+    unfold discardTrailingZeros
+    exact noTrailingZero_consAux ih
+
+def discardTrailingZeros' (a : List Nat) :=
+  (helper a []).snd.reverse where
+    helper (a b: List Nat) : List Nat × List Nat :=
+      match a, b with
+      | [], [] => ([], [])
+      | [], 0::ys => helper [] (ys)
+      | [], (k + 1)::ys => ([], (k + 1)::ys)
+      | x::xs, ys => helper xs (x::ys)
+
+theorem discardTrailingZeros'_nil : discardTrailingZeros' [] = [] := by
+  unfold discardTrailingZeros' discardTrailingZeros'.helper
+  simp only [List.reverse_nil]
+
+theorem discardTrailingZeros_eq_discardTrailingZeros' {a : List Nat} :
+  discardTrailingZeros a = discardTrailingZeros' a := by
+  induction a with
+  | nil => simp only [discardTrailingZeros_nil, discardTrailingZeros'_nil]
+  | cons x xs ih =>
+    sorry
+
+end DiscardTrailingZeros
+
 
 section LeAux
 
@@ -1427,7 +1461,7 @@ theorem noTrailingZero_prune_nil_of {n base : Nat} {hb : 1 < base} : noTrailingZ
   induction n using Nat.strongRecOn with
   | _ l ihl =>
     match gl : l with
-      | 0 => rw [prune.eq_def]; simp only [noTrailingZero_of_nil]
+      | 0 => rw [prune.eq_def]; simp only [noTrailingZero_nil]
       | k + 1 =>
         simp only [prune]
         have h1 : (k + 1) / base < k + 1  := Nat.div_lt_self (Nat.succ_pos k) hb

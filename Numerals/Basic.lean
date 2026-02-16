@@ -105,7 +105,7 @@ section OfNat
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   digits := ofNatAux n base hb
   allDigitsLtBase := allDigitsLtBase_prune
-  noTrailingZero := noTrailingZero_prune_of noTrailingZero_of_nil
+  noTrailingZero := noTrailingZero_prune_of noTrailingZero_nil
 
 
 theorem ofNat_isZero_iff {n base : Nat} (hb : 1 < base) :
@@ -127,7 +127,7 @@ zero (represented as `[]`) is the default `Numeral` - for any base
 instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
     digits := [],
     allDigitsLtBase := List.all_nil,
-    noTrailingZero := noTrailingZero_of_nil
+    noTrailingZero := noTrailingZero_nil
   }⟩
 
 end Default
