@@ -171,7 +171,7 @@ section Add
 def hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : Numeral base hb where
   digits := addAux a.digits b.digits 0 base hb
   allDigitsLtBase := allDigitsLtBase_addAux 0
-  noTrailingZero := noTrailingZero_addAux_of_noTrailingZero a.noTrailingZero b.noTrailingZero hb
+  noTrailingZero := noTrailingZero_addAux_of a.noTrailingZero b.noTrailingZero hb
 
 /-- -/
 theorem hAdd_nil_iff_and_nil_nil {base : Nat} {hb : 1 < base} {a b : Numeral base hb}  :
