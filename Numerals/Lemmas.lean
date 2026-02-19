@@ -1855,11 +1855,11 @@ theorem succ_cons_subAux_succ_eq {x n base : Nat} {xs b : List Nat} :
       have h3 : ¬ n + 1 ≤ x + 1 := Nat.not_le_of_lt h2
       simp only [g, h3, reduceIte, ← Nat.add_assoc, Nat.add_sub_add_right (base + x) 1 n]
   | y::ys =>
-      have h1 : subAux ((x + 1)::xs) (y::ys) (n + 1) base = subAux ((x + 1)::xs) ((y + 1)::ys) n base := by
-        rw [subAux_cons_succ_eq]
-      have h2 : subAux ((x + 1)::xs) ((y + 1)::ys) n base = subAux (x::xs) (y::ys) n base := by
-        rw [succ_cons_subAux_succ_cons_eq]
-      simp only [h1, h2]
+    have h1 : subAux ((x + 1)::xs) (y::ys) (n + 1) base = subAux ((x + 1)::xs) ((y + 1)::ys) n base := by
+      rw [subAux_cons_succ_eq]
+    have h2 : subAux ((x + 1)::xs) ((y + 1)::ys) n base = subAux (x::xs) (y::ys) n base := by
+      rw [succ_cons_subAux_succ_cons_eq]
+    simp only [h1, h2]
 
 theorem subAux_singleton_eq {a : List Nat} {n base : Nat} : subAux a [n] 0 base = subAux a [] n base := by
   unfold subAux subAux.helper
