@@ -1859,7 +1859,7 @@ theorem succ_cons_subAux_succ_eq {x n base : Nat} {xs b : List Nat} :
       rw [subAux_cons_succ_eq]
     have h2 : subAux ((x + 1)::xs) ((y + 1)::ys) n base = subAux (x::xs) (y::ys) n base := by
       rw [succ_cons_subAux_succ_cons_eq]
-    simp only [h1, h2]
+    rw [h1, h2]
 
 theorem subAux_singleton_eq {a : List Nat} {n base : Nat} : subAux a [n] 0 base = subAux a [] n base := by
   unfold subAux subAux.helper
@@ -1869,9 +1869,16 @@ theorem subAux_singleton_eq {a : List Nat} {n base : Nat} : subAux a [n] 0 base 
 
 theorem subAux_eq_subAux_subAux {a b : List Nat} {n base : Nat} :
   subAux a b n base = subAux (subAux a b 0 base) [] n base := by
-  induction n with
-  | zero => sorry
-  | succ k ih => sorry
+  induction n generalizing a b with
+  | zero => rw [subAux_nil_eq]
+  | succ k ih =>
+    match b with
+    | [] => sorry
+    | y::ys =>
+      rw [← subAux_cons_succ_eq, ih]
+      sorry
+
+#eval toNatAux (subAux [1,2] [2,1] 10 10) 10
 
 theorem toNatAux_subAux_left_distrib {a b : List Nat} {n base : Nat} :
   toNatAux (subAux a b n base) base = (toNatAux a base) - (toNatAux b base) - n := by
