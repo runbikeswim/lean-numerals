@@ -2110,7 +2110,19 @@ theorem lt_toNatAux_subAux_of_ltAux {a b : List Nat} {base : Nat} (h : ltAux b a
         simp only [Nat.mul_lt_mul_left h4]
         exact ih h1 h2 h3
       else
-        sorry
+        simp only [cons_subAux_cons_eq, Nat.add_zero, Nat.sub_zero]
+        if g2 : y ≤ x then
+          have h1 : y < x := Nat.lt_of_le_of_ne g2 g1
+          have h2 : 0 < x - y := Nat.sub_pos_of_lt h1
+          simp only [g2, reduceIte, toNatAux_cons]
+          exact Nat.lt_add_right (base * toNatAux (subAux xs ys 0 base) base) h2
+        else
+          have h1 : y < base := (allDigitsLtBase_cons_iff.mp hblt).left
+          have h2 : 0 < base - y := Nat.sub_pos_of_lt h1
+          have h3 : 0 < base - y + x := Nat.lt_add_right x h2
+          have h4 : 0 < base + x - y := by rwa [Nat.sub_add_comm (Nat.le_of_lt h1)]
+          simp only [g2, reduceIte, toNatAux_cons]
+          exact Nat.lt_add_right (base * toNatAux (subAux xs ys 1 base) base) h4
 
 #eval toNatAux (subAux [0] [] 1 10) 10
 #eval toNatAux (subAux [0] [] 0 10) 10 - 1
