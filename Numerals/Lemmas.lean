@@ -2148,31 +2148,31 @@ theorem toNatAux_subAux_one_eq {a b : List Nat} {base : Nat}
         have h3 : y ≤ x := Nat.le_trans h2 g1
         simp only [g1, Nat.add_zero, Nat.sub_zero, h3, reduceIte, toNatAux_cons, Nat.sub_add_comm h1]
       else
-        have h1 : x < y + 1 := Nat.lt_of_not_le g1
-        have h2 : x ≤ y := Nat.le_of_lt_succ h1
         simp only [g1, reduceIte, Nat.add_zero, Nat.sub_zero]
         if g2 : x = y then
-          have h3 : 1 ≤ base := Nat.le_of_lt hb
-          have h4 : ltAux ys xs := by
+          have h1 : 1 ≤ base := Nat.le_of_lt hb
+          have h2 : ltAux ys xs := by
             rw [g2] at h
             exact ltAux_of_ltAux_cons h
-          have h5 : noTrailingZero xs := (noTrailingZero_tail_of hntza).left
-          have h6 : allDigitsLtBase xs base := (allDigitsLtBase_cons_iff.mp halt).right
-          have h7 : allDigitsLtBase ys base := (allDigitsLtBase_cons_iff.mp hblt).right
-          have h8 : toNatAux (subAux xs ys 1 base) base = toNatAux (subAux xs ys 0 base) base - 1 :=
-            ih h4 h5 h6 h7
-          have h9 : ¬ equiv xs ys := by
+          have h3 : noTrailingZero xs := (noTrailingZero_tail_of hntza).left
+          have h4 : allDigitsLtBase xs base := (allDigitsLtBase_cons_iff.mp halt).right
+          have h5 : allDigitsLtBase ys base := (allDigitsLtBase_cons_iff.mp hblt).right
+          have h6 : toNatAux (subAux xs ys 1 base) base = toNatAux (subAux xs ys 0 base) base - 1 :=
+            ih h2 h3 h4 h5
+          have h7 : ¬ equiv xs ys := by
             rw [equiv_iff]
-            exact not_equiv_of_ltAux h4
-          have h11 : 1 ≤ toNatAux (subAux xs ys 0 base) base :=
-            Nat.succ_le_of_lt (lt_toNatAux_subAux_of_ltAux h4 hb h6 h7)
-          have h12 : base ≤ base * toNatAux (subAux xs ys 0 base) base := by
+            exact not_equiv_of_ltAux h2
+          have h8 : 1 ≤ toNatAux (subAux xs ys 0 base) base :=
+            Nat.succ_le_of_lt (lt_toNatAux_subAux_of_ltAux h2 hb h4 h5)
+          have h9 : base ≤ base * toNatAux (subAux xs ys 0 base) base := by
             rw (occs := .pos [1])[← Nat.mul_one base]
-            exact Nat.mul_le_mul_left base h11
-          simp only [g2, Nat.le_refl, reduceIte, Nat.add_sub_cancel, toNatAux_cons, Nat.sub_self, Nat.zero_add, h8]
-          simp only [Nat.mul_sub_left_distrib, Nat.mul_one, ← Nat.sub_add_comm h3, ← Nat.add_sub_assoc h12 base]
+            exact Nat.mul_le_mul_left base h8
+          simp only [g2, Nat.le_refl, reduceIte, Nat.add_sub_cancel, toNatAux_cons, Nat.sub_self, Nat.zero_add, h6]
+          simp only [Nat.mul_sub_left_distrib, Nat.mul_one, ← Nat.sub_add_comm h1, ← Nat.add_sub_assoc h9 base]
           simp only [Nat.add_sub_cancel_left]
         else
+          have h1 : x < y + 1 := Nat.lt_of_not_le g1
+          have h2 : x ≤ y := Nat.le_of_lt_succ h1
           have h3 : ¬ y ≤ x := by
             false_or_by_contra; rename _ => hc
             exact absurd (Nat.le_antisymm h2 hc) g2
