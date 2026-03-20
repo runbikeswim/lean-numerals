@@ -675,6 +675,45 @@ def consAux (n : Nat) (a : List Nat) : List Nat :=
   | k + 1, [] => [k + 1]
   | n, x::xs => n::x::xs
 
+theorem consAux_zero_nil : consAux 0 [] = [] := by
+  simp only [consAux]
+
+theorem consAux_succ_nil {n : Nat} : consAux (n + 1) [] = [n + 1] := by
+  simp only [consAux]
+
+theorem consAux_cons {n x : Nat} {xs : List Nat} : consAux n (x::xs) = n::x::xs := by
+  simp only [consAux]
+
+theorem equiv_consAux_cons {n : Nat} {a : List Nat} :
+  equiv (consAux n a) (n::a) := by
+  match gn : n, ga : a with
+  | 0, [] => simp only [consAux_zero_nil, equiv, true_and]
+  | k + 1, [] => simp only [consAux_succ_nil, equiv, true_and]
+  | n, x::xs => simp only [consAux, equiv_refl]
+
+theorem equiv_consAux_of_equiv {n : Nat} {a b : List Nat} (h : equiv a b) :
+  equiv (consAux n a) (consAux n b) := by
+  induction a generalizing b with
+  | nil =>
+    match n, b with
+    | _, [] => simp only [equiv_refl]
+    | 0, y::ys | k + 1, y::ys =>
+      simp only [equiv, consAux, true_and] at ⊢ h
+      assumption
+  | cons x xs ih =>
+    match n, b with
+    | 0, [] =>
+      simp only [consAux_cons, consAux_zero_nil]
+      exact equiv_cons_of_equiv h
+    | k + 1, [] =>
+      simp only [equiv] at h
+      simp only [consAux_cons, consAux_succ_nil, equiv, true_and]
+      assumption
+    | 0, y::ys | k + 1, y::ys =>
+      simp only [equiv_cons_iff] at h
+      simp only [consAux, equiv_cons_iff, true_and]
+      assumption
+
 theorem allDigitsLtBase_consAux_of {n base: Nat} {a : List Nat}
   (hn : n < base) (ha : allDigitsLtBase a base) :
   allDigitsLtBase (consAux n a) base := by
@@ -715,6 +754,14 @@ theorem noTrailingZero_discardTrailingZeros {a : List Nat} :
   | cons x xs ih =>
     unfold discardTrailingZeros
     exact noTrailingZero_consAux ih
+
+theorem equiv_discardTrailingZeros {a : List Nat} : equiv (discardTrailingZeros a) a := by
+  induction a with
+  | nil => simp only [discardTrailingZeros, equiv_refl]
+  | cons x xs ih =>
+    simp only [discardTrailingZeros]
+    -- exact equiv_consAux_of_equiv ih
+    sorry
 
 end DiscardTrailingZeros
 
