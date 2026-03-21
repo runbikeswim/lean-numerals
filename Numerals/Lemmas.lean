@@ -228,6 +228,8 @@ theorem equiv_symm {a b : List Nat} (hab : equiv a b) : equiv b a := by
       rw [hab.left]
       exact And.intro rfl (ihx hab.right)
 
+
+
 theorem equiv_iff {a b : List Nat} : equiv a b ↔ equiv b a := by
   constructor
   · intro h
@@ -238,6 +240,9 @@ theorem equiv_iff {a b : List Nat} : equiv a b ↔ equiv b a := by
 theorem not_equiv_iff {a b : List Nat} : ¬ equiv a b ↔ ¬ equiv b a :=
   Classical.iff_iff_iff_not_not.mp equiv_iff
 
+/-
+TODO: rename
+-/
 theorem equiv_cons_of_equiv {xs : List Nat} (h : equiv xs []) : equiv (0::xs) [] := by
   unfold equiv at ⊢
   exact And.intro rfl h
@@ -691,28 +696,55 @@ theorem equiv_consAux_cons {n : Nat} {a : List Nat} :
   | k + 1, [] => simp only [consAux_succ_nil, equiv, true_and]
   | n, x::xs => simp only [consAux, equiv_refl]
 
+theorem equiv_consAux_nil_of_equiv {n : Nat} {a : List Nat} (h : equiv a []) :
+  equiv (consAux n a) (consAux n []) := by
+  match n, a with
+  | _, [] => exact equiv_refl
+  | 0, x::xs =>
+    simp only [consAux_cons, consAux_zero_nil]
+    exact equiv_cons_of_equiv h
+  | k + 1, x::xs  =>
+    simp only [consAux_cons, consAux_succ_nil]
+    exact equiv_cons_iff.mpr (And.intro rfl h)
+
 theorem equiv_consAux_of_equiv {n : Nat} {a b : List Nat} (h : equiv a b) :
   equiv (consAux n a) (consAux n b) := by
-  induction a generalizing b with
-  | nil =>
-    match n, b with
-    | _, [] => simp only [equiv_refl]
-    | 0, y::ys | k + 1, y::ys =>
-      simp only [equiv, consAux, true_and] at ⊢ h
-      assumption
-  | cons x xs ih =>
-    match n, b with
-    | 0, [] =>
-      simp only [consAux_cons, consAux_zero_nil]
-      exact equiv_cons_of_equiv h
-    | k + 1, [] =>
-      simp only [equiv] at h
-      simp only [consAux_cons, consAux_succ_nil, equiv, true_and]
-      assumption
-    | 0, y::ys | k + 1, y::ys =>
-      simp only [equiv_cons_iff] at h
-      simp only [consAux, equiv_cons_iff, true_and]
-      assumption
+  match n, a, b with
+  | _, _, [] => exact equiv_consAux_nil_of_equiv h
+  | _, [], _ =>
+    rw [equiv_iff] at ⊢ h
+    exact equiv_consAux_nil_of_equiv h
+  | _, x::xs, y::ys =>
+    simp only [equiv_cons_iff] at h
+    simp only [consAux, equiv_cons_iff, true_and]
+    assumption
+
+theorem equiv_consAux_nil_cons_of_equiv {n : Nat} {a : List Nat} (h : equiv a []) :
+  equiv (consAux n a) [n] := by
+  match n, a with
+  | 0, [] =>
+    simp only [consAux_zero_nil]
+    exact equiv_iff.mp (equiv_cons_of_equiv h)
+  | k + 1, [] =>
+    simp only [consAux_succ_nil]
+    exact equiv_refl
+  | _, x::xs =>
+    simp only [consAux_cons]
+    exact equiv_cons_iff.mpr (And.intro rfl h)
+
+theorem equiv_consAux_cons_of_equiv {n : Nat} {a b : List Nat} (h : equiv a b) :
+  equiv (consAux n a) (n::b) := by
+  match n, a, b with
+  | _, _, [] => exact equiv_consAux_nil_cons_of_equiv h
+  | 0, [], _ =>
+    simp only [consAux_zero_nil]
+    exact equiv_iff.mp (equiv_cons_of_equiv (equiv_iff.mp h))
+  | k + 1, [], _ =>
+    simp only [consAux_succ_nil]
+    exact equiv_cons_iff.mpr (And.intro rfl h)
+  | _, x::xs, y::ys =>
+    simp only [consAux_cons]
+    exact equiv_cons_iff.mpr (And.intro rfl h)
 
 theorem allDigitsLtBase_consAux_of {n base: Nat} {a : List Nat}
   (hn : n < base) (ha : allDigitsLtBase a base) :
@@ -760,8 +792,7 @@ theorem equiv_discardTrailingZeros {a : List Nat} : equiv (discardTrailingZeros 
   | nil => simp only [discardTrailingZeros, equiv_refl]
   | cons x xs ih =>
     simp only [discardTrailingZeros]
-    -- exact equiv_consAux_of_equiv ih
-    sorry
+    exact equiv_consAux_cons_of_equiv ih
 
 end DiscardTrailingZeros
 
