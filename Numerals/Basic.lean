@@ -95,7 +95,7 @@ def toNat {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := toNatAux n
 theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : Numeral base hb) :
   toNat n = 0 ↔ n.isZero := by
   unfold toNat isZero
-  exact toNatAux_eq_zero_iff hb
+  exact toNatAux_eq_zero_iff_isZeroAux hb
 
 end toNat
 
@@ -105,17 +105,17 @@ section OfNat
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   digits := ofNatAux n base hb
   allDigitsLtBase := allDigitsLtBase_prune
-  noTrailingZero := noTrailingZero_prune_of noTrailingZero_nil
+  noTrailingZero := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
 
 
 theorem ofNat_isZero_iff {n base : Nat} (hb : 1 < base) :
   (ofNat n base hb).isZero ↔ n = 0 := by
   simp only [isZero, ofNat]
-  exact isZeroAux_ofNatAux_iff hb
+  exact isZeroAux_ofNatAux_iff_eq_zero hb
 
 /-- -/
 theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
-  rw [toNat, ofNat, toNatAux_prune_eq, toNatAux_nil, Nat.add_zero]
+  rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
 
 end OfNat
 
