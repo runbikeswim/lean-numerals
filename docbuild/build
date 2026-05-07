@@ -1,0 +1,4 @@
+rm -rf .lake
+MATHLIB_NO_CACHE_ON_UPDATE=1 lake update lean-numerals
+MATHLIB_NO_CACHE_ON_UPDATE=1 lake update doc-gen4
+DOCGEN_SRC="github" lake build Numerals:docs

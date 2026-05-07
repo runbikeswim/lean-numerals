@@ -17,7 +17,7 @@ path = "../"
 [[require]]
 scope = "leanprover"
 name = "doc-gen4"
-rev = "v4.26.0"
+rev = "v4.29.1"
 
 # run via 
 # cd docbuild

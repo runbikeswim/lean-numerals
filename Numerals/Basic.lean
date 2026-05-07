@@ -17,24 +17,64 @@ set_option linter.missingDocs false
 
 `Numeral` provides theorems and algorithms for the representation of natural numbers in a
 [positional numeral system](https://en.wikipedia.org/wiki/List_of_numeral_systems#Standard_positional_numeral_systems)
-for an arbitrary basis larger than one.
+for an arbitrary basis (i.e. any natural number larger than one).
 -/
+
+section PreNumerals
+
+/--
+`PreNumeral` provides a representation of a natural number in positional notation for `base`, with `digits`
+in _reverse_ (little-endian) order. `base` can be any number larger than one.
+`allDigitsLtBase` asserts that every digit is less than `base`.
+
+`PreNumeral`s can have leading zeros as in
+```
+def p : PreNumeral 10 (by decide) := {digits := [2, 1, 0], allDigitsLtBase := by decide}
+
+```
+which represents the `12` in base ten.
+-/
+structure PreNumeral (base : Nat) (hb : 1 < base) where
+  digits : List Nat
+  allDigitsLtBase : allDigitsLtBase digits base
+  deriving Repr
+
+end PreNumerals
+
+section Base
+
+/--
+returns the base of the provided numeral
+-/
+def PreNumeral.base {base' : Nat} {hb' : 1 < base'} (_ : PreNumeral base' hb') : Nat := base'
+
+end Base
 
 section Numerals
 
 /--
-`Numeral` provides a representation of a natural number in positional notation for `base`, with `digits`
-in _reverse_ (little-endian) order. `base` can be any number larger than one, which is ensured by `baseGtOne`.
-`allDigitsLtBase` asserts that every digit is less than `base`.
-Via `noTrailingZero`, it is ensured that there are no trailing zeros. By this, every natural
-number has a unique representation for the given `base`.
-`0` can be represented in two ways: either digits equals`[]` or `[0]`, which is independent of `base`
+`Numeral` are `PreNumerals` without leading zeros, which is ensured by `noTrailingZero`.
+By this, every natural number has a unique representation for the given `base`.
 -/
-structure Numeral (base : Nat) (hb : 1 < base) where
-  digits : List Nat
-  allDigitsLtBase : allDigitsLtBase digits base
+structure Numeral (base : Nat) (hb : 1 < base) extends PreNumeral base hb where
   noTrailingZero : noTrailingZero digits
   deriving Repr
+
+@[coe]
+def toPreNumeral {base : Nat} {hb : 1 < base} (n : Numeral base hb) : PreNumeral base hb :=
+  {digits := n.digits, allDigitsLtBase := n.allDigitsLtBase}
+
+instance {base : Nat} {hb : 1 < base} : Coe (Numeral base hb) (PreNumeral base hb) where
+  coe := toPreNumeral
+
+def n : Numeral 2 (by decide) := ⟨⟨[0, 1, 1], by decide⟩, by decide⟩
+def p : PreNumeral 2 (by decide) := n
+
+def toNumeral {base : Nat} {hb : 1 < base} (p : PreNumeral base hb) : Numeral base hb :=
+  let d := discardTrailingZeros p.digits
+  have h1 : allDigitsLtBase d base := sorry
+  have h2 : noTrailingZero d := sorry
+  {toPreNumeral := {digits := d, allDigitsLtBase := h1}, noTrailingZero := h2}
 
 /--
 Numbers in binary representation
@@ -60,12 +100,18 @@ namespace Numeral
 
 section Base
 
-/--
-returns the base of the provided numeral
--/
-def base {base' : Nat} {hb' : 1 < base'} (_ : Numeral base' hb') : Nat := base'
+def base {base' : Nat} {hb' : 1 < base'} (n : Numeral base' hb') : Nat := (n : PreNumeral base' hb').base
 
 end Base
+
+section Length
+
+/--
+provides the number of digits used by the given numeral
+-/
+def length {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := n.digits.length
+
+end Length
 
 section IsZero
 
@@ -157,13 +203,19 @@ section Rebase
 def rebase {base : Nat} {hb : 1 < base} (n : Numeral base hb) (toBase : Nat) (htb : 1 < toBase) : Numeral toBase htb :=
   ofNat (n.toNat) toBase htb
 
-@[simp]
 theorem rebase_base_eq_toBase {base : Nat} {hb : 1 < base} (n : Numeral base hb) (toBase : Nat) (htb : 1 < toBase) :
   (rebase n toBase htb).base = toBase := by
   unfold rebase ofNat toNat
   rfl
 
 end Rebase
+
+section LE
+
+
+
+end LE
+
 
 section Add
 
@@ -198,6 +250,10 @@ theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} {a b : Numeral base 
   exact toNatAux_addAux_left_distrib
 
 end Add
+
+section Sub
+
+end Sub
 
 end Numeral
 end Numerals
