@@ -440,6 +440,10 @@ theorem allDigitsLtBase_singleton {n : Nat} {base : Nat} (hn : n < base) :
   allDigitsLtBase [n] base := by
   exact allDigitsLtBase_cons_iff.mpr (And.intro hn allDigitsLtBase_nil)
 
+end AllDigitsLtBase
+
+section ListFinBase
+
 def toListFinBase {base : Nat} (a : List Nat) (h : allDigitsLtBase a base) : List (Fin base) :=
   match a with
   | [] => []
@@ -460,7 +464,21 @@ theorem allDigitsLtBase_fromListFinBase {base : Nat} (a : List (Fin base)) :
     have hx : x < base := Fin.isLt x
     exact allDigitsLtBase_cons_iff.mpr (And.intro hx ih)
 
-end AllDigitsLtBase
+theorem fromListFinBase_toListFinBase_cancel {base : Nat} (a : List Nat) (h : allDigitsLtBase a base) :
+  fromListFinBase (toListFinBase a h) = a := by
+  induction a with
+  | nil => simp only [toListFinBase, fromListFinBase]
+  | cons x xs ih =>
+    simp only [toListFinBase, fromListFinBase, ih]
+
+theorem toListFinBase_fromListFinBase_cancel {base : Nat} (a : List (Fin base)) :
+  toListFinBase (fromListFinBase a) (allDigitsLtBase_fromListFinBase a) = a := by
+  induction a with
+  | nil => simp only [toListFinBase, fromListFinBase]
+  | cons x xs ih =>
+    simp only [toListFinBase, fromListFinBase, ih]
+
+end ListFinBase
 
 section ToStringAux
 
