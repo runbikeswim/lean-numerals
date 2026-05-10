@@ -1,16 +1,57 @@
 /-
-Copyright (c) 2025 Dr. Stefan Kusterer. All rights reserved.
+Copyright (c) 2025, 2026 Dr. Stefan Kusterer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
 import Numerals.Lemmas
 
+/-!
+# Numerals.Basic
+
+-/
+
 set_option linter.all true
 /-
 TODO: remove and resolve
 -/
 set_option linter.missingDocs false
+
+section ToStringAux
+
+def digitToString (digit base : Nat) (hd : digit < base) : String :=
+  if g : base = 16 ∧ 10 ≤ digit then
+    /- needed for avoiding "Missing cases"-error in the following match -/
+    have : decide (digit < 16) := by
+      rw [g.left] at hd
+      simp only [hd, decide_true]
+    match digit with
+    | 10 => "a"
+    | 11 => "b"
+    | 12 => "c"
+    | 13 => "d"
+    | 14 => "e"
+    | 15 => "f"
+  else
+    s!"{digit}"
+
+def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
+  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
+  let r := if s = [] then ["0"] else s.reverse
+  match base with
+  | 2 => s!"0b{String.join r}"
+  | 8 => s!"0o{String.join r}"
+  | 10 => s!"{ String.join r}"
+  | 16 => s!"0x{String.join r}"
+  | _ => s!"{",".intercalate r}({base})"
+  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
+    match digits with
+    | [] => []
+    | x::xs =>
+      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
+      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
+
+end ToStringAux
 
 /-!
 # Numerals
