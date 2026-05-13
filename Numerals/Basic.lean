@@ -17,42 +17,6 @@ TODO: remove and resolve
 -/
 set_option linter.missingDocs false
 
-section ToStringAux
-
-def digitToString (digit base : Nat) (hd : digit < base) : String :=
-  if g : base = 16 ∧ 10 ≤ digit then
-    /- needed for avoiding "Missing cases"-error in the following match -/
-    have : decide (digit < 16) := by
-      rw [g.left] at hd
-      simp only [hd, decide_true]
-    match digit with
-    | 10 => "a"
-    | 11 => "b"
-    | 12 => "c"
-    | 13 => "d"
-    | 14 => "e"
-    | 15 => "f"
-  else
-    s!"{digit}"
-
-def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
-  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
-  let r := if s = [] then ["0"] else s.reverse
-  match base with
-  | 2 => s!"0b{String.join r}"
-  | 8 => s!"0o{String.join r}"
-  | 10 => s!"{ String.join r}"
-  | 16 => s!"0x{String.join r}"
-  | _ => s!"{",".intercalate r}({base})"
-  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
-    match digits with
-    | [] => []
-    | x::xs =>
-      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
-      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
-
-end ToStringAux
-
 /-!
 # Numerals
 
@@ -101,6 +65,9 @@ structure Numeral (base : Nat) (hb : 1 < base) extends PreNumeral base hb where
   noTrailingZero : noTrailingZero digits
   deriving Repr
 
+/--
+Coercion of a `Numeral` into a `PreNumeral`.
+-/
 @[coe]
 def toPreNumeral {base : Nat} {hb : 1 < base} (n : Numeral base hb) : PreNumeral base hb :=
   {digits := n.digits, allDigitsLtBase := n.allDigitsLtBase}
@@ -108,32 +75,57 @@ def toPreNumeral {base : Nat} {hb : 1 < base} (n : Numeral base hb) : PreNumeral
 instance {base : Nat} {hb : 1 < base} : Coe (Numeral base hb) (PreNumeral base hb) where
   coe := toPreNumeral
 
-def n : Numeral 2 (by decide) := ⟨⟨[0, 1, 1], by decide⟩, by decide⟩
-def p : PreNumeral 2 (by decide) := n
+/--
+Converts a `PreNumeral` into a `toNumeral` by discarding (potentially present) trailing zeros.
 
-def toNumeral {base : Nat} {hb : 1 < base} (p : PreNumeral base hb) : Numeral base hb :=
-  let d := discardTrailingZeros p.digits
-  have h1 : allDigitsLtBase d base := sorry
-  have h2 : noTrailingZero d := sorry
-  {toPreNumeral := {digits := d, allDigitsLtBase := h1}, noTrailingZero := h2}
+Examples:
+```
+def p : PreNumeral 10 (by decide) := ⟨[1,9,0], by  decide⟩
+#eval p -- { digits := [1, 9, 0], allDigitsLtBase := _ }
+
+def n : Numeral 10 (by decide) := p.toNumeral
+#eval n -- { toPreNumeral := { digits := [1, 9], allDigitsLtBase := _ }, noTrailingZero := _ }
+
+def q : PreNumeral 10 (by decide) := n.toPreNumeral
+#eval q -- { digits := [1, 9], allDigitsLtBase := _ }
+
+def r : PreNumeral 10 (by decide) := n
+#eval r -- { digits := [1, 9], allDigitsLtBase := _ }
+```
+-/
+def PreNumeral.toNumeral {base : Nat} {hb : 1 < base} (p : PreNumeral base hb) :
+  Numeral base hb where
+  digits := discardTrailingZeros p.digits
+  allDigitsLtBase := allDigitsLtBase_discardTrailingZeros p.allDigitsLtBase
+  noTrailingZero :=  noTrailingZero_discardTrailingZeros
 
 /--
-Numbers in binary representation
+PreNumerals in binary representation
+-/
+abbrev PreNumeral2 := PreNumeral 2 (by decide)
+
+/--
+Numerals in binary representation
 -/
 abbrev Numeral2 := Numeral 2 (by decide)
 
 /--
-Numbers in octal representation
+PreNumerals in octal representation
+-/
+abbrev PreNumeral8 := PreNumeral 8 (by decide)
+
+/--
+Numerals in octal representation
 -/
 abbrev Numeral8 := Numeral 8 (by decide)
 
 /--
-Numbers in decimal representation
+Numerals in decimal representation
 -/
 abbrev Numeral10 := Numeral 10 (by decide)
 
 /--
-Numbers in hexadecimal representation
+Numerals in hexadecimal representation
 -/
 abbrev Numeral16 := Numeral 16 (by decide)
 
@@ -220,6 +212,38 @@ instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral 
 end Default
 
 section ToString
+
+def digitToString (digit base : Nat) (hd : digit < base) : String :=
+  if g : base = 16 ∧ 10 ≤ digit then
+    /- needed for avoiding "Missing cases"-error in the following match -/
+    have : decide (digit < 16) := by
+      rw [g.left] at hd
+      simp only [hd, decide_true]
+    match digit with
+    | 10 => "a"
+    | 11 => "b"
+    | 12 => "c"
+    | 13 => "d"
+    | 14 => "e"
+    | 15 => "f"
+  else
+    s!"{digit}"
+
+def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
+  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
+  let r := if s = [] then ["0"] else s.reverse
+  match base with
+  | 2 => s!"0b{String.join r}"
+  | 8 => s!"0o{String.join r}"
+  | 10 => s!"{ String.join r}"
+  | 16 => s!"0x{String.join r}"
+  | _ => s!"{",".intercalate r}({base})"
+  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
+    match digits with
+    | [] => []
+    | x::xs =>
+      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
+      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
 
 /--
 For base 2, 8, 10 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
