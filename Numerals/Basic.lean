@@ -192,7 +192,7 @@ theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (ofNat n base h
 
 /--
 For `PreNumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat`, since
-trailing zeros not preserved by `toNat`. The following example shows this for a very
+trailing zeros are not preserved by `toNat`. The following example shows this for a very
 simple case.
 -/
 example : ∃ p : PreNumeral10, (ofNat (p.toNat) 10 (by decide)) ≠ p := by
@@ -325,11 +325,33 @@ structure Numeral (base : Nat) (hb : 1 < base) extends PreNumeral base hb where
   deriving Repr
 
 /--
+Numerals in binary representation
+-/
+abbrev Numeral2 := Numeral 2 (by decide)
+
+/--
+Numerals in octal representation
+-/
+abbrev Numeral8 := Numeral 8 (by decide)
+
+/--
+Numerals in decimal representation
+-/
+abbrev Numeral10 := Numeral 10 (by decide)
+
+/--
+Numerals in hexadecimal representation
+-/
+abbrev Numeral16 := Numeral 16 (by decide)
+
+/--
 Coercion of a `Numeral` into a `PreNumeral`.
 -/
 @[coe]
 def toPreNumeral {base : Nat} {hb : 1 < base} (n : Numeral base hb) : PreNumeral base hb :=
   {digits := n.digits, allDigitsLtBase := n.allDigitsLtBase}
+
+namespace Numeral
 
 instance {base : Nat} {hb : 1 < base} : Coe (Numeral base hb) (PreNumeral base hb) where
   coe := toPreNumeral
@@ -369,28 +391,6 @@ instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral 
 instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) where
   toString := fun n => n.toPreNumeral.toString
 
-/--
-Numerals in binary representation
--/
-abbrev Numeral2 := Numeral 2 (by decide)
-
-/--
-Numerals in octal representation
--/
-abbrev Numeral8 := Numeral 8 (by decide)
-
-/--
-Numerals in decimal representation
--/
-abbrev Numeral10 := Numeral 10 (by decide)
-
-/--
-Numerals in hexadecimal representation
--/
-abbrev Numeral16 := Numeral 16 (by decide)
-
-namespace Numeral
-
 def n : Numeral10 := ⟨⟨[1,2,3], by decide⟩, by decide⟩
 
 #eval n
@@ -403,19 +403,6 @@ def length {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := n.digits.
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   toPreNumeral := PreNumeral.ofNat n base hb
   noTrailingZero := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
-
-section Default
-
-/-
-zero (represented as `[]`) is the default `Numeral` - for any base
--/
-instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
-    digits := [],
-    allDigitsLtBase := List.all_nil,
-    noTrailingZero := noTrailingZero_nil
-  }⟩
-
-end Default
 
 section Add
 
