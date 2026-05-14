@@ -191,8 +191,8 @@ theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (ofNat n base h
   rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
 
 /--
-For `PreNumerals` with trailing zeros, the `ofNat` is not the left inverse of `toNat`, since
-trailing zeros are removed by applying `toNat`. The following example shows this for a very
+For `PreNumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat`, since
+trailing zeros not preserved by `toNat`. The following example shows this for a very
 simple case.
 -/
 example : ∃ p : PreNumeral10, (ofNat (p.toNat) 10 (by decide)) ≠ p := by
