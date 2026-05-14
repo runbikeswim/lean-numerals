@@ -39,18 +39,11 @@ def p : PreNumeral 10 (by decide) := {digits := [2, 1, 0], allDigitsLtBase := by
 ```
 which represents the `12` in base ten.
 -/
+@[ext]
 structure PreNumeral (base : Nat) (hb : 1 < base) where
   digits : List Nat
   allDigitsLtBase : allDigitsLtBase digits base
   deriving Repr
-
-/-
-zero (represented by `[]`) is the default `PreNumeral` - for any base
--/
-instance instInhabitedPreNumeral {base : Nat} {hb : 1 < base} : Inhabited (PreNumeral base hb) := ⟨{
-    digits := [],
-    allDigitsLtBase := List.all_nil
-  }⟩
 
 /--
 PreNumerals in binary representation
@@ -73,6 +66,33 @@ PreNumerals in hexadecimal representation
 abbrev PreNumeral16 := PreNumeral 16 (by decide)
 
 namespace PreNumeral
+
+/--
+`[]` (i.e. _zero_) is the default `PreNumeral` - for any base
+-/
+instance instInhabitedPreNumeral {base : Nat} {hb : 1 < base} : Inhabited (PreNumeral base hb) := ⟨{
+    digits := [],
+    allDigitsLtBase := List.all_nil
+  }⟩
+
+theorem eq_iff_digits_eq {base : Nat} (hb : 1 < base) (a b : PreNumeral base hb) :
+  a = b ↔ a.digits = b.digits := by
+  constructor
+  · intro h
+    simp only [h]
+  · intro h
+    ext
+    simp only [h]
+
+def decEq {base : Nat} (hb : 1 < base) (a b : PreNumeral base hb) : Decidable (a = b) :=
+  if h : a.digits = b.digits then
+    isTrue ((eq_iff_digits_eq hb a b).mpr h)
+  else
+    have : a.digits ≠ b.digits → a ≠ b := (Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq hb a b)).mpr
+    isFalse (this h)
+
+instance instDecidableEqPreNumeral {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : Decidable (a = b) :=
+  decEq hb a b
 
 /--
 returns the base of the provided numeral
@@ -142,28 +162,64 @@ theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) 
   unfold toNat isZero
   exact toNatAux_eq_zero_iff_isZeroAux hb
 
+/--
+returns a `PreNumeral` for the given number (of type `Nat`)
+
+Examples:
+```
+#eval PreNumeral.ofNat 0 10 (by decide) -- { digits := [], allDigitsLtBase := _ }
+#eval PreNumeral.ofNat 10 2 (by decide) -- { digits := [0, 1, 0, 1], allDigitsLtBase := _ }
+#eval PreNumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], allDigitsLtBase := _ }
+```
+-/
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : PreNumeral base hb where
   digits := ofNatAux n base hb
   allDigitsLtBase := allDigitsLtBase_prune
 
+/--
+`ofNat` returns a `PreNumeral` that `isZero` iff its input is `0`
+-/
 theorem ofNat_isZero_iff {n base : Nat} (hb : 1 < base) :
   (ofNat n base hb).isZero ↔ n = 0 := by
   simp only [isZero, ofNat]
   exact isZeroAux_ofNatAux_iff_eq_zero hb
 
-/-- -/
-theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
+/--
+`toNat` is the inverse of `ofNat`
+-/
+theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (ofNat n base hb).toNat = n := by
   rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
+
+/--
+For `PreNumerals` with trailing zeros, the `ofNat` is not the left inverse of `toNat`, since
+trailing zeros are removed by applying `toNat`. The following example shows this for a very
+simple case.
+-/
+example : ∃ p : PreNumeral10, (ofNat (p.toNat) 10 (by decide)) ≠ p := by
+  let p : PreNumeral10 := ⟨[0], by decide⟩
+  let q : PreNumeral10 := ⟨[], by decide⟩
+  refine ⟨p, ?_⟩
+  have : p.toNat = 0 := by decide
+  rw [this]
+  have : ofNat 0 10 (by decide) = q := by simp only [ofNat, ofNatAux, prune]; grind only
+  rw [this]
+  decide
 
 end ToNat_OfNat
 
 section Rebase
 
-/-- -/
+/--
+returns a `PreNumeral` with the same value as the input but for a different `base`
+-/
 def rebase {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) (toBase : Nat) (htb : 1 < toBase) :
   PreNumeral toBase htb := ofNat (n.toNat) toBase htb
 
-theorem rebase_base_eq_toBase {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) (toBase : Nat) (htb : 1 < toBase) :
+/--
+asserts that the result of `rebase` is a `PreNumeral` with `base` `toBase`
+-/
+theorem rebase_base_eq_toBase {base : Nat} {hb : 1 < base}
+  (n : PreNumeral base hb) (toBase : Nat) (htb : 1 < toBase) :
   (rebase n toBase htb).base = toBase := by
   unfold rebase ofNat PreNumeral.toNat
   rfl
@@ -257,16 +313,13 @@ instance instToStringPreNumeral {base : Nat} {hb : 1 < base} : ToString (PreNume
 
 end ToString
 
-section Base
-
-end Base
-
 section Numerals
 
 /--
 `Numeral` are `PreNumerals` without leading zeros, which is ensured by `noTrailingZero`.
 By this, every natural number has a unique representation for the given `base`.
 -/
+@[ext]
 structure Numeral (base : Nat) (hb : 1 < base) extends PreNumeral base hb where
   noTrailingZero : noTrailingZero digits
   deriving Repr
@@ -347,9 +400,6 @@ provides the number of digits used by the given `Numeral`
 -/
 def length {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := n.digits.length
 
-/--
-
--/
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   toPreNumeral := PreNumeral.ofNat n base hb
   noTrailingZero := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
