@@ -486,6 +486,11 @@ abbrev isZeroAux (a : List Nat) : Prop := equiv [] a
 -/
 theorem isZeroAux_nil : isZeroAux [] := equiv_refl
 
+theorem ne_nil_of_not_isZeroAux {a : List Nat} (h : ¬ isZeroAux a) : a ≠ [] :=
+  match a with
+  | [] => absurd isZeroAux_nil h
+  | x::xs => List.cons_ne_nil x xs
+
 /--
 A non-empty list can only be a representation of _zero_, if its head is `0 : Nat`
 and the tail is also a representation of _zero_.
@@ -539,6 +544,8 @@ theorem toNatAux_eq_zero_iff_isZeroAux {a : List Nat} {base : Nat} (hb : 1 < bas
   · intro h
     exact toNatAux_eq_zero_of_isZeroAux h
 
+
+
 def decIsZeroAux (a : List Nat) : Decidable (isZeroAux a) := decEquiv [] a
 
 instance instIsZero (a : List Nat) : Decidable (isZeroAux a) := decIsZeroAux a
@@ -574,7 +581,8 @@ def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase 
       isFalse (h (.inl hx))
 
 /-- -/
-instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) := decAllDigitsLtBase a base
+instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) :=
+  decAllDigitsLtBase a base
 
 /-- -/
 theorem allDigitsLtBase_nil {base : Nat}  :

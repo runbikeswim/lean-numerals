@@ -44,14 +44,220 @@ structure PreNumeral (base : Nat) (hb : 1 < base) where
   allDigitsLtBase : allDigitsLtBase digits base
   deriving Repr
 
-end PreNumerals
+/-
+zero (represented by `[]`) is the default `PreNumeral` - for any base
+-/
+instance instInhabitedPreNumeral {base : Nat} {hb : 1 < base} : Inhabited (PreNumeral base hb) := ⟨{
+    digits := [],
+    allDigitsLtBase := List.all_nil
+  }⟩
 
-section Base
+/--
+PreNumerals in binary representation
+-/
+abbrev PreNumeral2 := PreNumeral 2 (by decide)
+
+/--
+PreNumerals in octal representation
+-/
+abbrev PreNumeral8 := PreNumeral 8 (by decide)
+
+/--
+PreNumerals in decimal representation
+-/
+abbrev PreNumeral10 := PreNumeral 10 (by decide)
+
+/--
+PreNumerals in hexadecimal representation
+-/
+abbrev PreNumeral16 := PreNumeral 16 (by decide)
+
+namespace PreNumeral
 
 /--
 returns the base of the provided numeral
 -/
-def PreNumeral.base {base' : Nat} {hb' : 1 < base'} (_ : PreNumeral base' hb') : Nat := base'
+def base {base' : Nat} {hb' : 1 < base'} (_ : PreNumeral base' hb') : Nat := base'
+
+section IsZero
+/--
+`True` if the given `PreNumeral` is `0`
+-/
+def isZero {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) : Prop := isZeroAux a.digits
+
+/--
+makes `isZero` decidable
+-/
+def decIsZero {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) : Decidable a.isZero := decIsZeroAux a.digits
+
+/--
+instance of class `Decidable` for `isZero`
+-/
+instance instIsZeroPreNumeral {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) : Decidable (isZero a) :=
+  decIsZero a
+
+end IsZero
+
+/--
+`True` if `a` has no trailing zeros
+
+Examples:
+```
+#eval (⟨[], by decide⟩ : PreNumeral 10 (by decide)).hasNoTrailingZeros -- true
+#eval (⟨[0], by decide⟩ : PreNumeral 10 (by decide)).hasNoTrailingZeros -- false
+#eval (⟨[0,1,2], by decide⟩ : PreNumeral 10 (by decide)).hasNoTrailingZeros -- true
+#eval (⟨[0,1,2,0], by decide⟩ : PreNumeral 10 (by decide)).hasNoTrailingZeros -- false
+```
+-/
+def hasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) : Prop :=
+  noTrailingZero a.digits
+
+def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) :
+  Decidable (a.hasNoTrailingZeros) :=
+  if h : noTrailingZero a.digits then
+    isTrue h
+  else
+    isFalse h
+
+instance instHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) :
+  Decidable (a.hasNoTrailingZeros) := decHasNoTrailingZeros a
+
+section ToNat_OfNat
+
+/--
+returns the value (of type `Nat`) of the given `PreNumeral`
+
+Examples:
+```
+#eval (⟨[], by decide⟩ : PreNumeral 10 (by decide)).toNat -- 0
+#eval (⟨[0], by decide⟩ : PreNumeral 10 (by decide)).toNat -- 0
+#eval (⟨[0,1,2], by decide⟩ : PreNumeral 10 (by decide)).toNat -- 210
+#eval (⟨[0,1,2,0], by decide⟩ : PreNumeral 10 (by decide)).toNat -- 210
+```
+-/
+def toNat {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) : Nat := toNatAux n.digits base
+
+theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) :
+  toNat n = 0 ↔ n.isZero := by
+  unfold toNat isZero
+  exact toNatAux_eq_zero_iff_isZeroAux hb
+
+def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : PreNumeral base hb where
+  digits := ofNatAux n base hb
+  allDigitsLtBase := allDigitsLtBase_prune
+
+theorem ofNat_isZero_iff {n base : Nat} (hb : 1 < base) :
+  (ofNat n base hb).isZero ↔ n = 0 := by
+  simp only [isZero, ofNat]
+  exact isZeroAux_ofNatAux_iff_eq_zero hb
+
+/-- -/
+theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
+  rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
+
+end ToNat_OfNat
+
+section Rebase
+
+/-- -/
+def rebase {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) (toBase : Nat) (htb : 1 < toBase) :
+  PreNumeral toBase htb := ofNat (n.toNat) toBase htb
+
+theorem rebase_base_eq_toBase {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) (toBase : Nat) (htb : 1 < toBase) :
+  (rebase n toBase htb).base = toBase := by
+  unfold rebase ofNat PreNumeral.toNat
+  rfl
+
+end Rebase
+
+section Add
+
+def hAdd {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : PreNumeral base hb where
+  digits := addAux a.digits b.digits 0 base hb
+  allDigitsLtBase := allDigitsLtBase_addAux 0
+
+instance instHAddPreNumerals {base : Nat} {hb : 1 < base} :
+  HAdd (PreNumeral base hb) (PreNumeral base hb) (PreNumeral base hb) := ⟨hAdd⟩
+
+theorem add_eq_hAdd  {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : a + b = a.hAdd b := rfl
+
+/-- -/
+theorem hAdd_nil_iff_and_nil_nil {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
+  (a + b).digits = [] ↔ a.digits = [] ∧ b.digits = [] := by
+  simp only [add_eq_hAdd, hAdd, addAux_eq_nil_iff, true_and]
+
+/-- -/
+theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
+  a + b = b + a := by
+  simp only [add_eq_hAdd, hAdd, addAux_comm hb]
+
+/-- -/
+instance instCommutativeHAddPreNumerals {base : Nat} {hb : 1 < base} :
+  Std.Commutative (α := PreNumeral base hb) hAdd := ⟨hAdd_comm⟩
+
+/-- -/
+theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
+  (a + b).toNat = a.toNat + b.toNat := by
+  simp only [add_eq_hAdd, PreNumeral.toNat, hAdd, toNatAux_addAux_left_distrib]
+
+end Add
+
+end PreNumeral
+end PreNumerals
+
+section ToString
+
+def digitToString (digit base : Nat) (hd : digit < base) : String :=
+  if g : base = 16 ∧ 10 ≤ digit then
+    /- needed for avoiding "Missing cases"-error in the following match -/
+    have : decide (digit < 16) := by
+      rw [g.left] at hd
+      simp only [hd, decide_true]
+    match digit with
+    | 10 => "a"
+    | 11 => "b"
+    | 12 => "c"
+    | 13 => "d"
+    | 14 => "e"
+    | 15 => "f"
+  else
+    s!"{digit}"
+
+def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
+  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
+  let r := if s = [] then ["0"] else s.reverse
+  match base with
+  | 2 => s!"0b{String.join r}"
+  | 8 => s!"0o{String.join r}"
+  | 10 => s!"{ String.join r}"
+  | 16 => s!"0x{String.join r}"
+  | _ => s!"{",".intercalate r}({base})"
+  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
+    match digits with
+    | [] => []
+    | x::xs =>
+      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
+      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
+
+/--
+For base 2, 8, 10 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
+[octal](https://en.wikipedia.org/wiki/Octal) or [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal)
+representation of `n` is returned in the format that Lean uses for binary, octal, decimal or hexadecimal
+constants.
+
+For all other values of base, the list of digits - starting with the most significant - is
+returned as sequence of natural numbers, separated by "," and succeeded by the
+the value of `base` (all in decimal notation).
+-/
+def PreNumeral.toString {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) : String :=
+  toStringAux n.digits base n.allDigitsLtBase
+
+instance instToStringPreNumeral {base : Nat} {hb : 1 < base} : ToString (PreNumeral base hb) where
+  toString := PreNumeral.toString
+
+end ToString
+
+section Base
 
 end Base
 
@@ -99,20 +305,21 @@ def PreNumeral.toNumeral {base : Nat} {hb : 1 < base} (p : PreNumeral base hb) :
   allDigitsLtBase := allDigitsLtBase_discardTrailingZeros p.allDigitsLtBase
   noTrailingZero :=  noTrailingZero_discardTrailingZeros
 
-/--
-PreNumerals in binary representation
+/-
+zero (represented by `[]`) is the default `Numeral` - for any base
 -/
-abbrev PreNumeral2 := PreNumeral 2 (by decide)
+instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
+    toPreNumeral := default,
+    noTrailingZero := noTrailingZero_nil
+  }⟩
+
+instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) where
+  toString := fun n => n.toPreNumeral.toString
 
 /--
 Numerals in binary representation
 -/
 abbrev Numeral2 := Numeral 2 (by decide)
-
-/--
-PreNumerals in octal representation
--/
-abbrev PreNumeral8 := PreNumeral 8 (by decide)
 
 /--
 Numerals in octal representation
@@ -131,72 +338,21 @@ abbrev Numeral16 := Numeral 16 (by decide)
 
 namespace Numeral
 
-section Base
+def n : Numeral10 := ⟨⟨[1,2,3], by decide⟩, by decide⟩
 
-def base {base' : Nat} {hb' : 1 < base'} (n : Numeral base' hb') : Nat := (n : PreNumeral base' hb').base
-
-end Base
-
-section Length
+#eval n
 
 /--
-provides the number of digits used by the given numeral
+provides the number of digits used by the given `Numeral`
 -/
 def length {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := n.digits.length
 
-end Length
-
-section IsZero
-
 /--
-covers the two representations of zero as `Numeral`
+
 -/
-def isZero {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Prop := isZeroAux a.digits
-
-/--
-makes `isZero` decidable
--/
-def decIsZero {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Decidable a.isZero := decIsZeroAux a.digits
-
-/--
-instance of class `Decidable` for `isZero`
--/
-instance instIsZeroNumeral {base : Nat} {hb : 1 < base} (a : Numeral base hb) : Decidable (isZero a) := decIsZero a
-
-end IsZero
-
-section toNat
-
-/-- -/
-def toNat {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := toNatAux n.digits base
-
-/-- -/
-theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : Numeral base hb) :
-  toNat n = 0 ↔ n.isZero := by
-  unfold toNat isZero
-  exact toNatAux_eq_zero_iff_isZeroAux hb
-
-end toNat
-
-section OfNat
-
-/-- -/
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
-  digits := ofNatAux n base hb
-  allDigitsLtBase := allDigitsLtBase_prune
+  toPreNumeral := PreNumeral.ofNat n base hb
   noTrailingZero := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
-
-
-theorem ofNat_isZero_iff {n base : Nat} (hb : 1 < base) :
-  (ofNat n base hb).isZero ↔ n = 0 := by
-  simp only [isZero, ofNat]
-  exact isZeroAux_ofNatAux_iff_eq_zero hb
-
-/-- -/
-theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : toNat (ofNat n base hb) = n := by
-  rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
-
-end OfNat
 
 section Default
 
@@ -211,108 +367,37 @@ instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral 
 
 end Default
 
-section ToString
-
-def digitToString (digit base : Nat) (hd : digit < base) : String :=
-  if g : base = 16 ∧ 10 ≤ digit then
-    /- needed for avoiding "Missing cases"-error in the following match -/
-    have : decide (digit < 16) := by
-      rw [g.left] at hd
-      simp only [hd, decide_true]
-    match digit with
-    | 10 => "a"
-    | 11 => "b"
-    | 12 => "c"
-    | 13 => "d"
-    | 14 => "e"
-    | 15 => "f"
-  else
-    s!"{digit}"
-
-def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
-  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
-  let r := if s = [] then ["0"] else s.reverse
-  match base with
-  | 2 => s!"0b{String.join r}"
-  | 8 => s!"0o{String.join r}"
-  | 10 => s!"{ String.join r}"
-  | 16 => s!"0x{String.join r}"
-  | _ => s!"{",".intercalate r}({base})"
-  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
-    match digits with
-    | [] => []
-    | x::xs =>
-      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
-      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
-
-/--
-For base 2, 8, 10 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
-[octal](https://en.wikipedia.org/wiki/Octal) or [hexadecimal](https://en.wikipedia.org/wiki/Hexadecimal)
-representation of `n` is returned in the format that Lean uses for binary, octal, decimal or hexadecimal
-constants.
-
-For all other values of base, the list of digits - starting with the most significant - is
-returned as sequence of natural numbers, separated by "," and succeeded by the
-the value of `base` (all in decimal notation).
--/
-def toString {base : Nat} {hb : 1 < base} (n : Numeral base hb) : String :=
-  toStringAux n.digits base n.allDigitsLtBase
-
-instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) := ⟨toString⟩
-
-end ToString
-
-section Rebase
-
-/-- -/
-def rebase {base : Nat} {hb : 1 < base} (n : Numeral base hb) (toBase : Nat) (htb : 1 < toBase) : Numeral toBase htb :=
-  ofNat (n.toNat) toBase htb
-
-theorem rebase_base_eq_toBase {base : Nat} {hb : 1 < base} (n : Numeral base hb) (toBase : Nat) (htb : 1 < toBase) :
-  (rebase n toBase htb).base = toBase := by
-  unfold rebase ofNat toNat
-  rfl
-
-end Rebase
-
-section LE
-
-
-
-end LE
-
-
 section Add
 
 /-- -/
 def hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : Numeral base hb where
-  digits := addAux a.digits b.digits 0 base hb
-  allDigitsLtBase := allDigitsLtBase_addAux 0
+  toPreNumeral := a + b
   noTrailingZero := noTrailingZero_addAux_of a.noTrailingZero b.noTrailingZero hb
 
-/-- -/
-theorem hAdd_nil_iff_and_nil_nil {base : Nat} {hb : 1 < base} {a b : Numeral base hb}  :
-  (hAdd a b).digits = [] ↔ a.digits = [] ∧ b.digits = [] := by
-  unfold hAdd
-  simp only [addAux_eq_nil_iff, true_and]
+instance instHAddNumerals {base : Nat} {hb : 1 < base} :
+  HAdd (Numeral base hb) (Numeral base hb) (Numeral base hb) := ⟨hAdd⟩
 
-/-- -/
-theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : hAdd a b = hAdd b a := by
-  unfold hAdd
-  simp only [addAux_comm hb]
+theorem add_eq_hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : a + b = a.hAdd b := rfl
 
-/-- -/
-instance instCommutativeHAddNumerals {base : Nat} {hb : 1 < base} : Std.Commutative (α := Numeral base hb) hAdd :=
-  ⟨hAdd_comm⟩
+theorem toPreNumeral_add_distrib {base : Nat} {hb : 1 < base} (a b : Numeral base hb) :
+  (a + b).toPreNumeral = a.toPreNumeral + b.toPreNumeral := rfl
 
-instance instHAddNumerals {base : Nat} {hb : 1 < base} : HAdd (Numeral base hb) (Numeral base hb) (Numeral base hb) := ⟨hAdd⟩
+theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : Numeral base hb) :
+  a + b = b + a := by
+  sorry
 
-/-- -/
-theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} {a b : Numeral base hb} :
-  toNat (hAdd a b) = a.toNat + b.toNat := by
-  unfold toNat hAdd
+/-
+instance instCommutativeHAddNumerals {base : Nat} {hb : 1 < base} :
+  Std.Commutative (α := Numeral base hb) hAdd := ⟨PreNumeral.hAdd_comm⟩
+-/
+
+/-
+theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} {a b : PreNumeral base hb} :
+  (a.hAdd b).toNat = a.toNat + b.toNat := by
+  unfold PreNumeral.toNat hAdd
   simp only []
   exact toNatAux_addAux_left_distrib
+-/
 
 end Add
 
