@@ -157,8 +157,8 @@ Examples:
 -/
 def toNat {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) : Nat := toNatAux n.digits base
 
-theorem toNat_eq_zero_iff {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) :
-  toNat n = 0 ↔ n.isZero := by
+theorem toNat_eq_zero_iff_isZero {base : Nat} {hb : 1 < base} (n : PreNumeral base hb) :
+  n.toNat = 0 ↔ n.isZero := by
   unfold toNat isZero
   exact toNatAux_eq_zero_iff_isZeroAux hb
 
@@ -235,26 +235,42 @@ def hAdd {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : PreNumeral ba
 instance instHAddPreNumerals {base : Nat} {hb : 1 < base} :
   HAdd (PreNumeral base hb) (PreNumeral base hb) (PreNumeral base hb) := ⟨hAdd⟩
 
+/--
+useful with `rw`-tactics
+-/
 theorem add_eq_hAdd  {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : a + b = a.hAdd b := rfl
 
-/-- -/
-theorem hAdd_nil_iff_and_nil_nil {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
-  (a + b).digits = [] ↔ a.digits = [] ∧ b.digits = [] := by
-  simp only [add_eq_hAdd, hAdd, addAux_eq_nil_iff, true_and]
-
-/-- -/
-theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
+/--
+addition on `PreNumerals` is [commutative](https://en.wikipedia.org/wiki/Commutative_property)
+-/
+theorem add_comm {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
   a + b = b + a := by
   simp only [add_eq_hAdd, hAdd, addAux_comm hb]
 
-/-- -/
 instance instCommutativeHAddPreNumerals {base : Nat} {hb : 1 < base} :
-  Std.Commutative (α := PreNumeral base hb) hAdd := ⟨hAdd_comm⟩
+  Std.Commutative (α := PreNumeral base hb) hAdd := ⟨add_comm⟩
 
-/-- -/
 theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
   (a + b).toNat = a.toNat + b.toNat := by
   simp only [add_eq_hAdd, PreNumeral.toNat, hAdd, toNatAux_addAux_left_distrib]
+
+/--
+the sum of two `PreNumeral`s `isZero` iff for both of them `isZero` holds
+-/
+theorem add_isZero_iff_isZero_and_isZero {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
+  (a + b).isZero ↔ a.isZero ∧ b.isZero := by
+  constructor
+  · intro h
+    have : (a + b).toNat = 0 := (toNat_eq_zero_iff_isZero (a + b)).mpr h
+    have : a.toNat + b.toNat = 0 := by rwa [toNat_add_left_distrib a b] at this
+    have : a.toNat = 0 ∧ b.toNat = 0 := by rwa [Nat.add_eq_zero_iff] at this
+    rwa [toNat_eq_zero_iff_isZero a, toNat_eq_zero_iff_isZero b] at this
+  · intro _
+    have : a.toNat = 0 ∧ b.toNat = 0 := by
+      rwa [toNat_eq_zero_iff_isZero a, toNat_eq_zero_iff_isZero b]
+    have : a.toNat + b.toNat = 0 := Nat.add_eq_zero_iff.mpr this
+    have : (a + b).toNat = 0 := by rwa [toNat_add_left_distrib a b]
+    rwa [toNat_eq_zero_iff_isZero (a + b)] at this
 
 end Add
 
@@ -419,14 +435,12 @@ theorem add_eq_hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : a + b
 theorem toPreNumeral_add_distrib {base : Nat} {hb : 1 < base} (a b : Numeral base hb) :
   (a + b).toPreNumeral = a.toPreNumeral + b.toPreNumeral := rfl
 
-theorem hAdd_comm {base : Nat} {hb : 1 < base} (a b : Numeral base hb) :
+theorem add_comm {base : Nat} {hb : 1 < base} (a b : Numeral base hb) :
   a + b = b + a := by
-  sorry
+  simp only [add_eq_hAdd, hAdd, PreNumeral.add_comm]
 
-/-
 instance instCommutativeHAddNumerals {base : Nat} {hb : 1 < base} :
-  Std.Commutative (α := Numeral base hb) hAdd := ⟨PreNumeral.hAdd_comm⟩
--/
+  Std.Commutative (α := Numeral base hb) hAdd := ⟨add_comm⟩
 
 /-
 theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} {a b : PreNumeral base hb} :
