@@ -32,7 +32,7 @@ theorem imp_iff_not_imp_not {p q : Prop} : (p → q) ↔ (¬q → ¬p) := by
   rw [← Classical.or_iff_not_imp_left, or_comm, Classical.or_iff_not_imp_left, Classical.not_not]
 
 /--
-This lemma is used in the proofs of `not_equiv_iff_not_equiv`, `toNatAux_le_toNatAux_of_leAux`
+This lemma is used in the proofs of `not_equivAux_iff_not_equivAux`, `toNatAux_le_of_leAux`
 `toNatAux_lt_toNatAux_of_ltAux` and `ltAux_of_toNatAux_lt_toNatAux`.
 -/
 theorem iff_iff_not_iff_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
@@ -56,7 +56,7 @@ for theorems used in proofs.
 theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
 
 /--
-This lemma is used in the proof of `ne_zero_mod_of_one_lt_of_div_zero`-
+This lemma is used in the proof of `mod_ne_zero_of_one_lt_of_div_zero_of_ne`
 -/
 theorem eq_zero_of_one_lt_of_mod_eq_zero_of_lt {a b : Nat}
   (h1 : 1 < b) (h2 : a % b = 0) (h3 : a < b) : a = 0 := by
@@ -111,7 +111,7 @@ theorem div_eq_div_of_eq {a b base : Nat} (h: a = b) : a / base = b / base := by
   rw [h]
 
 /--
-This lemma is used in the proof of `equiv_of_toNatAux_eq`, .
+This lemma is used in the proof of `equivAux_of_toNatAux_eq`, .
 -/
 theorem add_mul_eq_iff_eq_and_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
   a + base * b = c + base * d ↔ a = c ∧ b = d := by
@@ -222,11 +222,11 @@ theorem toNatAux_helper_snd_eq {a : List Nat} {base factor acc : Nat} :
     rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
 
 /--
-This lemma is used in the proofs of `toNatAux_eq_zero_of_isZeroAux`, `toNatAux_eq_of_equiv`,
-`equiv_of_toNatAux_eq`, `equiv_of_toNatAux_eq`, `toNatAux_le_toNatAux_of_leAux`,
-`leAux_of_toNatAux_le_toNatAux`, `toNatAux_prune_eq_add_toNatAux`,
+This lemma is used in the proofs of `toNatAux_eq_zero_of_isZeroAux`, `toNatAux_eq_of_equivAux`,
+`equivAux_of_toNatAux_eq`, `equivAux_of_toNatAux_eq`, `toNatAux_le_of_leAux`,
+`leAux_of_toNatAux_le_toNatAux_of`, `toNatAux_prune_eq_add_toNatAux`,
 `toNatAux_subAux_nil_one_eq_of`, `toNatAux_subAux_one_eq_of`,
-`toNatAux_subAux_left_distrib_of_equiv`, `toNatAux_subAux_left_distrib_of_leAux`.
+`toNatAux_subAux_left_distrib_of_equivAux`, `toNatAux_subAux_left_distrib_of_leAux`.
 -/
 theorem toNatAux_nil_eq {base : Nat} : toNatAux [] base = 0 := by
   unfold toNatAux
@@ -243,104 +243,104 @@ theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
 
 end ToNatAux
 
-section Equiv
+section EquivAux
 
 /--
 Equivalence for lists of natural numbers - two lists are _equivalent_ if they only
 differ with respect to _trailing zeros_.
 
-`equiv` is an [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation) on
-`List Nat` - which is asserted by theorems `equiv_refl`, `equiv_symm` and `equiv_trans`.
+`equivAux` is an [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation) on
+`List Nat` - which is asserted by theorems `equivAux_refl`, `equivAux_symm` and `equivAux_trans`.
 
 Examples:
 ```
-#eval equiv [0, 1, 0] [0, 1] -- true
-#eval equiv [0, 1, 0] [1, 0] -- false
-#eval equiv [1, 1, 0] [11] -- false
+#eval equivAux [0, 1, 0] [0, 1] -- true
+#eval equivAux [0, 1, 0] [1, 0] -- false
+#eval equivAux [1, 1, 0] [11] -- false
 ```
 -/
-def equiv (a b : List Nat) : Prop :=
+def equivAux (a b : List Nat) : Prop :=
   match a, b with
   | [], [] => True
-  | x::xs, [] => x = 0 ∧ equiv xs []
-  | [], y::ys => y = 0 ∧ equiv [] ys
-  | x::xs, y::ys => x = y ∧ equiv xs ys
+  | x::xs, [] => x = 0 ∧ equivAux xs []
+  | [], y::ys => y = 0 ∧ equivAux [] ys
+  | x::xs, y::ys => x = y ∧ equivAux xs ys
 
 /--
-[Reflexivity](https://en.wikipedia.org/wiki/Reflexive_relation) for `equiv`.
+[Reflexivity](https://en.wikipedia.org/wiki/Reflexive_relation) for `equivAux`.
 
-Together with `equiv_symm` and `equiv_trans` this ensures that `equiv` is an
+Together with `equivAux_symm` and `equivAux_trans` this ensures that `equivAux` is an
 [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation).
 -/
-theorem equiv_refl {a : List Nat} : equiv a a := by
+theorem equivAux_refl {a : List Nat} : equivAux a a := by
   induction a with
-  | nil => simp only [equiv]
+  | nil => simp only [equivAux]
   | cons x xs ih =>
-    simp only [equiv, ih, true_and]
+    simp only [equivAux, ih, true_and]
 
 /--
-[Symmetry](https://en.wikipedia.org/wiki/Symmetric_relation) for `equiv`.
+[Symmetry](https://en.wikipedia.org/wiki/Symmetric_relation) for `equivAux`.
 
-Together with `equiv_refl` and `equiv_trans` this ensures that `equiv` is an
+Together with `equivAux_refl` and `equivAux_trans` this ensures that `equivAux` is an
 [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation).
 -/
-theorem equiv_symm {a b : List Nat} (hab : equiv a b) : equiv b a := by
+theorem equivAux_symm {a b : List Nat} (hab : equivAux a b) : equivAux b a := by
   induction a generalizing b with
   | nil =>
     induction b with
     | nil => exact hab
     | cons y ys ihy =>
-      unfold equiv at ⊢ hab
+      unfold equivAux at ⊢ hab
       exact And.intro hab.left (ihy hab.right)
   | cons x xs ihx =>
     match b with
     | [] | y::ys =>
-      unfold equiv at ⊢ hab
+      unfold equivAux at ⊢ hab
       rw [hab.left]
       exact And.intro rfl (ihx hab.right)
 
 /--
 This lemma makes it possible to apply the `rw`-tactic.
 -/
-theorem equiv_iff_equiv {a b : List Nat} : equiv a b ↔ equiv b a := by
+theorem equivAux_iff_equivAux {a b : List Nat} : equivAux a b ↔ equivAux b a := by
   constructor
   · intro h
-    exact equiv_symm h
+    exact equivAux_symm h
   · intro h
-    exact equiv_symm h
+    exact equivAux_symm h
 
 
 /--
-[Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equiv` with
+[Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equivAux` with
 `[] : List Nat` as first and two arbitrary parameters of type `List Nat` as second
 and third element.
 -/
-theorem equiv_trans_nil {a b : List Nat} (ha : equiv [] a) (hab : equiv a b) : equiv [] b := by
+theorem equivAux_trans_nil {a b : List Nat} (ha : equivAux [] a) (hab : equivAux a b) : equivAux [] b := by
   induction a generalizing b with
     | nil => exact hab
     | cons x xs ih =>
-      unfold equiv at ha hab
+      unfold equivAux at ha hab
       match b with
       | [] =>
         simp only at hab
         exact ih ha.right hab.right
       | z::zs =>
-        unfold equiv
+        unfold equivAux
         simp only at ⊢ hab
         have : z = 0 := by rw [ha.left] at hab; exact (Eq.symm hab.left)
         exact And.intro this (ih ha.right hab.right)
 
 /--
-[Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equiv`.
+[Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equivAux`.
 
-Together with `equiv_refl` and `equiv_symm` this ensures that `equiv` is an
+Together with `equivAux_refl` and `equivAux_symm` this ensures that `equivAux` is an
 [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation).
 -/
-theorem equiv_trans {a b c : List Nat} (hab : equiv a b) (hbc :  equiv b c) : equiv a c := by
+theorem equivAux_trans {a b c : List Nat} (hab : equivAux a b) (hbc :  equivAux b c) : equivAux a c := by
   induction a generalizing b c with
-  | nil => exact equiv_trans_nil hab hbc
+  | nil => exact equivAux_trans_nil hab hbc
   | cons x xs ihx =>
-    unfold equiv at ⊢ hab hbc
+    unfold equivAux at ⊢ hab hbc
     match b, c with
     | [], [] => simp only at ⊢ hab hbc; exact hab
     | y::ys, [] =>
@@ -359,132 +359,133 @@ theorem equiv_trans {a b c : List Nat} (hab : equiv a b) (hbc :  equiv b c) : eq
 /--
 This lemma is used in the proof of `leAux_antiysmm`.
 -/
-theorem not_equiv_iff_not_equiv {a b : List Nat} : ¬ equiv a b ↔ ¬ equiv b a :=
-  Classical.iff_iff_not_iff_not.mp equiv_iff_equiv
+theorem not_equivAux_iff_not_equivAux {a b : List Nat} : ¬ equivAux a b ↔ ¬ equivAux b a :=
+  Classical.iff_iff_not_iff_not.mp equivAux_iff_equivAux
 
 /--
-This lemma is used in the proof of `equiv_consAux_consAux_nil_of_equiv_nil`,
-`equiv_consAux_singleton_of_equiv_nil`, `equiv_consAux_cons_of_equiv` and
-`equiv_subAux_nil_of_equiv`.
+This lemma is used in the proof of `equivAux_consAux_consAux_nil_of_equivAux_nil`,
+`equivAux_consAux_singleton_of_equivAux_nil`, `equivAux_consAux_cons_of_equivAux` and
+`equivAux_subAux_nil_of_equivAux`.
 -/
-theorem equiv_cons_nil_of_equiv_nil {xs : List Nat} (h : equiv xs []) : equiv (0::xs) [] := by
-  unfold equiv
+theorem equivAux_cons_nil_of_equivAux_nil {xs : List Nat} (h : equivAux xs []) : equivAux (0::xs) [] := by
+  unfold equivAux
   exact And.intro rfl h
 
 /--
 This lemma is not used in this file but might be useful somewhere else.
 -/
-theorem not_equiv_cons_of_lt {x y : Nat} {xs ys : List Nat} (h : x < y) : ¬ equiv (x::xs) (y::ys) := by
+theorem not_equivAux_cons_of_lt {x y : Nat} {xs ys : List Nat} (h : x < y) : ¬ equivAux (x::xs) (y::ys) := by
   have : x ≠ y := Nat.ne_of_lt h
-  simp only [equiv, Classical.not_and_iff_not_or_not]
+  simp only [equivAux, Classical.not_and_iff_not_or_not]
   exact .inl this
 
-theorem not_equiv_of_equiv_of_not_equiv {a b c : List Nat}
-  (hab : equiv a b) (hbc : ¬ equiv b c) : ¬ equiv a c := by
+theorem not_equivAux_of_equivAux_of_not_equivAux {a b c : List Nat}
+  (hab : equivAux a b) (hbc : ¬ equivAux b c) : ¬ equivAux a c := by
   false_or_by_contra; rename _ => hac
-  have : equiv b c := equiv_trans (equiv_symm hab) hac
+  have : equivAux b c := equivAux_trans (equivAux_symm hab) hac
   contradiction
 
-theorem not_equiv_of_not_equiv_of_equiv {a b c : List Nat}
-  (hab : ¬ equiv a b) (hbc : equiv b c) : ¬ equiv a c := by
+theorem not_equivAux_of_not_equivAux_of_equivAux {a b c : List Nat}
+  (hab : ¬ equivAux a b) (hbc : equivAux b c) : ¬ equivAux a c := by
   false_or_by_contra; rename _ => hac
-  have : equiv a b := equiv_trans hac (equiv_symm hbc)
+  have : equivAux a b := equivAux_trans hac (equivAux_symm hbc)
   contradiction
 
-theorem equiv_cons_iff_eq_and_equiv {x y : Nat} {xs ys : List Nat} : equiv (x::xs) (y::ys) ↔ x = y ∧ equiv xs ys := by
-  rw [equiv]
+theorem equivAux_cons_iff_eq_and_equivAux {x y : Nat} {xs ys : List Nat} :
+  equivAux (x::xs) (y::ys) ↔ x = y ∧ equivAux xs ys := by
+  rw [equivAux]
 
 /--
-Decidable equivalence as defined by `equiv` of a parameter
+Decidable equivalence as defined by `equivAux` of a parameter
 of type `List Nat` with `[] : List Nat`.
 -/
-def decEquiv_nil (a : List Nat) : Decidable (equiv [] a)  :=
+def decEquivAux_nil (a : List Nat) : Decidable (equivAux [] a)  :=
   match a with
   | [] =>
-    have : equiv [] [] := by simp only [equiv]
+    have : equivAux [] [] := by simp only [equivAux]
     isTrue this
   | x::xs =>
     if gx : x = 0 then
-      match ge : decEquiv_nil xs with
+      match ge : decEquivAux_nil xs with
       | isTrue p =>
-        have : equiv [] (x::xs) := by
-          unfold equiv
+        have : equivAux [] (x::xs) := by
+          unfold equivAux
           exact And.intro gx p
         isTrue this
       | isFalse p =>
-        have : ¬ equiv [] (x::xs) := by
-          unfold equiv
+        have : ¬ equivAux [] (x::xs) := by
+          unfold equivAux
           rw [not_and]
           exact fun _ : x = 0 => p
         isFalse this
     else
-      have : ¬ equiv [] (x::xs) := by
-        unfold equiv
+      have : ¬ equivAux [] (x::xs) := by
+        unfold equivAux
         rw [not_and]
         intro gx'
         contradiction
       isFalse this
 
 /--
-Decidable equivalence as defined by `equiv` for two arbitrary parameters of type `List Nat`.
+Decidable equivalence as defined by `equivAux` for two arbitrary parameters of type `List Nat`.
 -/
-def decEquiv (a b : List Nat) : Decidable (equiv a b)  :=
+def decEquivAux (a b : List Nat) : Decidable (equivAux a b)  :=
   match a, b with
   | [], [] =>
-    have : equiv [] [] := by simp only [equiv]
+    have : equivAux [] [] := by simp only [equivAux]
     isTrue this
   | x::xs, [] =>
-    match decEquiv_nil (x::xs) with
+    match decEquivAux_nil (x::xs) with
     | isFalse p =>
-      have : ¬ equiv (x::xs) [] := by
+      have : ¬ equivAux (x::xs) [] := by
         intro h
-        exact absurd (equiv_symm h) p
+        exact absurd (equivAux_symm h) p
       isFalse this
     | isTrue p =>
-      have : equiv (x::xs) [] := equiv_symm p
+      have : equivAux (x::xs) [] := equivAux_symm p
       isTrue this
-  | [], y::ys => decEquiv_nil (y::ys)
+  | [], y::ys => decEquivAux_nil (y::ys)
   | x::xs, y::ys =>
     if gxy : x = y then
-      match decEquiv xs ys with
+      match decEquivAux xs ys with
       | isFalse p =>
-        have : ¬ equiv (x::xs) (y::ys) := by
+        have : ¬ equivAux (x::xs) (y::ys) := by
           intro h
-          simp only [equiv] at h
+          simp only [equivAux] at h
           exact absurd h.right p
         isFalse this
       | isTrue p =>
-        have : equiv (x::xs) (y::ys) := by
-          simp only [equiv]
+        have : equivAux (x::xs) (y::ys) := by
+          simp only [equivAux]
           exact And.intro gxy p
         isTrue this
     else
-      have : ¬ equiv (x::xs) (y::ys) := by
+      have : ¬ equivAux (x::xs) (y::ys) := by
         intro h
-        simp only [equiv] at h
+        simp only [equivAux] at h
         exact absurd h.left gxy
       isFalse this
   termination_by a.length + b.length
 
-instance instEquiv (a b: List Nat) : Decidable (equiv a b) := decEquiv a b
+instance instEquiv (a b: List Nat) : Decidable (equivAux a b) := decEquivAux a b
 
-end Equiv
+end EquivAux
 
 section IsZeroAux
 
 /--
 A value of type `List Nat` is considered a representation of _zero_, if is is
-equivalent with respect to `equiv` to the empty list, means means that all elements of
+equivalent with respect to `equivAux` to the empty list, means means that all elements of
 the list must be `0 : Nat`.
 
 This property is independent of the `base` of the respective numeral.
 -/
-abbrev isZeroAux (a : List Nat) : Prop := equiv [] a
+abbrev isZeroAux (a : List Nat) : Prop := equivAux [] a
 
 /--
 `[] : List Nat` is itself a representation of _zero_.
 -/
-theorem isZeroAux_nil : isZeroAux [] := equiv_refl
+theorem isZeroAux_nil : isZeroAux [] := equivAux_refl
 
 theorem ne_nil_of_not_isZeroAux {a : List Nat} (h : ¬ isZeroAux a) : a ≠ [] :=
   match a with
@@ -498,7 +499,7 @@ and the tail is also a representation of _zero_.
 theorem isZeroAux_cons_iff_eq_zero_and_isZeroAux {x : Nat} {xs : List Nat} :
   isZeroAux (x::xs) ↔ x = 0 ∧ isZeroAux xs:= by
   unfold isZeroAux
-  rw [equiv.eq_def]
+  rw [equivAux.eq_def]
 
 /--
 This lemma is used in the proof of `toNatAux_eq_zero_iff_isZeroAux`.
@@ -508,7 +509,7 @@ theorem isZeroAux_of_toNatAux_eq_zero {a : List Nat} {base : Nat} (h: toNatAux a
   induction a with
   | nil =>
     rw [toNatAux] at h
-    simp only [isZeroAux, equiv_refl]
+    simp only [isZeroAux, equivAux_refl]
   | cons x xs ih =>
     rw [toNatAux_cons_eq] at h
     have h1 : x = 0 ∧ base * (toNatAux xs base) = 0 := Nat.eq_zero_of_add_eq_zero h
@@ -544,9 +545,7 @@ theorem toNatAux_eq_zero_iff_isZeroAux {a : List Nat} {base : Nat} (hb : 1 < bas
   · intro h
     exact toNatAux_eq_zero_of_isZeroAux h
 
-
-
-def decIsZeroAux (a : List Nat) : Decidable (isZeroAux a) := decEquiv [] a
+def decIsZeroAux (a : List Nat) : Decidable (isZeroAux a) := decEquivAux [] a
 
 instance instIsZero (a : List Nat) : Decidable (isZeroAux a) := decIsZeroAux a
 
@@ -643,7 +642,7 @@ end ListFinBase
 
 section ToNatAux_Equiv
 
-theorem toNatAux_eq_of_equiv {a b : List Nat} {base : Nat} (h : equiv a b) (hb : 1 < base) :
+theorem toNatAux_eq_of_equivAux {a b : List Nat} {base : Nat} (h : equivAux a b) (hb : 1 < base) :
   toNatAux a base = toNatAux b base := by
   induction a generalizing b with
   | nil =>
@@ -654,16 +653,16 @@ theorem toNatAux_eq_of_equiv {a b : List Nat} {base : Nat} (h : equiv a b) (hb :
     match b with
     | [] =>
       have : toNatAux (x::xs) base = 0 ↔ isZeroAux (x::xs) := toNatAux_eq_zero_iff_isZeroAux hb
-      rw [isZeroAux.eq_def,  equiv_iff_equiv] at this
+      rw [isZeroAux.eq_def,  equivAux_iff_equivAux] at this
       simp only [toNatAux_nil_eq, this, h]
     | y::ys =>
-      simp only [equiv] at h
+      simp only [equivAux] at h
       simp only [toNatAux_cons_eq, h.left, ih h.right]
 
-theorem equiv_of_toNatAux_eq {a b : List Nat} {base : Nat}
+theorem equivAux_of_toNatAux_eq {a b : List Nat} {base : Nat}
   (h : toNatAux a base = toNatAux b base)
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
-  equiv a b := by
+  equivAux a b := by
   induction a generalizing b with
   | nil =>
     have : toNatAux b base = 0 ↔ isZeroAux b := toNatAux_eq_zero_iff_isZeroAux hb
@@ -674,35 +673,35 @@ theorem equiv_of_toNatAux_eq {a b : List Nat} {base : Nat}
     match b with
     | [] =>
       have : toNatAux (x::xs) base = 0 ↔ isZeroAux (x::xs) := toNatAux_eq_zero_iff_isZeroAux hb
-      rw [isZeroAux.eq_def,  equiv_iff_equiv] at this
+      rw [isZeroAux.eq_def,  equivAux_iff_equivAux] at this
       rw [toNatAux_nil_eq] at h
       exact this.mp h
     | y::ys =>
       have halt' : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halt
       have hblt' : y < base ∧ allDigitsLtBase ys base := allDigitsLtBase_cons_iff.mp hblt
       simp only [toNatAux_cons_eq] at h
-      simp only [equiv]
+      simp only [equivAux]
       have : x = y ∧ toNatAux xs base = toNatAux ys base :=
         (Nat.add_mul_eq_iff_eq_and_eq_of halt'.left hblt'.left).mp h
       exact And.intro this.left (ih this.right halt'.right hblt'.right)
 
-theorem toNatAux_eq_iff_equiv {a b : List Nat} {base : Nat}
+theorem toNatAux_eq_iff_equivAux {a b : List Nat} {base : Nat}
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
-  toNatAux a base = toNatAux b base ↔ equiv a b := by
+  toNatAux a base = toNatAux b base ↔ equivAux a b := by
   constructor
   · intro h
-    exact equiv_of_toNatAux_eq h halt hblt hb
+    exact equivAux_of_toNatAux_eq h halt hblt hb
   · intro h
-    exact toNatAux_eq_of_equiv h hb
+    exact toNatAux_eq_of_equivAux h hb
 
 example {a b : List Nat} {base : Nat} (ha : a = [11]) (hb : b = [1,1]) (hbase : base = 10) :
-  toNatAux a base = toNatAux b base ∧ ¬ equiv a b := by
+  toNatAux a base = toNatAux b base ∧ ¬ equivAux a b := by
   have : toNatAux a base = toNatAux b base := by rw [ha, hb, hbase]; decide
-  match decEquiv a b with
+  match decEquivAux a b with
   | isFalse q => exact And.intro this q
   | isTrue q =>
     rw [ha, hb] at q
-    simp only [equiv, Nat.succ_ne_self, false_and, and_false] at q
+    simp only [equivAux, Nat.succ_ne_self, false_and, and_false] at q
 
 end ToNatAux_Equiv
 
@@ -826,62 +825,62 @@ theorem consAux_succ_nil_eq {n : Nat} : consAux (n + 1) [] = [n + 1] := by
 theorem consAux_cons_eq {n x : Nat} {xs : List Nat} : consAux n (x::xs) = n::x::xs := by
   simp only [consAux]
 
-theorem equiv_consAux_cons {n : Nat} {a : List Nat} :
-  equiv (consAux n a) (n::a) := by
+theorem equivAux_consAux_cons {n : Nat} {a : List Nat} :
+  equivAux (consAux n a) (n::a) := by
   match gn : n, ga : a with
-  | 0, [] => simp only [consAux_zero_nil_eq, equiv, true_and]
-  | k + 1, [] => simp only [consAux_succ_nil_eq, equiv, true_and]
-  | n, x::xs => simp only [consAux, equiv_refl]
+  | 0, [] => simp only [consAux_zero_nil_eq, equivAux, true_and]
+  | k + 1, [] => simp only [consAux_succ_nil_eq, equivAux, true_and]
+  | n, x::xs => simp only [consAux, equivAux_refl]
 
-theorem equiv_consAux_consAux_nil_of_equiv_nil {n : Nat} {a : List Nat} (h : equiv a []) :
-  equiv (consAux n a) (consAux n []) := by
+theorem equivAux_consAux_consAux_nil_of_equivAux_nil {n : Nat} {a : List Nat} (h : equivAux a []) :
+  equivAux (consAux n a) (consAux n []) := by
   match n, a with
-  | _, [] => exact equiv_refl
+  | _, [] => exact equivAux_refl
   | 0, x::xs =>
     simp only [consAux_cons_eq, consAux_zero_nil_eq]
-    exact equiv_cons_nil_of_equiv_nil h
+    exact equivAux_cons_nil_of_equivAux_nil h
   | k + 1, x::xs  =>
     simp only [consAux_cons_eq, consAux_succ_nil_eq]
-    exact equiv_cons_iff_eq_and_equiv.mpr (And.intro rfl h)
+    exact equivAux_cons_iff_eq_and_equivAux.mpr (And.intro rfl h)
 
-theorem equiv_consAux_consAux_of_equiv {n : Nat} {a b : List Nat} (h : equiv a b) :
-  equiv (consAux n a) (consAux n b) := by
+theorem equivAux_consAux_consAux_of_equivAux {n : Nat} {a b : List Nat} (h : equivAux a b) :
+  equivAux (consAux n a) (consAux n b) := by
   match n, a, b with
-  | _, _, [] => exact equiv_consAux_consAux_nil_of_equiv_nil h
+  | _, _, [] => exact equivAux_consAux_consAux_nil_of_equivAux_nil h
   | _, [], _ =>
-    rw [equiv_iff_equiv] at ⊢ h
-    exact equiv_consAux_consAux_nil_of_equiv_nil h
+    rw [equivAux_iff_equivAux] at ⊢ h
+    exact equivAux_consAux_consAux_nil_of_equivAux_nil h
   | _, x::xs, y::ys =>
-    simp only [equiv_cons_iff_eq_and_equiv] at h
-    simp only [consAux, equiv_cons_iff_eq_and_equiv, true_and]
+    simp only [equivAux_cons_iff_eq_and_equivAux] at h
+    simp only [consAux, equivAux_cons_iff_eq_and_equivAux, true_and]
     assumption
 
-theorem equiv_consAux_singleton_of_equiv_nil {n : Nat} {a : List Nat} (h : equiv a []) :
-  equiv (consAux n a) [n] := by
+theorem equivAux_consAux_singleton_of_equivAux_nil {n : Nat} {a : List Nat} (h : equivAux a []) :
+  equivAux (consAux n a) [n] := by
   match n, a with
   | 0, [] =>
     simp only [consAux_zero_nil_eq]
-    exact equiv_iff_equiv.mp (equiv_cons_nil_of_equiv_nil h)
+    exact equivAux_iff_equivAux.mp (equivAux_cons_nil_of_equivAux_nil h)
   | k + 1, [] =>
     simp only [consAux_succ_nil_eq]
-    exact equiv_refl
+    exact equivAux_refl
   | _, x::xs =>
     simp only [consAux_cons_eq]
-    exact equiv_cons_iff_eq_and_equiv.mpr (And.intro rfl h)
+    exact equivAux_cons_iff_eq_and_equivAux.mpr (And.intro rfl h)
 
-theorem equiv_consAux_cons_of_equiv {n : Nat} {a b : List Nat} (h : equiv a b) :
-  equiv (consAux n a) (n::b) := by
+theorem equivAux_consAux_cons_of_equivAux {n : Nat} {a b : List Nat} (h : equivAux a b) :
+  equivAux (consAux n a) (n::b) := by
   match n, a, b with
-  | _, _, [] => exact equiv_consAux_singleton_of_equiv_nil h
+  | _, _, [] => exact equivAux_consAux_singleton_of_equivAux_nil h
   | 0, [], _ =>
     simp only [consAux_zero_nil_eq]
-    exact equiv_iff_equiv.mp (equiv_cons_nil_of_equiv_nil (equiv_iff_equiv.mp h))
+    exact equivAux_iff_equivAux.mp (equivAux_cons_nil_of_equivAux_nil (equivAux_iff_equivAux.mp h))
   | k + 1, [], _ =>
     simp only [consAux_succ_nil_eq]
-    exact equiv_cons_iff_eq_and_equiv.mpr (And.intro rfl h)
+    exact equivAux_cons_iff_eq_and_equivAux.mpr (And.intro rfl h)
   | _, x::xs, y::ys =>
     simp only [consAux_cons_eq]
-    exact equiv_cons_iff_eq_and_equiv.mpr (And.intro rfl h)
+    exact equivAux_cons_iff_eq_and_equivAux.mpr (And.intro rfl h)
 
 theorem allDigitsLtBase_consAux_of {n base: Nat} {a : List Nat}
   (hn : n < base) (ha : allDigitsLtBase a base) :
@@ -934,12 +933,12 @@ theorem allDigitsLtBase_discardTrailingZeros {base: Nat} {a : List Nat} (ha : al
     have hxs : allDigitsLtBase (discardTrailingZeros xs) base := ih (allDigitsLtBase_cons_iff.mp ha).right
     exact allDigitsLtBase_consAux_of hx hxs
 
-theorem equiv_discardTrailingZeros {a : List Nat} : equiv (discardTrailingZeros a) a := by
+theorem equivAux_discardTrailingZeros {a : List Nat} : equivAux (discardTrailingZeros a) a := by
   induction a with
-  | nil => simp only [discardTrailingZeros, equiv_refl]
+  | nil => simp only [discardTrailingZeros, equivAux_refl]
   | cons x xs ih =>
     simp only [discardTrailingZeros]
-    exact equiv_consAux_cons_of_equiv ih
+    exact equivAux_consAux_cons_of_equivAux ih
 
 end DiscardTrailingZeros
 
@@ -949,12 +948,12 @@ def leAux (a b : List Nat) : Prop :=
   match a, b with
   | [], _ => True
   | x::xs, [] => x = 0 ∧ leAux xs []
-  | x::xs, y::ys => if equiv xs ys then x ≤ y else leAux xs ys
+  | x::xs, y::ys => if equivAux xs ys then x ≤ y else leAux xs ys
 
 theorem leAux_refl {a : List Nat} : leAux a a := by
   induction a with
   | nil => simp only [leAux]
-  | cons x xs ih => simp only [leAux, equiv_refl, reduceIte, Nat.le_refl]
+  | cons x xs ih => simp only [leAux, equivAux_refl, reduceIte, Nat.le_refl]
 
 theorem leAux_nil {a : List Nat} : leAux [] a := by
   induction a with
@@ -962,81 +961,81 @@ theorem leAux_nil {a : List Nat} : leAux [] a := by
   | cons x xs ih => simp only [leAux]
 
 theorem leAux_cons_iff {x y : Nat} {xs ys : List Nat} :
-  leAux (x::xs) (y::ys) ↔ if equiv xs ys then x ≤ y else leAux xs ys := by
+  leAux (x::xs) (y::ys) ↔ if equivAux xs ys then x ≤ y else leAux xs ys := by
   rw [leAux.eq_def]
 
 section Equiv_LeAux
 
-theorem not_equiv_of_leAux_cons_of_ne_le {x y : Nat} {xs ys : List Nat}
-  (hl : leAux (x::xs) (y::ys)) (hn : ¬ x ≤ y) : ¬ equiv xs ys := by
-  have : if equiv xs ys then x ≤ y else leAux xs ys := leAux_cons_iff.mp hl
+theorem not_equivAux_of_leAux_cons_of_ne_le {x y : Nat} {xs ys : List Nat}
+  (hl : leAux (x::xs) (y::ys)) (hn : ¬ x ≤ y) : ¬ equivAux xs ys := by
+  have : if equivAux xs ys then x ≤ y else leAux xs ys := leAux_cons_iff.mp hl
   false_or_by_contra; rename _ => hc
   simp only [hc, reduceIte] at this
   contradiction
 
-theorem leAux_of_equiv {a b : List Nat} (h : equiv a b) : leAux a b := by
+theorem leAux_of_equivAux {a b : List Nat} (h : equivAux a b) : leAux a b := by
   induction a generalizing b with
   | nil => exact leAux_nil
   | cons x xs ih =>
     match b with
     | [] =>
-      simp only [equiv] at h
+      simp only [equivAux] at h
       simp only [leAux]
       exact And.intro h.left (ih h.right)
     | y::ys =>
-      simp only [equiv] at h
+      simp only [equivAux] at h
       simp only [leAux, h.right, reduceIte, h.left, Nat.le_refl]
 
-theorem equiv_nil_of_leAux_nil {a : List Nat} (h : leAux a []) : equiv [] a  := by
+theorem equivAux_nil_of_leAux_nil {a : List Nat} (h : leAux a []) : equivAux [] a  := by
   induction a with
-  | nil  => exact equiv_refl
+  | nil  => exact equivAux_refl
   | cons x xs ih =>
-    rw [equiv.eq_def]
+    rw [equivAux.eq_def]
     rw [leAux.eq_def] at h
     simp only at ih h ⊢
     exact And.intro h.left (ih h.right)
 
-theorem leAux_nil_iff_equiv_nil {a : List Nat} : leAux a [] ↔ equiv [] a := by
+theorem leAux_nil_iff_equivAux_nil {a : List Nat} : leAux a [] ↔ equivAux [] a := by
   constructor
   · intro h
-    exact equiv_nil_of_leAux_nil h
+    exact equivAux_nil_of_leAux_nil h
   · intro h
-    exact leAux_of_equiv (equiv_symm h)
+    exact leAux_of_equivAux (equivAux_symm h)
 
 end Equiv_LeAux
 
 theorem leAux_antiysmm {a b : List Nat}:
-  equiv a b ↔ leAux a b ∧ leAux b a := by
+  equivAux a b ↔ leAux a b ∧ leAux b a := by
   constructor
   · intro h
-    have h1 : leAux a b := leAux_of_equiv h
-    have h2 : leAux b a := leAux_of_equiv (equiv_symm h)
+    have h1 : leAux a b := leAux_of_equivAux h
+    have h2 : leAux b a := leAux_of_equivAux (equivAux_symm h)
     exact And.intro h1 h2
   · intro h
     induction a generalizing b with
     | nil =>
       unfold leAux at h
       match b with
-      | [] => exact equiv_refl
+      | [] => exact equivAux_refl
       | x::xs =>
-        rw [equiv.eq_def]
+        rw [equivAux.eq_def]
         simp only [true_and] at ⊢ h
-        exact And.intro h.left (equiv_nil_of_leAux_nil h.right)
+        exact And.intro h.left (equivAux_nil_of_leAux_nil h.right)
     | cons x xs ih =>
       match b with
       | [] =>
-        have : equiv [] (x :: xs) := equiv_nil_of_leAux_nil h.left
-        exact equiv_symm this
+        have : equivAux [] (x :: xs) := equivAux_nil_of_leAux_nil h.left
+        exact equivAux_symm this
       | y::ys =>
         unfold leAux at h
-        unfold equiv
-        if g : equiv xs ys then
-          simp only [g, equiv_symm, reduceIte] at h
+        unfold equivAux
+        if g : equivAux xs ys then
+          simp only [g, equivAux_symm, reduceIte] at h
           simp only [Nat.le_antisymm h.left h.right, g, true_and]
         else
-          have : ¬ equiv ys xs := not_equiv_iff_not_equiv.mp g
+          have : ¬ equivAux ys xs := not_equivAux_iff_not_equivAux.mp g
           simp only [g, reduceIte, this] at h
-          have : equiv xs ys := ih h
+          have : equivAux xs ys := ih h
           contradiction
 
 theorem leAux_nil_of_leAux {a b : List Nat} (h : leAux a b) : leAux [] b := by
@@ -1050,7 +1049,7 @@ theorem leAux_nil_of_leAux {a b : List Nat} (h : leAux a b) : leAux [] b := by
 
 section LeAux_Equiv
 
-theorem leAux_of_leAux_of_equiv {a b c : List Nat} (hab : leAux a b) (hbc : equiv b c): leAux a c := by
+theorem leAux_of_leAux_of_equivAux {a b c : List Nat} (hab : leAux a b) (hbc : equivAux b c): leAux a c := by
   induction a generalizing b c with
   | nil => exact leAux_nil
   | cons x xs ih =>
@@ -1058,84 +1057,84 @@ theorem leAux_of_leAux_of_equiv {a b c : List Nat} (hab : leAux a b) (hbc : equi
     | [], [] => simp_all only
     | y::ys, [] =>
       unfold leAux at hab ⊢
-      unfold equiv at hbc
-      if g : equiv xs ys then
+      unfold equivAux at hbc
+      if g : equivAux xs ys then
         simp only [g, reduceIte, hbc.left] at hab
         have h1 : x = 0 := Nat.eq_zero_of_le_zero hab
-        have h2 : leAux xs ys := leAux_of_equiv g
+        have h2 : leAux xs ys := leAux_of_equivAux g
         have h3 : leAux xs [] := ih  h2 hbc.right
         exact And.intro h1 h3
       else
         simp only [g, reduceIte, hbc.left] at hab
         have h1 : leAux xs [] := ih hab hbc.right
-        have h2 : equiv xs [] := equiv_symm (equiv_nil_of_leAux_nil h1)
-        have h3 : equiv xs ys := equiv_trans h2 (equiv_symm hbc.right)
+        have h2 : equivAux xs [] := equivAux_symm (equivAux_nil_of_leAux_nil h1)
+        have h3 : equivAux xs ys := equivAux_trans h2 (equivAux_symm hbc.right)
         contradiction
     | [], z::zs =>
-      have : equiv (x :: xs) [] := equiv_symm (equiv_nil_of_leAux_nil hab)
-      have : equiv (x :: xs) (z :: zs) := equiv_trans this hbc
-      exact leAux_of_equiv this
+      have : equivAux (x :: xs) [] := equivAux_symm (equivAux_nil_of_leAux_nil hab)
+      have : equivAux (x :: xs) (z :: zs) := equivAux_trans this hbc
+      exact leAux_of_equivAux this
     | y::ys, z::zs =>
       unfold leAux at hab ⊢
-      unfold equiv at hbc
-      if g1 : equiv xs ys then
+      unfold equivAux at hbc
+      if g1 : equivAux xs ys then
         simp only [g1, reduceIte, hbc.left] at hab
-        if g2 : equiv xs zs then
+        if g2 : equivAux xs zs then
           simp only [g2, reduceIte]
           exact hab
         else
           simp only [g2, reduceIte]
-          have : equiv xs zs := equiv_trans g1 hbc.right
+          have : equivAux xs zs := equivAux_trans g1 hbc.right
           contradiction
       else
         simp only [g1, reduceIte] at hab
-        if g2 : equiv xs zs then
+        if g2 : equivAux xs zs then
           simp only [g2, reduceIte]
-          have : equiv xs ys := equiv_trans g2 (equiv_symm hbc.right)
+          have : equivAux xs ys := equivAux_trans g2 (equivAux_symm hbc.right)
           contradiction
         else
           simp only [g2, reduceIte]
           exact ih hab hbc.right
 
-theorem leAux_of_equiv_of_leAux {a b c : List Nat} (hab : equiv a b) (hbc : leAux b c): leAux a c := by
+theorem leAux_of_equivAux_of_leAux {a b c : List Nat} (hab : equivAux a b) (hbc : leAux b c): leAux a c := by
   induction a generalizing b c with
   | nil => exact leAux_nil
   | cons x xs ih =>
     match b, c with
     | [], [] =>
-      simp only [equiv] at hab
+      simp only [equivAux] at hab
       simp only [leAux, And.intro hab.left (ih hab.right hbc), and_true]
     | y::ys, [] =>
-      simp only [equiv] at hab
+      simp only [equivAux] at hab
       simp only [leAux] at hbc ⊢
       simp only [hab.left, hbc.left, true_and, (ih hab.right hbc.right)]
     | [], z::zs =>
-      simp only [equiv] at hab
+      simp only [equivAux] at hab
       simp only [leAux] at hbc ⊢
-      if h : equiv xs zs then
+      if h : equivAux xs zs then
         simp only [h, reduceIte, hab.left, Nat.zero_le]
       else
         simp only [h, reduceIte]
         have : leAux [] zs := leAux_nil
         exact ih hab.right this
     | y::ys, z::zs =>
-      simp only [equiv] at hab
+      simp only [equivAux] at hab
       simp only [leAux] at hbc
-      if h : equiv ys zs then
+      if h : equivAux ys zs then
         simp only [h, reduceIte] at hbc
-        simp only [leAux, equiv_trans hab.right h, reduceIte]
+        simp only [leAux, equivAux_trans hab.right h, reduceIte]
         rwa [hab.left]
       else
         simp only [h, reduceIte] at hbc
-        have : ¬ equiv xs zs := not_equiv_of_equiv_of_not_equiv hab.right h
+        have : ¬ equivAux xs zs := not_equivAux_of_equivAux_of_not_equivAux hab.right h
         simp only [leAux, this, reduceIte, ih hab.right hbc]
 
-theorem equiv_and_equiv_of_leAux_of_leAux_of_equiv {a b c : List Nat}
-  (hab : leAux a b) (hbc : leAux b c) (hac : equiv a c) : equiv a b ∧ equiv b c := by
-  have h1 : leAux b a := leAux_of_leAux_of_equiv hbc (equiv_symm hac)
-  have h2 : equiv a b := leAux_antiysmm.mpr (And.intro hab h1)
-  have h3 : leAux c b := leAux_of_equiv_of_leAux (equiv_symm hac) hab
-  have h4 : equiv b c := leAux_antiysmm.mpr (And.intro hbc h3)
+theorem equivAux_and_equivAux_of_leAux_of_leAux_of_equivAux {a b c : List Nat}
+  (hab : leAux a b) (hbc : leAux b c) (hac : equivAux a c) : equivAux a b ∧ equivAux b c := by
+  have h1 : leAux b a := leAux_of_leAux_of_equivAux hbc (equivAux_symm hac)
+  have h2 : equivAux a b := leAux_antiysmm.mpr (And.intro hab h1)
+  have h3 : leAux c b := leAux_of_equivAux_of_leAux (equivAux_symm hac) hab
+  have h4 : equivAux b c := leAux_antiysmm.mpr (And.intro hbc h3)
   exact And.intro h2 h4
 
 end LeAux_Equiv
@@ -1147,39 +1146,39 @@ theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leA
     match b, c with
     | [], [] => unfold leAux at hab ⊢; simp_all only [and_true]
     | y::ys, [] =>
-      have : equiv (y::ys) [] := equiv_symm (equiv_nil_of_leAux_nil hbc)
-      exact leAux_of_leAux_of_equiv hab this
+      have : equivAux (y::ys) [] := equivAux_symm (equivAux_nil_of_leAux_nil hbc)
+      exact leAux_of_leAux_of_equivAux hab this
     | [], z::zs =>
-      have : equiv (x::xs) [] := equiv_symm (equiv_nil_of_leAux_nil hab)
-      exact leAux_of_equiv_of_leAux this hbc
+      have : equivAux (x::xs) [] := equivAux_symm (equivAux_nil_of_leAux_nil hab)
+      exact leAux_of_equivAux_of_leAux this hbc
     | y::ys, z::zs =>
       unfold leAux at hab hbc ⊢
-      if gxy : equiv xs ys then
-        if gyz : equiv ys zs then
-          have : equiv xs zs := equiv_trans gxy gyz
+      if gxy : equivAux xs ys then
+        if gyz : equivAux ys zs then
+          have : equivAux xs zs := equivAux_trans gxy gyz
           simp only [gxy, reduceIte] at hab
           simp only [gyz, reduceIte] at hbc
           simp only [this, reduceIte]
           exact Nat.le_trans hab hbc
         else
-          have : ¬ equiv xs zs := not_equiv_of_equiv_of_not_equiv gxy gyz
+          have : ¬ equivAux xs zs := not_equivAux_of_equivAux_of_not_equivAux gxy gyz
           simp only [gxy, reduceIte] at hab
           simp only [gyz, reduceIte] at hbc
           simp only [this, reduceIte]
-          exact ihx (leAux_of_equiv gxy) hbc
+          exact ihx (leAux_of_equivAux gxy) hbc
       else
-        if gyz : equiv ys zs then
-          have : ¬ equiv xs zs := not_equiv_of_not_equiv_of_equiv gxy gyz
+        if gyz : equivAux ys zs then
+          have : ¬ equivAux xs zs := not_equivAux_of_not_equivAux_of_equivAux gxy gyz
           simp only [gxy, reduceIte] at hab
           simp only [gyz, reduceIte] at hbc
           simp only [this, reduceIte]
-          exact ihx hab (leAux_of_equiv gyz)
+          exact ihx hab (leAux_of_equivAux gyz)
         else
           simp only [gxy, reduceIte] at hab
           simp only [gyz, reduceIte] at hbc
-          have : ¬ equiv xs zs := by
+          have : ¬ equivAux xs zs := by
             false_or_by_contra; rename _ => hc
-            exact absurd (equiv_and_equiv_of_leAux_of_leAux_of_equiv hab hbc hc).left gxy
+            exact absurd (equivAux_and_equivAux_of_leAux_of_leAux_of_equivAux hab hbc hc).left gxy
           simp only [this, reduceIte]
           exact ihx hab hbc
 
@@ -1211,7 +1210,7 @@ def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
     have : leAux [] (y::ys) := by simp only [leAux]
     isTrue this
   | x::xs, y::ys =>
-    match decEquiv xs ys with
+    match decEquivAux xs ys with
     | isFalse p =>
       match decLeAux xs ys with
       | isFalse q =>
@@ -1246,22 +1245,22 @@ theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (h : leAux a b) (hb :
   | cons x xs ih =>
     match b with
     | [] =>
-      have : isZeroAux (x::xs) := equiv_nil_of_leAux_nil h
+      have : isZeroAux (x::xs) := equivAux_nil_of_leAux_nil h
       have : toNatAux (x :: xs) base = 0 := (toNatAux_eq_zero_iff_isZeroAux hb).mpr this
       simp only [this, Nat.zero_le]
     | y::ys =>
       simp only [leAux_cons_iff] at h
       simp only [toNatAux_cons_eq]
-      if g : equiv xs ys then
+      if g : equivAux xs ys then
         simp only [g, reduceIte] at h
-        simp only [toNatAux_eq_of_equiv g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
+        simp only [toNatAux_eq_of_equivAux g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
       else
         simp only [g, reduceIte] at h
         have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
         have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
         have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
         have h4 : toNatAux xs base ≠ toNatAux ys base :=
-          (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equiv h1.right h2.right hb)).mpr g
+          (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
         have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
         exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
 
@@ -1274,14 +1273,14 @@ theorem leAux_of_toNatAux_le_toNatAux_of {a b : List Nat} {base : Nat}
     match b with
     | [] =>
       have : toNatAux [] base = 0 := toNatAux_nil_eq
-      simp only [toNatAux_nil_eq, Nat.le_zero, toNatAux_eq_zero_iff_isZeroAux hb, isZeroAux, equiv_iff_equiv] at h
-      exact leAux_of_equiv h
+      simp only [toNatAux_nil_eq, Nat.le_zero, toNatAux_eq_zero_iff_isZeroAux hb, isZeroAux, equivAux_iff_equivAux] at h
+      exact leAux_of_equivAux h
     | y::ys =>
       simp only [toNatAux_cons_eq] at h
       simp only [leAux]
-      if g : equiv xs ys then
+      if g : equivAux xs ys then
         simp only [g, reduceIte]
-        rw [toNatAux_eq_of_equiv g hb] at h
+        rw [toNatAux_eq_of_equivAux g hb] at h
         exact Nat.le_of_add_le_add_right h
       else
         have halt' : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
@@ -1289,7 +1288,7 @@ theorem leAux_of_toNatAux_le_toNatAux_of {a b : List Nat} {base : Nat}
         simp only [g, reduceIte]
         have : toNatAux xs base ≠ toNatAux ys base := by
           false_or_by_contra; rename _ => hc
-          exact absurd (equiv_of_toNatAux_eq hc halt'.right hblt'.right hb) g
+          exact absurd (equivAux_of_toNatAux_eq hc halt'.right hblt'.right hb) g
         have : toNatAux xs base ≤ toNatAux ys base :=
           (Nat.add_mul_le_iff_le_of this halt'.left hblt'.left).mp h
         exact ih this halt'.right hblt'.right
@@ -1392,7 +1391,7 @@ theorem ltAux_of_ltAux_cons {x : Nat} {xs ys : List Nat} (h : ltAux (x::xs) (x::
 
 section Equiv_LtAux
 
-theorem not_equiv_nil_of_ltAux_nil {a : List Nat} (h : ltAux [] a) : ¬ equiv [] a := by
+theorem not_equivAux_nil_of_ltAux_nil {a : List Nat} (h : ltAux [] a) : ¬ equivAux [] a := by
   induction a with
   | nil =>
     have : ¬ ltAux [] [] := ltAux_irrefl
@@ -1407,50 +1406,50 @@ theorem not_equiv_nil_of_ltAux_nil {a : List Nat} (h : ltAux [] a) : ¬ equiv []
       · intro hr
         have : y ≠ 0 := Nat.ne_zero_of_lt hr
         rwa [ne_eq y 0] at this
-    simp only [equiv, Classical.not_and_iff_not_or_not, this]
+    simp only [equivAux, Classical.not_and_iff_not_or_not, this]
     cases h with
     | inl hl => exact .inl hl
     | inr hr => exact .inr (ih hr)
 
-theorem not_equiv_of_ltAux {a b : List Nat} (h : ltAux a b) : ¬ equiv a b := by
+theorem not_equivAux_of_ltAux {a b : List Nat} (h : ltAux a b) : ¬ equivAux a b := by
   induction a generalizing b with
-  | nil => exact not_equiv_nil_of_ltAux_nil h
+  | nil => exact not_equivAux_nil_of_ltAux_nil h
   | cons x xs ih =>
     match b with
     | [] => rw [ltAux.eq_def] at h; contradiction
     | y::ys =>
       simp only [ltAux] at h
-      simp only [equiv, Classical.not_and_iff_not_or_not]
+      simp only [equivAux, Classical.not_and_iff_not_or_not]
       cases h with
       | inl hl => exact .inl (Nat.ne_of_lt hl.left)
       | inr hr => exact .inr (ih hr)
 
-theorem not_ltAux_nil_of_equiv_nil {a : List Nat} (h : equiv [] a) : ¬ ltAux [] a := by
+theorem not_ltAux_nil_of_equivAux_nil {a : List Nat} (h : equivAux [] a) : ¬ ltAux [] a := by
   induction a with
   | nil => exact ltAux_irrefl
   | cons y ys ih =>
-    unfold equiv at h
+    unfold equivAux at h
     simp only [ltAux, not_or, Nat.not_lt, Nat.le_zero]
     exact And.intro h.left (ih h.right)
 
-theorem not_ltAux_of_equiv {a b : List Nat} (h : equiv a b) : ¬ ltAux a b := by
+theorem not_ltAux_of_equivAux {a b : List Nat} (h : equivAux a b) : ¬ ltAux a b := by
   induction a generalizing b with
-  | nil => exact not_ltAux_nil_of_equiv_nil h
+  | nil => exact not_ltAux_nil_of_equivAux_nil h
   | cons x xs ih =>
     match b with
     | [] => simp only [ltAux, not_false_eq_true]
     | y::ys =>
-      simp only [equiv] at h
+      simp only [equivAux] at h
       simp only [ltAux, not_or, Classical.not_and_iff_not_or_not, Classical.not_not]
       have : ¬ x < y := by rw [h.left]; exact Nat.lt_irrefl y
       exact And.intro (.inl this) (ih h.right)
 
-theorem ltAux_nil_of_not_equiv_nil_of_not_ltAux_nil {a : List Nat}
-  (h1 : ¬ equiv [] a) (h2 : ¬ ltAux a []) : ltAux [] a := by
+theorem ltAux_nil_of_not_equivAux_nil_of_not_ltAux_nil {a : List Nat}
+  (h1 : ¬ equivAux [] a) (h2 : ¬ ltAux a []) : ltAux [] a := by
   induction a with
-  | nil => unfold equiv at h1; simp only [not_true] at h1
+  | nil => unfold equivAux at h1; simp only [not_true] at h1
   | cons x xs ih =>
-    unfold equiv at h1
+    unfold equivAux at h1
     simp only [Classical.not_and_iff_not_or_not] at h1
     unfold ltAux
     cases h1 with
@@ -1461,19 +1460,19 @@ theorem ltAux_nil_of_not_equiv_nil_of_not_ltAux_nil {a : List Nat}
       have : ¬ ltAux xs [] := by simp only [ltAux, not_false_eq_true]
       exact .inr (ih h1r this)
 
-theorem ltAux_of_not_equiv_of_not_ltAux {a b : List Nat}
-  (h1 : ¬ equiv a b) (h2 : ¬ ltAux b a) : ltAux a b := by
+theorem ltAux_of_not_equivAux_of_not_ltAux {a b : List Nat}
+  (h1 : ¬ equivAux a b) (h2 : ¬ ltAux b a) : ltAux a b := by
   induction a generalizing b with
-  | nil => exact ltAux_nil_of_not_equiv_nil_of_not_ltAux_nil h1 h2
+  | nil => exact ltAux_nil_of_not_equivAux_nil_of_not_ltAux_nil h1 h2
   | cons x xs ihx =>
-    unfold equiv at h1
+    unfold equivAux at h1
     match b with
     | [] =>
       simp only [Classical.not_and_iff_not_or_not] at h1
       unfold ltAux at ⊢ h2
       simp only [not_or, Nat.not_lt, Nat.le_zero_eq] at h1 h2
       have : ¬¬x = 0 := not_not_intro h2.left
-      have : ¬equiv xs [] := Or.resolve_left h1 this
+      have : ¬equivAux xs [] := Or.resolve_left h1 this
       have : ltAux xs [] := ihx this h2.right
       have : False := by simp only [ltAux] at this
       contradiction
@@ -1492,9 +1491,9 @@ theorem ltAux_of_not_equiv_of_not_ltAux {a b : List Nat}
           exact .inr (h2.left this)
         | inr h1r => exact .inr (ihx h1r h2.right)
 
-theorem equiv_of_not_ltAux_and_not_ltAux {a b : List Nat} (h : ¬ ltAux a b ∧ ¬ ltAux b a) : equiv a b := by
+theorem equivAux_of_not_ltAux_and_not_ltAux {a b : List Nat} (h : ¬ ltAux a b ∧ ¬ ltAux b a) : equivAux a b := by
   false_or_by_contra; rename _ => hc
-  exact absurd (ltAux_of_not_equiv_of_not_ltAux hc h.right) h.left
+  exact absurd (ltAux_of_not_equivAux_of_not_ltAux hc h.right) h.left
 
 end Equiv_LtAux
 
@@ -1510,11 +1509,11 @@ theorem leAux_of_ltAux {a b : List Nat} (h : ltAux a b) : leAux a b := by
       simp only [ltAux] at h
       simp only [leAux]
       if g : ltAux xs ys then
-        have : ¬ equiv xs ys := not_equiv_of_ltAux g
+        have : ¬ equivAux xs ys := not_equivAux_of_ltAux g
         simp only [this, reduceIte, ih g]
       else
         have h1 : x < y ∧ ¬ltAux ys xs := Or.resolve_right h g
-        have h2 : equiv xs ys := equiv_of_not_ltAux_and_not_ltAux (And.intro g h1.right)
+        have h2 : equivAux xs ys := equivAux_of_not_ltAux_and_not_ltAux (And.intro g h1.right)
         simp only [h2, reduceIte, Nat.le_of_lt h1.left]
 
 theorem leAux_iff_not_ltAux {a b : List Nat} : leAux a b ↔ ¬ ltAux b a := by
@@ -1535,52 +1534,52 @@ theorem leAux_iff_not_ltAux {a b : List Nat} : leAux a b ↔ ¬ ltAux b a := by
       simp only [not_or, Classical.not_and_iff_not_or_not, Classical.not_not, Nat.not_lt, ih]
       constructor
       · intro h
-        if g : equiv xs ys then
+        if g : equivAux xs ys then
           simp [g] at h
-          have : ¬ltAux ys xs := ih.mp (leAux_of_equiv g)
+          have : ¬ltAux ys xs := ih.mp (leAux_of_equivAux g)
           exact And.intro (.inl h) this
         else
           simp [g] at h
-          have : ltAux xs ys := ltAux_of_not_equiv_of_not_ltAux g h
+          have : ltAux xs ys := ltAux_of_not_equivAux_of_not_ltAux g h
           exact And.intro (.inr this) h
       · intro h
         if g : ltAux xs ys then
-          have : ¬ equiv xs ys := not_equiv_of_ltAux g
+          have : ¬ equivAux xs ys := not_equivAux_of_ltAux g
           simp only [this, reduceIte, h.right, not_false_eq_true]
         else
-          have : equiv xs ys := equiv_of_not_ltAux_and_not_ltAux (And.intro g h.right)
+          have : equivAux xs ys := equivAux_of_not_ltAux_and_not_ltAux (And.intro g h.right)
           simp only [this, reduceIte]
           exact Or.resolve_right h.left g
 
-theorem ltAux_iff_leAux_and_not_equiv {a b : List Nat} : ltAux a b ↔ leAux a b ∧ ¬ equiv a b := by
+theorem ltAux_iff_leAux_and_not_equivAux {a b : List Nat} : ltAux a b ↔ leAux a b ∧ ¬ equivAux a b := by
   constructor
   · intro h
-    exact And.intro (leAux_of_ltAux h) (not_equiv_of_ltAux h)
+    exact And.intro (leAux_of_ltAux h) (not_equivAux_of_ltAux h)
   · intro h
     have : ¬ ltAux b a := leAux_iff_not_ltAux.mp h.left
-    exact ltAux_of_not_equiv_of_not_ltAux h.right this
+    exact ltAux_of_not_equivAux_of_not_ltAux h.right this
 
 theorem ltAux_of_ltAux_of_leAux {a b c : List Nat} (hab : ltAux a b) (hbc : leAux b c) : ltAux a c := by
   have h1 : leAux a c := leAux_trans (leAux_of_ltAux hab) hbc
-  have h2 : equiv a c → equiv a b ∧ equiv b c := by
+  have h2 : equivAux a c → equivAux a b ∧ equivAux b c := by
     intro h
-    exact equiv_and_equiv_of_leAux_of_leAux_of_equiv (leAux_of_ltAux hab) hbc h
-  have h3 : equiv a c → ¬ ltAux a b := by
+    exact equivAux_and_equivAux_of_leAux_of_leAux_of_equivAux (leAux_of_ltAux hab) hbc h
+  have h3 : equivAux a c → ¬ ltAux a b := by
     intro h
-    exact not_ltAux_of_equiv (h2 h).left
-  have h4 : ¬ equiv a c := fun h : equiv a c => absurd hab (h3 h)
-  exact ltAux_iff_leAux_and_not_equiv.mpr (And.intro h1 h4)
+    exact not_ltAux_of_equivAux (h2 h).left
+  have h4 : ¬ equivAux a c := fun h : equivAux a c => absurd hab (h3 h)
+  exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro h1 h4)
 
 theorem ltAux_of_leAux_of_ltAux {a b c : List Nat} (hab : leAux a b) (hbc : ltAux b c) : ltAux a c := by
   have h1 : leAux a c := leAux_trans hab (leAux_of_ltAux hbc)
-  have h2 : equiv a c → equiv a b ∧ equiv b c := by
+  have h2 : equivAux a c → equivAux a b ∧ equivAux b c := by
     intro h
-    exact equiv_and_equiv_of_leAux_of_leAux_of_equiv hab (leAux_of_ltAux hbc) h
-  have h3 : equiv a c → ¬ ltAux b c := by
+    exact equivAux_and_equivAux_of_leAux_of_leAux_of_equivAux hab (leAux_of_ltAux hbc) h
+  have h3 : equivAux a c → ¬ ltAux b c := by
     intro h
-    exact not_ltAux_of_equiv (h2 h).right
-  have h4 : ¬ equiv a c := fun h : equiv a c => absurd hbc (h3 h)
-  exact ltAux_iff_leAux_and_not_equiv.mpr (And.intro h1 h4)
+    exact not_ltAux_of_equivAux (h2 h).right
+  have h4 : ¬ equivAux a c := fun h : equivAux a c => absurd hbc (h3 h)
+  exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro h1 h4)
 
 end LeAux_LtAux
 
@@ -1669,8 +1668,8 @@ theorem toNatAux_lt_toNatAux_of_ltAux {a b : List Nat} {base : Nat} (h : ltAux a
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
   toNatAux a base < toNatAux b base := by
   have h1 : toNatAux a base ≤ toNatAux b base := toNatAux_le_of_leAux (leAux_of_ltAux h) hb halt hblt
-  have h2 : ¬ equiv a b := not_equiv_of_ltAux h
-  have h3 : toNatAux a base = toNatAux b base ↔ equiv a b := toNatAux_eq_iff_equiv halt hblt hb
+  have h2 : ¬ equivAux a b := not_equivAux_of_ltAux h
+  have h3 : toNatAux a base = toNatAux b base ↔ equivAux a b := toNatAux_eq_iff_equivAux halt hblt hb
   have h4 : ¬ toNatAux a base = toNatAux b base := (Classical.iff_iff_not_iff_not.mp h3).mpr h2
   exact Nat.lt_of_le_of_ne h1 h4
 
@@ -1680,9 +1679,9 @@ theorem ltAux_of_toNatAux_lt_toNatAux {a b : List Nat} {base : Nat}
   ltAux a b := by
   have h1 : toNatAux a base ≤ toNatAux b base := Nat.le_of_lt h
   have h2 : ¬ toNatAux a base = toNatAux b base := Nat.ne_of_lt h
-  have h3 : toNatAux a base = toNatAux b base ↔ equiv a b := toNatAux_eq_iff_equiv halt hblt hb
-  have h4 : ¬ equiv a b := (Classical.iff_iff_not_iff_not.mp h3).mp h2
-  exact ltAux_iff_leAux_and_not_equiv.mpr (And.intro (leAux_of_toNatAux_le_toNatAux_of h1 hb halt hblt) h4)
+  have h3 : toNatAux a base = toNatAux b base ↔ equivAux a b := toNatAux_eq_iff_equivAux halt hblt hb
+  have h4 : ¬ equivAux a b := (Classical.iff_iff_not_iff_not.mp h3).mp h2
+  exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro (leAux_of_toNatAux_le_toNatAux_of h1 hb halt hblt) h4)
 
 theorem ltAux_iff_toNatAux_lt_toNtAux {a b : List Nat} {base : Nat} (hb : 1 < base)
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
@@ -1841,7 +1840,7 @@ theorem isZeroAux_ofNatAux_iff_eq_zero {n base : Nat} (hb : 1 < base) :
     have h2 : (prune [] n base hb) = [] := (isZeroAux_iff_eq_nil_of_noTrailingZero h1).mp h
     exact ((prune_eq_nil_iff_eq_nil_and_eq_zero hb).mp h2).right
   · intro h
-    simp only [h, ofNatAux, prune, isZeroAux, equiv]
+    simp only [h, ofNatAux, prune, isZeroAux, equivAux]
 
 end OfNatAux
 
@@ -2197,17 +2196,17 @@ theorem subAux_singleton_zero_eq {a : List Nat} {n base : Nat} : subAux a [n] 0 
   | [] => simp only
   | x::xs => simp only [Nat.add_zero, Nat.zero_add, Nat.sub_zero]
 
-theorem equiv_subAux_nil_of_equiv {a b : List Nat} {base : Nat} (h: equiv a b) :
-  equiv (subAux a b 0 base) [] := by
+theorem equivAux_subAux_nil_of_equivAux {a b : List Nat} {base : Nat} (h: equivAux a b) :
+  equivAux (subAux a b 0 base) [] := by
   induction b generalizing a with
   | nil => rwa [subAux_nil_eq]
   | cons y ys ih =>
     match a with
-    | [] => simp only [subAux_nil_eq_nil, equiv_refl]
+    | [] => simp only [subAux_nil_eq_nil, equivAux_refl]
     | x::xs =>
-      rw [equiv_cons_iff_eq_and_equiv] at h
+      rw [equivAux_cons_iff_eq_and_equivAux] at h
       simp only [← h.left, subAux_cons_cons_eq, Nat.add_zero, Nat.le_refl, reduceIte, Nat.sub_zero, Nat.sub_self]
-      exact equiv_cons_nil_of_equiv_nil (ih h.right)
+      exact equivAux_cons_nil_of_equivAux_nil (ih h.right)
 
 theorem toNatAux_subAux_nil_zero_eq_zero {a : List Nat} {base : Nat} :
   toNatAux (subAux [] a 0 base) base = 0 := by
@@ -2326,9 +2325,9 @@ theorem toNatAux_subAux_one_eq_of {a b : List Nat} {base : Nat}
           have h5 : allDigitsLtBase ys base := (allDigitsLtBase_cons_iff.mp hblt).right
           have h6 : toNatAux (subAux xs ys 1 base) base = toNatAux (subAux xs ys 0 base) base - 1 :=
             ih h2 h3 h4 h5
-          have h7 : ¬ equiv xs ys := by
-            rw [equiv_iff_equiv]
-            exact not_equiv_of_ltAux h2
+          have h7 : ¬ equivAux xs ys := by
+            rw [equivAux_iff_equivAux]
+            exact not_equivAux_of_ltAux h2
           have h8 : 1 ≤ toNatAux (subAux xs ys 0 base) base :=
             Nat.succ_le_of_lt (lt_toNatAux_subAux_of_ltAux_of h2 hb h4 h5)
           have h9 : base ≤ base * toNatAux (subAux xs ys 0 base) base := by
@@ -2350,12 +2349,12 @@ theorem toNatAux_subAux_one_eq_of {a b : List Nat} {base : Nat}
           have h8 : 1 ≤ base + x - y := Nat.succ_le_of_lt h7
           simp only [h3, reduceIte, toNatAux_cons_eq, Nat.sub_add_comm h8]
 
-theorem toNatAux_subAux_left_distrib_of_equiv {a b : List Nat} {base : Nat} (h : equiv a b) (hb : 1 < base) :
+theorem toNatAux_subAux_left_distrib_of_equivAux {a b : List Nat} {base : Nat} (h : equivAux a b) (hb : 1 < base) :
   toNatAux (subAux a b 0 base) base = (toNatAux a base) - (toNatAux b base) := by
   have h1 : toNatAux (subAux a b 0 base) base = 0 := by
-    rw [toNatAux_eq_of_equiv (equiv_subAux_nil_of_equiv h) hb]
+    rw [toNatAux_eq_of_equivAux (equivAux_subAux_nil_of_equivAux h) hb]
     exact toNatAux_nil_eq
-  have h2 : (toNatAux a base) = (toNatAux b base) := toNatAux_eq_of_equiv h hb
+  have h2 : (toNatAux a base) = (toNatAux b base) := toNatAux_eq_of_equivAux h hb
   simp only [h1, h2, Nat.sub_self]
 
 theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
@@ -2366,7 +2365,7 @@ theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
   | nil =>
     have : isZeroAux b := by
       unfold isZeroAux
-      exact equiv_nil_of_leAux_nil h
+      exact equivAux_nil_of_leAux_nil h
     simp only [toNatAux_subAux_nil_zero_eq_zero, toNatAux_eq_zero_of_isZeroAux this, toNatAux_nil_eq]
   | cons x xs ih =>
     match b with
@@ -2375,11 +2374,11 @@ theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
       have h1 : noTrailingZero xs := (noTrailingZero_cons_iff_noTrailingZero_and.mp hntza).left
       have h2 : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halt
       have h3 : y < base ∧ allDigitsLtBase ys base := allDigitsLtBase_cons_iff.mp hblt
-      if g1 : equiv ys xs then
+      if g1 : equivAux ys xs then
         have h4 : y ≤ x := by
           simp only [leAux_cons_iff, g1, reduceIte] at h
           exact h
-        have h5 : leAux ys xs := leAux_of_equiv g1
+        have h5 : leAux ys xs := leAux_of_equivAux g1
         have h6 : toNatAux ys base ≤ toNatAux xs base := toNatAux_le_of_leAux h5 hb h3.right h2.right
         simp only [subAux_cons_cons_eq, Nat.add_zero, h4, reduceIte, Nat.sub_zero]
         simp only [toNatAux_cons_eq, ih h5 h1 h2.right h3.right]
@@ -2394,7 +2393,7 @@ theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
           simp only [toNatAux_cons_eq, ih h4 h1 h2.right h3.right]
           exact Nat.sub_add_mul_sub_eq_of h5 g2
         else
-          have h5 : ltAux ys xs := ltAux_iff_leAux_and_not_equiv.mpr (And.intro h4 g1)
+          have h5 : ltAux ys xs := ltAux_iff_leAux_and_not_equivAux.mpr (And.intro h4 g1)
           have h6 : toNatAux ys base < toNatAux xs base := toNatAux_lt_toNatAux_of_ltAux h5 hb h3.right h2.right
           simp only [subAux_cons_cons_eq, Nat.add_zero, g2, reduceIte, Nat.sub_zero, toNatAux_cons_eq]
           simp only [toNatAux_subAux_one_eq_of h5 h1 h2.right h3.right hb, ih h4 h1 h2.right h3.right]

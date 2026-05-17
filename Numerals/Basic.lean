@@ -45,6 +45,8 @@ structure PreNumeral (base : Nat) (hb : 1 < base) where
   allDigitsLtBase : allDigitsLtBase digits base
   deriving Repr
 
+
+
 /--
 PreNumerals in binary representation
 -/
@@ -68,12 +70,19 @@ abbrev PreNumeral16 := PreNumeral 16 (by decide)
 namespace PreNumeral
 
 /--
+returns the base of the provided numeral
+-/
+def base {base' : Nat} {hb' : 1 < base'} (_ : PreNumeral base' hb') : Nat := base'
+
+/--
 `[]` (i.e. _zero_) is the default `PreNumeral` - for any base
 -/
 instance instInhabitedPreNumeral {base : Nat} {hb : 1 < base} : Inhabited (PreNumeral base hb) := ⟨{
     digits := [],
     allDigitsLtBase := List.all_nil
   }⟩
+
+section Equality
 
 theorem eq_iff_digits_eq {base : Nat} (hb : 1 < base) (a b : PreNumeral base hb) :
   a = b ↔ a.digits = b.digits := by
@@ -94,10 +103,48 @@ def decEq {base : Nat} (hb : 1 < base) (a b : PreNumeral base hb) : Decidable (a
 instance instDecidableEqPreNumeral {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : Decidable (a = b) :=
   decEq hb a b
 
+end Equality
+
+section Equivalence
+
+def equiv {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : Prop :=
+  equivAux a.digits b.digits
+
 /--
-returns the base of the provided numeral
+`equiv` is an `Equivalence`
+
+Example:
+```
+#check equivalence_equiv.refl -- ∀ (x : PreNumeral ?m.1 ?m.2), x.equiv x
+#check equivalence_equiv.symm -- equiv ?m.5 ?m.6 → equiv ?m.6 ?m.5
+#check equivalence_equiv.trans -- equiv ?m.5 ?m.6 → equiv ?m.6 ?m.7 → equiv ?m.5 ?m.7
+```
 -/
-def base {base' : Nat} {hb' : 1 < base'} (_ : PreNumeral base' hb') : Nat := base'
+theorem equivalence_equiv {base: Nat} {hb : 1 < base} :
+  Equivalence (equiv : (PreNumeral base hb) → (PreNumeral base hb) → Prop) :=
+    ⟨
+      by unfold equiv; exact fun _ ↦ equivAux_refl,
+      by unfold equiv; intro a b hab; exact equivAux_symm hab,
+      by unfold equiv; intro a b c hab hbc; exact equivAux_trans hab hbc
+    ⟩
+
+instance instHasEquivPreNumeral {base : Nat} {hb : 1 < base} : HasEquiv (PreNumeral base hb) := ⟨equiv⟩
+
+example {base: Nat} {hb : 1 < base} (a : PreNumeral base hb) : a ≈ a := by
+  exact equivalence_equiv.refl a
+
+example {base: Nat} {hb : 1 < base} (a b : PreNumeral base hb) : a ≈ b → b ≈ a := by
+  exact equivalence_equiv.symm
+
+example {base: Nat} {hb : 1 < base} (a b c : PreNumeral base hb) : a ≈ b → b ≈ c → a ≈ c:= by
+  exact equivalence_equiv.trans
+
+example {base: Nat} {hb : 1 < base} (a b c : PreNumeral base hb) : a ≈ b → c ≈ b → a ≈ c:= by
+  intro hab hcb
+  have hbc : b ≈ c := equivalence_equiv.symm hcb
+  exact equivalence_equiv.trans hab hbc
+
+end Equivalence
 
 section IsZero
 /--
@@ -117,6 +164,8 @@ instance instIsZeroPreNumeral {base : Nat} {hb : 1 < base} (a : PreNumeral base 
   decIsZero a
 
 end IsZero
+
+section TrainingZeros
 
 /--
 `True` if `a` has no trailing zeros
@@ -141,6 +190,55 @@ def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) 
 
 instance instHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) :
   Decidable (a.hasNoTrailingZeros) := decHasNoTrailingZeros a
+
+end TrainingZeros
+
+section LessThanOrEqualTo
+
+/--
+[_less than or equal to_](https://en.wikipedia.org/w/index.php?title=Inequality_(mathematics)&oldid=1351959378)
+on `PreNumeral`s
+
+```
+def a : PreNumeral10 := default
+def b : PreNumeral10 := ⟨[1], by decide⟩
+def c : PreNumeral10 := ⟨[1, 0], by decide⟩
+#check a ≤ b -- Prop
+#eval a ≤ b -- true
+#eval b ≤ a -- false
+#eval b ≤ c -- true
+#eval c ≤ b -- true
+```
+-/
+def le {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : Prop :=
+  leAux a.digits b.digits
+
+def a : PreNumeral10 := default
+def b : PreNumeral10 := ⟨[1], by decide⟩
+def c : PreNumeral10 := ⟨[1, 0], by decide⟩
+
+instance instLePreNumeral {base : Nat} {hb : 1 < base} : LE (PreNumeral base hb) := ⟨le⟩
+
+instance instLePreNumeralIsPreorder {base : Nat} {hb : 1 < base} : Std.IsPreorder (PreNumeral base hb) :=
+  ⟨
+    by unfold instLePreNumeral le; intro _ ; exact leAux_refl,
+    by unfold instLePreNumeral le; intro a b c; exact leAux_trans
+  ⟩
+
+def decLe {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) : Decidable (a ≤ b) :=
+  if h : leAux a.digits b.digits then
+    isTrue h
+  else
+    isFalse h
+
+instance DecidableLE {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
+  Decidable (a ≤ b) := decLe a b
+
+theorem le_refl {base : Nat} {hb : 1 < base} {a : PreNumeral base hb} : a ≤ a := by
+  unfold instLePreNumeral le
+  exact leAux_refl
+
+end LessThanOrEqualTo
 
 section ToNat_OfNat
 
@@ -255,24 +353,15 @@ theorem toNat_add_left_distrib {base : Nat} {hb : 1 < base} (a b : PreNumeral ba
   simp only [add_eq_hAdd, PreNumeral.toNat, hAdd, toNatAux_addAux_left_distrib]
 
 /--
-the sum of two `PreNumeral`s `isZero` iff for both of them `isZero` holds
+the sum of two `PreNumeral`s `isZero` iff `isZero` holds for both of them
 -/
 theorem add_isZero_iff_isZero_and_isZero {base : Nat} {hb : 1 < base} (a b : PreNumeral base hb) :
   (a + b).isZero ↔ a.isZero ∧ b.isZero := by
-  constructor
-  · intro h
-    have : (a + b).toNat = 0 := (toNat_eq_zero_iff_isZero (a + b)).mpr h
-    have : a.toNat + b.toNat = 0 := by rwa [toNat_add_left_distrib a b] at this
-    have : a.toNat = 0 ∧ b.toNat = 0 := by rwa [Nat.add_eq_zero_iff] at this
-    rwa [toNat_eq_zero_iff_isZero a, toNat_eq_zero_iff_isZero b] at this
-  · intro _
-    have : a.toNat = 0 ∧ b.toNat = 0 := by
-      rwa [toNat_eq_zero_iff_isZero a, toNat_eq_zero_iff_isZero b]
-    have : a.toNat + b.toNat = 0 := Nat.add_eq_zero_iff.mpr this
-    have : (a + b).toNat = 0 := by rwa [toNat_add_left_distrib a b]
-    rwa [toNat_eq_zero_iff_isZero (a + b)] at this
+  simp only [← toNat_eq_zero_iff_isZero, toNat_add_left_distrib]
+  exact Nat.add_eq_zero_iff
 
 end Add
+
 
 end PreNumeral
 end PreNumerals
