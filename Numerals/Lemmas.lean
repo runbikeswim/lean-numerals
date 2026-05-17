@@ -309,7 +309,6 @@ theorem equivAux_iff_equivAux {a b : List Nat} : equivAux a b ↔ equivAux b a :
   · intro h
     exact equivAux_symm h
 
-
 /--
 [Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equivAux` with
 `[] : List Nat` as first and two arbitrary parameters of type `List Nat` as second
@@ -370,6 +369,14 @@ This lemma is used in the proof of `equivAux_consAux_consAux_nil_of_equivAux_nil
 theorem equivAux_cons_nil_of_equivAux_nil {xs : List Nat} (h : equivAux xs []) : equivAux (0::xs) [] := by
   unfold equivAux
   exact And.intro rfl h
+
+theorem all_eq_zero_of_equivAux_nil {a : List Nat} (h : equivAux a []) : a.all (· = 0) := by
+  induction a with
+  | nil => exact List.all_nil
+  | cons x xs ih =>
+    simp only [equivAux] at h
+    simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
+    exact And.intro h.left (ih h.right)
 
 /--
 This lemma is not used in this file but might be useful somewhere else.
@@ -790,6 +797,18 @@ theorem noTrailingZero_cons_iff_noTrailingZero_and {x : Nat} {xs : List Nat} :
 
 end NoTrailingZero
 
+section NoTrailingZero_Equiv
+
+theorem eq_of_noTrailingZero_of_equivAux {a b : List Nat}
+  (hantz : noTrailingZero a) (hbntz : noTrailingZero b) (habe: equivAux a b) : a = b := by
+  match ha: a, hb: b with
+  | [], [] => rfl
+  | x::xs, [] => sorry
+  | [], y::ys => sorry
+  | x::xs, y::ys => sorry
+
+end NoTrailingZero_Equiv
+
 section NoTrailingZero_IsZeroAux
 
 theorem isZeroAux_iff_eq_nil_of_noTrailingZero {a : List Nat} (hantz : noTrailingZero a) :
@@ -1004,7 +1023,11 @@ theorem leAux_nil_iff_equivAux_nil {a : List Nat} : leAux a [] ↔ equivAux [] a
 
 end Equiv_LeAux
 
-theorem leAux_antiysmm {a b : List Nat}:
+/--
+`leAux` is almost transitive - `equivAux` implies equality only if
+trailing zeros can be excluded
+-/
+theorem equivAux_iff_leAux_and_leAux {a b : List Nat}:
   equivAux a b ↔ leAux a b ∧ leAux b a := by
   constructor
   · intro h
@@ -1132,9 +1155,9 @@ theorem leAux_of_equivAux_of_leAux {a b c : List Nat} (hab : equivAux a b) (hbc 
 theorem equivAux_and_equivAux_of_leAux_of_leAux_of_equivAux {a b c : List Nat}
   (hab : leAux a b) (hbc : leAux b c) (hac : equivAux a c) : equivAux a b ∧ equivAux b c := by
   have h1 : leAux b a := leAux_of_leAux_of_equivAux hbc (equivAux_symm hac)
-  have h2 : equivAux a b := leAux_antiysmm.mpr (And.intro hab h1)
+  have h2 : equivAux a b := equivAux_iff_leAux_and_leAux.mpr (And.intro hab h1)
   have h3 : leAux c b := leAux_of_equivAux_of_leAux (equivAux_symm hac) hab
-  have h4 : equivAux b c := leAux_antiysmm.mpr (And.intro hbc h3)
+  have h4 : equivAux b c := equivAux_iff_leAux_and_leAux.mpr (And.intro hbc h3)
   exact And.intro h2 h4
 
 end LeAux_Equiv

@@ -45,8 +45,6 @@ structure PreNumeral (base : Nat) (hb : 1 < base) where
   allDigitsLtBase : allDigitsLtBase digits base
   deriving Repr
 
-
-
 /--
 PreNumerals in binary representation
 -/
@@ -188,7 +186,7 @@ def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) 
   else
     isFalse h
 
-instance instHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) :
+instance instDecHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : PreNumeral base hb) :
   Decidable (a.hasNoTrailingZeros) := decHasNoTrailingZeros a
 
 end TrainingZeros
@@ -197,7 +195,7 @@ section LessThanOrEqualTo
 
 /--
 [_less than or equal to_](https://en.wikipedia.org/w/index.php?title=Inequality_(mathematics)&oldid=1351959378)
-on `PreNumeral`s
+for `PreNumeral`s
 
 ```
 def a : PreNumeral10 := default
