@@ -1021,14 +1021,11 @@ def leAux (a b : List Nat) : Prop :=
   | x::xs, y::ys => if equivAux xs ys then x ≤ y else leAux xs ys
 
 theorem leAux_refl {a : List Nat} : leAux a a := by
-  induction a with
-  | nil => simp only [leAux]
-  | cons x xs ih => simp only [leAux, equivAux_refl, reduceIte, Nat.le_refl]
+  match a with
+  | [] => simp only [leAux]
+  | x::xs => simp only [leAux, equivAux_refl, reduceIte, Nat.le_refl]
 
-theorem leAux_nil {a : List Nat} : leAux [] a := by
-  induction a with
-  | nil => exact leAux_refl
-  | cons x xs ih => simp only [leAux]
+theorem leAux_nil {a : List Nat} : leAux [] a := by simp only [leAux]
 
 theorem leAux_cons_iff {x y : Nat} {xs ys : List Nat} :
   leAux (x::xs) (y::ys) ↔ if equivAux xs ys then x ≤ y else leAux xs ys := by
@@ -1075,8 +1072,7 @@ theorem leAux_nil_iff_equivAux_nil {a : List Nat} : leAux a [] ↔ equivAux [] a
 end Equiv_LeAux
 
 /--
-`leAux` is almost transitive - `equivAux` implies equality only if
-trailing zeros can be excluded
+`leAux` is _almost_ antisymmetric
 -/
 theorem equivAux_iff_leAux_and_leAux {a b : List Nat}:
   equivAux a b ↔ leAux a b ∧ leAux b a := by
@@ -1111,15 +1107,6 @@ theorem equivAux_iff_leAux_and_leAux {a b : List Nat}:
           simp only [g, reduceIte, this] at h
           have : equivAux xs ys := ih h
           contradiction
-
-theorem leAux_nil_of_leAux {a b : List Nat} (h : leAux a b) : leAux [] b := by
-  induction a generalizing b with
-  | nil => exact leAux_nil
-  | cons x xs ih =>
-    unfold leAux at h;
-    match b with
-    | [] => exact ih h.right
-    | y::ys => unfold leAux; simp_all only
 
 section LeAux_Equiv
 
