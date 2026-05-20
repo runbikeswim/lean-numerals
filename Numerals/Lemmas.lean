@@ -182,6 +182,32 @@ theorem add_sub_add_mul_sub_sub_eq_of {a b x y base : Nat}
 
 end Nat
 
+section List
+
+namespace List
+
+/--
+this lemma asserts the obvious fact that if `p` is true for all elements of a non-empty
+list `l`, it particular holds for the last element in the list provided by `List.getLast`.
+-/
+theorem getLast_true_of_all_true_of_ne_nil {α : Type} (l : List α) (p : α → Bool)
+  (ha : l.all p) (hn : l ≠ []) : p (l.getLast hn) := by
+  induction l with
+  | nil => contradiction
+  | cons x xs ih =>
+    rw [List.all_cons, Bool.and_eq_true] at ha
+    match xs with
+    | [] =>
+      rw [List.getLast_singleton]
+      exact ha.left
+    | xxs::xss =>
+      have : xxs::xss ≠ [] := List.cons_ne_nil xxs xss
+      rw [List.getLast_cons_cons]
+      exact ih ha.right this
+
+end List
+end List
+
 section ToNatAux
 
 /--
@@ -799,13 +825,38 @@ end NoTrailingZero
 
 section NoTrailingZero_Equiv
 
+theorem eq_nil_of_noTrailingZero_of_equivAux {a : List Nat}
+  (hantz : noTrailingZero a) (hea: equivAux a []) : a = [] := by
+  match a with
+  | [] => rfl
+  | x::xs =>
+    have : (x::xs).all (· = 0) := all_eq_zero_of_equivAux_nil hea
+    have h : (x::xs).getLast (List.cons_ne_nil x xs) = 0 := by
+      rw [← beq_iff_eq]
+      exact List.getLast_true_of_all_true_of_ne_nil (x::xs) (· == 0) this (List.cons_ne_nil x xs)
+    have h': (x::xs).getLast (List.cons_ne_nil x xs) ≠ 0 := by
+      unfold noTrailingZero at hantz
+      exact hantz (List.cons_ne_nil x xs)
+    exact absurd h h'
+
 theorem eq_of_noTrailingZero_of_equivAux {a b : List Nat}
   (hantz : noTrailingZero a) (hbntz : noTrailingZero b) (habe: equivAux a b) : a = b := by
-  match ha: a, hb: b with
-  | [], [] => rfl
-  | x::xs, [] => sorry
-  | [], y::ys => sorry
-  | x::xs, y::ys => sorry
+  induction a generalizing b with
+  | nil =>
+    have : equivAux b [] := equivAux_symm habe
+    exact Eq.symm (eq_nil_of_noTrailingZero_of_equivAux hbntz this)
+  | cons x xs ih =>
+    match b with
+    | [] => exact eq_nil_of_noTrailingZero_of_equivAux hantz habe
+    | y::ys =>
+      have hxs : noTrailingZero xs := (noTrailingZero_tail_and_of hantz).left
+      have hys : noTrailingZero ys := (noTrailingZero_tail_and_of hbntz).left
+      have heq : x = y ∧ equivAux xs ys := by
+        simp only [equivAux] at habe
+        exact habe
+      have hes : xs = ys := ih hxs hys heq.right
+      have he : x = y := heq.left
+      exact List.cons_eq_cons.mpr (And.intro he hes)
 
 end NoTrailingZero_Equiv
 
