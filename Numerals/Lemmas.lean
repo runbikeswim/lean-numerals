@@ -1020,12 +1020,12 @@ def leAux (a b : List Nat) : Prop :=
   | x::xs, [] => x = 0 ∧ leAux xs []
   | x::xs, y::ys => if equivAux xs ys then x ≤ y else leAux xs ys
 
+def leAux_nil {a : List Nat} : leAux [] a := by simp only [leAux]
+
 theorem leAux_refl {a : List Nat} : leAux a a := by
   match a with
   | [] => simp only [leAux]
   | x::xs => simp only [leAux, equivAux_refl, reduceIte, Nat.le_refl]
-
-theorem leAux_nil {a : List Nat} : leAux [] a := by simp only [leAux]
 
 theorem leAux_cons_iff {x y : Nat} {xs ys : List Nat} :
   leAux (x::xs) (y::ys) ↔ if equivAux xs ys then x ≤ y else leAux xs ys := by
@@ -1107,6 +1107,27 @@ theorem equivAux_iff_leAux_and_leAux {a b : List Nat}:
           simp only [g, reduceIte, this] at h
           have : equivAux xs ys := ih h
           contradiction
+
+theorem leAux_total {a b : List Nat} : leAux a b ∨ leAux b a := by
+  induction a generalizing b with
+  | nil => exact .inl (leAux_nil)
+  | cons x xs ih =>
+    match b with
+    | [] => exact .inr (leAux_nil)
+    | y::ys =>
+      if g1 : equivAux xs ys then
+        if g2 : x ≤ y then
+          have : leAux (x::xs) (y::ys) := by simp only [leAux, g1, g2, reduceIte]
+          exact .inl this
+        else
+          have h1 : equivAux ys xs := equivAux_symm g1
+          have h2 : y ≤ x := Nat.le_of_not_le g2
+          have : leAux (y::ys) (x::xs) := by simp only [leAux, h1, h2, reduceIte]
+          exact .inr this
+      else
+        have g2 : ¬ equivAux ys xs := not_equivAux_iff_not_equivAux.mp g1
+        simp only [leAux, g1, g2, reduceIte]
+        exact ih
 
 section LeAux_Equiv
 
