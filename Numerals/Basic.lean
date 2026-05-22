@@ -30,11 +30,11 @@ section Prenumerals
 /--
 `Prenumeral` provides a representation of a natural number in positional notation for `base`, with `digits`
 in _reverse_ (little-endian) order. `base` can be any number larger than one.
-`allDigitsLtBase` asserts that every digit is less than `base`.
+`ltBase` asserts that every digit is less than `base`.
 
 `Prenumeral`s can have leading zeros as in
 ```
-def p : Prenumeral 10 (by decide) := {digits := [2, 1, 0], allDigitsLtBase := by decide}
+def p : Prenumeral 10 (by decide) := {digits := [2, 1, 0], ltBase := by decide}
 
 ```
 which represents the `12` in base ten.
@@ -42,7 +42,7 @@ which represents the `12` in base ten.
 @[ext]
 structure Prenumeral (base : Nat) (hb : 1 < base) where
   digits : List Nat
-  allDigitsLtBase : allDigitsLtBase digits base
+  ltBase : allDigitsLtBase digits base
   deriving Repr
 
 /--
@@ -68,7 +68,19 @@ abbrev Prenumeral16 := Prenumeral 16 (by decide)
 namespace Prenumeral
 
 /--
-returns the base of the provided numeral
+
+Example:
+```
+def p : Prenumeral 10 (by decide) := ofList [1, 2, 3, 0] (by decide)
+#eval p -- { digits := [1, 2, 3, 0], ltBase := _ }
+```
+-/
+def ofList {base: Nat} {hb: 1 < base} (a: List Nat) (ha : allDigitsLtBase a base) : Prenumeral base hb where
+  digits := a
+  ltBase := ha
+
+/--
+returns the base of the provided `Prenumeral`
 -/
 def base {base' : Nat} {hb' : 1 < base'} (_ : Prenumeral base' hb') : Nat := base'
 
@@ -77,11 +89,14 @@ def base {base' : Nat} {hb' : 1 < base'} (_ : Prenumeral base' hb') : Nat := bas
 -/
 instance instInhabitedPrenumeral {base : Nat} {hb : 1 < base} : Inhabited (Prenumeral base hb) := ⟨{
     digits := [],
-    allDigitsLtBase := List.all_nil
+    ltBase := List.all_nil
   }⟩
 
 section Equality
 
+/--
+asserts that two `Prenumeral`s are equal iff their lists of digits are equal
+-/
 theorem eq_iff_digits_eq {base : Nat} (hb : 1 < base) (a b : Prenumeral base hb) :
   a = b ↔ a.digits = b.digits := by
   constructor
@@ -91,6 +106,9 @@ theorem eq_iff_digits_eq {base : Nat} (hb : 1 < base) (a b : Prenumeral base hb)
     ext
     simp only [h]
 
+/--
+decidable equality
+-/
 def decEq {base : Nat} (hb : 1 < base) (a b : Prenumeral base hb) : Decidable (a = b) :=
   if h : a.digits = b.digits then
     isTrue ((eq_iff_digits_eq hb a b).mpr h)
@@ -105,11 +123,14 @@ end Equality
 
 section Equivalence
 
+/--
+two `Prenumeral` if the same `base` are `equiv`alent, if they only differ with respect to leading zeros.
+-/
 def equiv {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prop :=
   equivAux a.digits b.digits
 
 /--
-`equiv` is an `Equivalence`
+`equiv` is an `Equivalence` i.e. [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation)
 
 Example:
 ```
@@ -237,10 +258,6 @@ def decLe {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Decidable (a
 instance DecidableLE {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
   Decidable (a ≤ b) := decLe a b
 
-theorem le_refl {base : Nat} {hb : 1 < base} {a : Prenumeral base hb} : a ≤ a := by
-  unfold instLePrenumeral le
-  exact leAux_refl
-
 end LessThanOrEqualTo
 
 section ToNat_OfNat
@@ -268,14 +285,14 @@ returns a `Prenumeral` for the given number (of type `Nat`)
 
 Examples:
 ```
-#eval Prenumeral.ofNat 0 10 (by decide) -- { digits := [], allDigitsLtBase := _ }
-#eval Prenumeral.ofNat 10 2 (by decide) -- { digits := [0, 1, 0, 1], allDigitsLtBase := _ }
-#eval Prenumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], allDigitsLtBase := _ }
+#eval Prenumeral.ofNat 0 10 (by decide) -- { digits := [], ltBase := _ }
+#eval Prenumeral.ofNat 10 2 (by decide) -- { digits := [0, 1, 0, 1], ltBase := _ }
+#eval Prenumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], ltBase := _ }
 ```
 -/
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Prenumeral base hb where
   digits := ofNatAux n base hb
-  allDigitsLtBase := allDigitsLtBase_prune
+  ltBase := allDigitsLtBase_prune
 
 /--
 `ofNat` returns a `Prenumeral` that `isZero` iff its input is `0`
@@ -331,7 +348,7 @@ section Add
 
 def hAdd {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prenumeral base hb where
   digits := addAux a.digits b.digits 0 base hb
-  allDigitsLtBase := allDigitsLtBase_addAux 0
+  ltBase := allDigitsLtBase_addAux 0
 
 instance instHAddPrenumerals {base : Nat} {hb : 1 < base} :
   HAdd (Prenumeral base hb) (Prenumeral base hb) (Prenumeral base hb) := ⟨hAdd⟩
@@ -413,7 +430,7 @@ returned as sequence of natural numbers, separated by "," and succeeded by the
 the value of `base` (all in decimal notation).
 -/
 def Prenumeral.toString {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) : String :=
-  toStringAux n.digits base n.allDigitsLtBase
+  toStringAux n.digits base n.ltBase
 
 instance instToStringPrenumeral {base : Nat} {hb : 1 < base} : ToString (Prenumeral base hb) where
   toString := Prenumeral.toString
@@ -456,7 +473,7 @@ Coercion of a `Numeral` into a `Prenumeral`.
 -/
 @[coe]
 def toPrenumeral {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Prenumeral base hb :=
-  {digits := n.digits, allDigitsLtBase := n.allDigitsLtBase}
+  {digits := n.digits, ltBase := n.ltBase}
 
 namespace Numeral
 
@@ -469,22 +486,22 @@ Converts a `Prenumeral` into a `toNumeral` by discarding (potentially present) t
 Examples:
 ```
 def p : Prenumeral 10 (by decide) := ⟨[1,9,0], by  decide⟩
-#eval p -- { digits := [1, 9, 0], allDigitsLtBase := _ }
+#eval p -- { digits := [1, 9, 0], ltBase := _ }
 
 def n : Numeral 10 (by decide) := p.toNumeral
-#eval n -- { toPrenumeral := { digits := [1, 9], allDigitsLtBase := _ }, noTrailingZero := _ }
+#eval n -- { toPrenumeral := { digits := [1, 9], ltBase := _ }, noTrailingZero := _ }
 
 def q : Prenumeral 10 (by decide) := n.toPrenumeral
-#eval q -- { digits := [1, 9], allDigitsLtBase := _ }
+#eval q -- { digits := [1, 9], ltBase := _ }
 
 def r : Prenumeral 10 (by decide) := n
-#eval r -- { digits := [1, 9], allDigitsLtBase := _ }
+#eval r -- { digits := [1, 9], ltBase := _ }
 ```
 -/
 def Prenumeral.toNumeral {base : Nat} {hb : 1 < base} (p : Prenumeral base hb) :
   Numeral base hb where
   digits := discardTrailingZeros p.digits
-  allDigitsLtBase := allDigitsLtBase_discardTrailingZeros p.allDigitsLtBase
+  ltBase := allDigitsLtBase_discardTrailingZeros p.ltBase
   noTrailingZero :=  noTrailingZero_discardTrailingZeros
 
 /-
