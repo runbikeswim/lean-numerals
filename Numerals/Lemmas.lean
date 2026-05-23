@@ -25,16 +25,9 @@ elements in the lists as digits. Additionally, a parameter `base : Nat` is used 
 
 namespace  Classical
 
-/--
-This lemma is used in the proof of `noTrailingZero_prune_nil`.
--/
 theorem imp_iff_not_imp_not {p q : Prop} : (p → q) ↔ (¬q → ¬p) := by
   rw [← Classical.or_iff_not_imp_left, or_comm, Classical.or_iff_not_imp_left, Classical.not_not]
 
-/--
-This lemma is used in the proofs of `not_equivAux_iff_not_equivAux`, `toNatAux_le_of_leAux`
-`toNatAux_lt_toNatAux_of_ltAux` and `ltAux_of_toNatAux_lt_toNatAux`.
--/
 theorem iff_iff_not_iff_not {p q : Prop} : (p ↔ q) ↔ (¬p ↔ ¬q) := by
   constructor
   · intro h
@@ -55,19 +48,12 @@ for theorems used in proofs.
 -/
 theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
 
-/--
-This lemma is used in the proof of `mod_ne_zero_of_one_lt_of_div_zero_of_ne`
--/
 theorem eq_zero_of_one_lt_of_mod_eq_zero_of_lt {a b : Nat}
   (h1 : 1 < b) (h2 : a % b = 0) (h3 : a < b) : a = 0 := by
   have h4 : b ∣ a  := Nat.dvd_iff_mod_eq_zero.mpr h2
   have h5 : a < b := Or.resolve_left (.inr h3) (Nat.ne_zero_of_lt h1)
   exact Nat.eq_zero_of_dvd_of_lt h4 h5
 
-/--
-This lemma is used in the proofs of `noTrailingZero_prune_nil` and
-`noTrailingZero_prune_of_noTrailingZero`.
--/
 theorem mod_ne_zero_of_one_lt_of_div_zero_of_ne {a b : Nat}
   (h1 : 1 < b) (h2 : a / b = 0) (h3 : a ≠ 0) : a % b ≠ 0 := by
   have h4 : a < b := Nat.lt_of_div_eq_zero (Nat.pos_of_one_lt h1) h2
@@ -75,22 +61,13 @@ theorem mod_ne_zero_of_one_lt_of_div_zero_of_ne {a b : Nat}
   have h6 : a = 0 := eq_zero_of_one_lt_of_mod_eq_zero_of_lt h1 h5 h4
   contradiction
 
-/--
-This lemma is used in the proof of `add_mul_mod_eq_iff_eq_of`.
--/
 theorem add_mul_mod_eq {a b base : Nat} (halt : a < base) : (a + base * b) % base = a := by
   rw [Nat.add_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt halt]
 
-/--
-This lemma is used in the proof of `add_mul_eq_iff_eq_and_eq_of`.
--/
 theorem add_mul_mod_eq_iff_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
   (a + base * b) % base = (c + base * d) % base ↔ a = c := by
   rw [add_mul_mod_eq halt, add_mul_mod_eq hclt]
 
-/--
-This lemma is used in the proof of `add_mul_eq_iff_eq_and_eq_of`.
--/
 theorem add_mul_div_eq_iff_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
   (a + base * b) / base = (c + base * d) / base ↔ b = d := by
   have : 0 < base := Nat.lt_of_le_of_lt (Nat.zero_le a) halt
@@ -98,21 +75,12 @@ theorem add_mul_div_eq_iff_eq_of {a b c d base : Nat} (halt : a < base) (hclt : 
   rw [(Nat.div_eq_zero_iff_lt this).mpr halt, Nat.zero_add]
   rw [(Nat.div_eq_zero_iff_lt this).mpr hclt, Nat.zero_add]
 
-/--
-This lemma is used in the proof of `add_mul_eq_iff_eq_and_eq_of`.
--/
 theorem mod_eq_mod_of_eq {a b base : Nat} (h: a = b) : a % base = b % base := by
   rw [h]
 
-/--
-This lemma is used in the proof of `add_mul_eq_iff_eq_and_eq_of`.
--/
 theorem div_eq_div_of_eq {a b base : Nat} (h: a = b) : a / base = b / base := by
   rw [h]
 
-/--
-This lemma is used in the proof of `equivAux_of_toNatAux_eq`, .
--/
 theorem add_mul_eq_iff_eq_and_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
   a + base * b = c + base * d ↔ a = c ∧ b = d := by
   constructor
@@ -123,9 +91,6 @@ theorem add_mul_eq_iff_eq_and_eq_of {a b c d base : Nat} (halt : a < base) (hclt
   · intro h
     rw [h.left, h.right]
 
-/--
-This lemma is used in the proofs of `add_mul_le_iff_le_of` and `toNatAux_le_of_leAux`.
--/
 theorem add_mul_lt_of_lt_of_lt {a b x y base : Nat} (hab : a < b) (hx : x < base) :
   x + base * a < y + base * b := by
   calc x + base * a < base + base * a := Nat.add_lt_add_right hx (base * a)
@@ -134,9 +99,6 @@ theorem add_mul_lt_of_lt_of_lt {a b x y base : Nat} (hab : a < b) (hx : x < base
     _ ≤ base * b := Nat.mul_le_mul_left base (Nat.succ_le_of_lt hab)
     _ ≤ y + base * b := Nat.le_add_left (base * b) y
 
-/--
-This lemma is used in the proof of `leAux_of_toNatAux_le_toNatAux_of`.
--/
 theorem add_mul_le_iff_le_of {a b x y base : Nat} (hab: a ≠ b) (hx : x < base) (hy : y < base)  :
   x + base * a ≤ y + base * b ↔ a ≤ b := by
   constructor
@@ -148,18 +110,12 @@ theorem add_mul_le_iff_le_of {a b x y base : Nat} (hab: a ≠ b) (hx : x < base)
     have : x + base * a < y + base * b := add_mul_lt_of_lt_of_lt (Nat.lt_of_le_of_ne h hab) hx
     exact Nat.le_of_lt this
 
-/--
-This lemma is used in the proof of `toNatAux_subAux_left_distrib_of_leAux`.
--/
 theorem sub_add_mul_sub_eq_of {a b x y base : Nat} (hab: b ≤ a) (hxy : y ≤ x):
   x - y + base * (a - b) = x + base * a - (y + base * b) := by
   have : base * b ≤ base * a := Nat.mul_le_mul_left base hab
   simp only [Nat.mul_sub_left_distrib, ← Nat.add_sub_assoc this]
   simp only [← Nat.sub_add_comm hxy, Nat.sub_sub]
 
-/--
-This lemma is used in the proof of `toNatAux_subAux_left_distrib_of_leAux`.
--/
 theorem add_sub_add_mul_sub_sub_eq_of {a b x y base : Nat}
   (hab: b < a ) (hy : y < base) (hb : 1 < base):
   base + x - y + base * (a - b - 1) = x + base * a - (y + base * b) := by
@@ -187,7 +143,7 @@ section List
 namespace List
 
 /--
-this lemma asserts the obvious fact that if `p` is true for all elements of a non-empty
+asserts the obvious fact that if `p` is true for all elements of a non-empty
 list `l`, it particular holds for the last element in the list provided by `List.getLast`.
 -/
 theorem getLast_true_of_all_true_of_ne_nil {α : Type} (l : List α) (p : α → Bool)
@@ -226,16 +182,10 @@ def toNatAux (a : List Nat) (base : Nat) : Nat :=
       | [] => (factor, acc)
       | x::xs => helper xs base (factor * base) (x * factor + acc)
 
-/--
-This lemma is used in the proof of `toNatAux_helper_snd_eq`.
--/
 theorem toNatAux_helper_nil_eq {base factor acc : Nat} : toNatAux.helper [] base factor acc = (factor, acc) := by
   unfold toNatAux.helper
   rfl
 
-/--
-This lemma is used in the proof of `toNatAux_cons_eq`.
--/
 theorem toNatAux_helper_snd_eq {a : List Nat} {base factor acc : Nat} :
   (toNatAux.helper a base factor acc).snd = acc + factor * (toNatAux.helper a base 1 0).snd := by
   induction a generalizing factor acc with
@@ -247,20 +197,10 @@ theorem toNatAux_helper_snd_eq {a : List Nat} {base factor acc : Nat} :
     rw (occs := .pos [2]) [ih]
     rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
 
-/--
-This lemma is used in the proofs of `toNatAux_eq_zero_of_isZeroAux`, `toNatAux_eq_of_equivAux`,
-`equivAux_of_toNatAux_eq`, `equivAux_of_toNatAux_eq`, `toNatAux_le_of_leAux`,
-`leAux_of_toNatAux_le_toNatAux_of`, `toNatAux_prune_eq_add_toNatAux`,
-`toNatAux_subAux_nil_one_eq_of`, `toNatAux_subAux_one_eq_of`,
-`toNatAux_subAux_left_distrib_of_equivAux`, `toNatAux_subAux_left_distrib_of_leAux`.
--/
 theorem toNatAux_nil_eq {base : Nat} : toNatAux [] base = 0 := by
   unfold toNatAux
   rfl
 
-/--
-This lemma is used in the proofs of theorems in fils file.
--/
 theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
   toNatAux (x::xs) base = x + base * (toNatAux xs base) := by
   rw [toNatAux.eq_def, toNatAux.helper.eq_def]
@@ -381,17 +321,9 @@ theorem equivAux_trans {a b c : List Nat} (hab : equivAux a b) (hbc :  equivAux 
       rw [hab.left, ← hbc.left]
       exact And.intro rfl (ihx hab.right hbc.right)
 
-/--
-This lemma is used in the proof of `leAux_antiysmm`.
--/
 theorem not_equivAux_iff_not_equivAux {a b : List Nat} : ¬ equivAux a b ↔ ¬ equivAux b a :=
   Classical.iff_iff_not_iff_not.mp equivAux_iff_equivAux
 
-/--
-This lemma is used in the proof of `equivAux_consAux_consAux_nil_of_equivAux_nil`,
-`equivAux_consAux_singleton_of_equivAux_nil`, `equivAux_consAux_cons_of_equivAux` and
-`equivAux_subAux_nil_of_equivAux`.
--/
 theorem equivAux_cons_nil_of_equivAux_nil {xs : List Nat} (h : equivAux xs []) : equivAux (0::xs) [] := by
   unfold equivAux
   exact And.intro rfl h
@@ -404,9 +336,6 @@ theorem all_eq_zero_of_equivAux_nil {a : List Nat} (h : equivAux a []) : a.all (
     simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
     exact And.intro h.left (ih h.right)
 
-/--
-This lemma is not used in this file but might be useful somewhere else.
--/
 theorem not_equivAux_cons_of_lt {x y : Nat} {xs ys : List Nat} (h : x < y) : ¬ equivAux (x::xs) (y::ys) := by
   have : x ≠ y := Nat.ne_of_lt h
   simp only [equivAux, Classical.not_and_iff_not_or_not]
@@ -635,44 +564,6 @@ theorem allDigitsLtBase_singleton {n : Nat} {base : Nat} (hn : n < base) :
 
 end AllDigitsLtBase
 
-section ListFinBase
-
-def toListFinBase {base : Nat} (a : List Nat) (h : allDigitsLtBase a base) : List (Fin base) :=
-  match a with
-  | [] => []
-  | x::xs =>
-    have : x < base := (allDigitsLtBase_cons_iff.mp h).left
-    ⟨x,this⟩ :: toListFinBase xs (allDigitsLtBase_cons_iff.mp h).right
-
-def fromListFinBase {base : Nat} (a : List (Fin base)) : List Nat :=
-  match a with
-  | [] => []
-  | x::xs => ↑x :: fromListFinBase xs
-
-theorem allDigitsLtBase_fromListFinBase {base : Nat} (a : List (Fin base)) :
-  allDigitsLtBase (fromListFinBase a) base := by
-  induction a with
-  | nil => unfold fromListFinBase; simp only [allDigitsLtBase_nil]
-  | cons x xs ih =>
-    have hx : x < base := Fin.isLt x
-    exact allDigitsLtBase_cons_iff.mpr (And.intro hx ih)
-
-theorem fromListFinBase_toListFinBase_cancel {base : Nat} (a : List Nat) (h : allDigitsLtBase a base) :
-  fromListFinBase (toListFinBase a h) = a := by
-  induction a with
-  | nil => simp only [toListFinBase, fromListFinBase]
-  | cons x xs ih =>
-    simp only [toListFinBase, fromListFinBase, ih]
-
-theorem toListFinBase_fromListFinBase_cancel {base : Nat} (a : List (Fin base)) :
-  toListFinBase (fromListFinBase a) (allDigitsLtBase_fromListFinBase a) = a := by
-  induction a with
-  | nil => simp only [toListFinBase, fromListFinBase]
-  | cons x xs ih =>
-    simp only [toListFinBase, fromListFinBase, ih]
-
-end ListFinBase
-
 section ToNatAux_Equiv
 
 theorem toNatAux_eq_of_equivAux {a b : List Nat} {base : Nat} (h : equivAux a b) (hb : 1 < base) :
@@ -823,7 +714,7 @@ theorem noTrailingZero_cons_iff_noTrailingZero_and {x : Nat} {xs : List Nat} :
 
 end NoTrailingZero
 
-section NoTrailingZero_Equiv
+section NoTrailingZero_EquivAux
 
 theorem eq_nil_of_noTrailingZero_of_equivAux {a : List Nat}
   (hantz : noTrailingZero a) (hea: equivAux a []) : a = [] := by
@@ -858,7 +749,17 @@ theorem eq_of_noTrailingZero_of_equivAux {a b : List Nat}
       have he : x = y := heq.left
       exact List.cons_eq_cons.mpr (And.intro he hes)
 
-end NoTrailingZero_Equiv
+theorem eq_iff_equivAux_of_noTrailingZero {a b : List Nat}
+  (hantz : noTrailingZero a) (hbntz : noTrailingZero b) :
+  a = b ↔ equivAux a b := by
+  constructor
+  · intro h
+    rw [← h]
+    exact equivAux_refl
+  · intro h
+    exact eq_of_noTrailingZero_of_equivAux hantz hbntz h
+
+end NoTrailingZero_EquivAux
 
 section NoTrailingZero_IsZeroAux
 
@@ -1221,6 +1122,75 @@ theorem equivAux_and_equivAux_of_leAux_of_leAux_of_equivAux {a b c : List Nat}
 
 end LeAux_Equiv
 
+section ToNatAux_LeAux
+
+theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (h : leAux a b) (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
+  toNatAux a base ≤ toNatAux b base := by
+  induction a generalizing b with
+  | nil => simp only [toNatAux_nil_eq, Nat.zero_le]
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      have : isZeroAux (x::xs) := equivAux_nil_of_leAux_nil h
+      have : toNatAux (x :: xs) base = 0 := (toNatAux_eq_zero_iff_isZeroAux hb).mpr this
+      simp only [this, Nat.zero_le]
+    | y::ys =>
+      simp only [leAux_cons_iff] at h
+      simp only [toNatAux_cons_eq]
+      if g : equivAux xs ys then
+        simp only [g, reduceIte] at h
+        simp only [toNatAux_eq_of_equivAux g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
+      else
+        simp only [g, reduceIte] at h
+        have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
+        have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
+        have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
+        have h4 : toNatAux xs base ≠ toNatAux ys base :=
+          (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
+        have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
+        exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
+
+theorem leAux_of_toNatAux_le_toNatAux_of {a b : List Nat} {base : Nat}
+  (h : toNatAux a base ≤ toNatAux b base) (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) : leAux a b := by
+  induction a generalizing b with
+  | nil => exact leAux_nil
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      have : toNatAux [] base = 0 := toNatAux_nil_eq
+      simp only [toNatAux_nil_eq, Nat.le_zero, toNatAux_eq_zero_iff_isZeroAux hb, isZeroAux, equivAux_iff_equivAux] at h
+      exact leAux_of_equivAux h
+    | y::ys =>
+      simp only [toNatAux_cons_eq] at h
+      simp only [leAux]
+      if g : equivAux xs ys then
+        simp only [g, reduceIte]
+        rw [toNatAux_eq_of_equivAux g hb] at h
+        exact Nat.le_of_add_le_add_right h
+      else
+        have halt' : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
+        have hblt' : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
+        simp only [g, reduceIte]
+        have : toNatAux xs base ≠ toNatAux ys base := by
+          false_or_by_contra; rename _ => hc
+          exact absurd (equivAux_of_toNatAux_eq hc halt'.right hblt'.right hb) g
+        have : toNatAux xs base ≤ toNatAux ys base :=
+          (Nat.add_mul_le_iff_le_of this halt'.left hblt'.left).mp h
+        exact ih this halt'.right hblt'.right
+
+theorem leAux_iff_toNatAux_le_toNatAux {a b : List Nat} {base : Nat} (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
+  leAux a b ↔ (toNatAux a base) ≤ (toNatAux b base) := by
+  constructor
+  · intro h
+    exact toNatAux_le_of_leAux h hb halt hblt
+  · intro h
+    exact leAux_of_toNatAux_le_toNatAux_of h hb halt hblt
+
+end ToNatAux_LeAux
+
 theorem leAux_trans {a b c : List Nat} (hab : leAux a b) (hbc : leAux b c) : leAux a c := by
   induction a generalizing b c with
   | nil => exact leAux_nil
@@ -1316,75 +1286,6 @@ def decLeAux (a b : List Nat) : Decidable (leAux a b) :=
 instance instLeAux (a b : List Nat) : Decidable (leAux a b) := decLeAux a b
 
 end LeAux
-
-section ToNatAux_LeAux
-
-theorem toNatAux_le_of_leAux {a b : List Nat} {base : Nat} (h : leAux a b) (hb : 1 < base)
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
-  toNatAux a base ≤ toNatAux b base := by
-  induction a generalizing b with
-  | nil => simp only [toNatAux_nil_eq, Nat.zero_le]
-  | cons x xs ih =>
-    match b with
-    | [] =>
-      have : isZeroAux (x::xs) := equivAux_nil_of_leAux_nil h
-      have : toNatAux (x :: xs) base = 0 := (toNatAux_eq_zero_iff_isZeroAux hb).mpr this
-      simp only [this, Nat.zero_le]
-    | y::ys =>
-      simp only [leAux_cons_iff] at h
-      simp only [toNatAux_cons_eq]
-      if g : equivAux xs ys then
-        simp only [g, reduceIte] at h
-        simp only [toNatAux_eq_of_equivAux g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
-      else
-        simp only [g, reduceIte] at h
-        have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
-        have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
-        have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
-        have h4 : toNatAux xs base ≠ toNatAux ys base :=
-          (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
-        have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
-        exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
-
-theorem leAux_of_toNatAux_le_toNatAux_of {a b : List Nat} {base : Nat}
-  (h : toNatAux a base ≤ toNatAux b base) (hb : 1 < base)
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) : leAux a b := by
-  induction a generalizing b with
-  | nil => exact leAux_nil
-  | cons x xs ih =>
-    match b with
-    | [] =>
-      have : toNatAux [] base = 0 := toNatAux_nil_eq
-      simp only [toNatAux_nil_eq, Nat.le_zero, toNatAux_eq_zero_iff_isZeroAux hb, isZeroAux, equivAux_iff_equivAux] at h
-      exact leAux_of_equivAux h
-    | y::ys =>
-      simp only [toNatAux_cons_eq] at h
-      simp only [leAux]
-      if g : equivAux xs ys then
-        simp only [g, reduceIte]
-        rw [toNatAux_eq_of_equivAux g hb] at h
-        exact Nat.le_of_add_le_add_right h
-      else
-        have halt' : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
-        have hblt' : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
-        simp only [g, reduceIte]
-        have : toNatAux xs base ≠ toNatAux ys base := by
-          false_or_by_contra; rename _ => hc
-          exact absurd (equivAux_of_toNatAux_eq hc halt'.right hblt'.right hb) g
-        have : toNatAux xs base ≤ toNatAux ys base :=
-          (Nat.add_mul_le_iff_le_of this halt'.left hblt'.left).mp h
-        exact ih this halt'.right hblt'.right
-
-theorem leAux_iff_toNatAux_le_toNatAux {a b : List Nat} {base : Nat} (hb : 1 < base)
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
-  leAux a b ↔ (toNatAux a base) ≤ (toNatAux b base) := by
-  constructor
-  · intro h
-    exact toNatAux_le_of_leAux h hb halt hblt
-  · intro h
-    exact leAux_of_toNatAux_le_toNatAux_of h hb halt hblt
-
-end ToNatAux_LeAux
 
 section LtAux
 
@@ -2492,3 +2393,41 @@ def sub (a b : List Nat) (base : Nat) : List Nat :=
     discardTrailingZeros (subAux a b 0 base)
 
 end Sub
+
+section ListFinBase
+
+def toListFinBase {base : Nat} (a : List Nat) (h : allDigitsLtBase a base) : List (Fin base) :=
+  match a with
+  | [] => []
+  | x::xs =>
+    have : x < base := (allDigitsLtBase_cons_iff.mp h).left
+    ⟨x,this⟩ :: toListFinBase xs (allDigitsLtBase_cons_iff.mp h).right
+
+def fromListFinBase {base : Nat} (a : List (Fin base)) : List Nat :=
+  match a with
+  | [] => []
+  | x::xs => ↑x :: fromListFinBase xs
+
+theorem allDigitsLtBase_fromListFinBase {base : Nat} (a : List (Fin base)) :
+  allDigitsLtBase (fromListFinBase a) base := by
+  induction a with
+  | nil => unfold fromListFinBase; simp only [allDigitsLtBase_nil]
+  | cons x xs ih =>
+    have hx : x < base := Fin.isLt x
+    exact allDigitsLtBase_cons_iff.mpr (And.intro hx ih)
+
+theorem fromListFinBase_toListFinBase_cancel {base : Nat} (a : List Nat) (h : allDigitsLtBase a base) :
+  fromListFinBase (toListFinBase a h) = a := by
+  induction a with
+  | nil => simp only [toListFinBase, fromListFinBase]
+  | cons x xs ih =>
+    simp only [toListFinBase, fromListFinBase, ih]
+
+theorem toListFinBase_fromListFinBase_cancel {base : Nat} (a : List (Fin base)) :
+  toListFinBase (fromListFinBase a) (allDigitsLtBase_fromListFinBase a) = a := by
+  induction a with
+  | nil => simp only [toListFinBase, fromListFinBase]
+  | cons x xs ih =>
+    simp only [toListFinBase, fromListFinBase, ih]
+
+end ListFinBase

@@ -16,7 +16,7 @@ def zeroBase10 : Numeral10 := default
 def oneBase10 : Numeral10 := {
     digits := [1],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval oneBase10
@@ -25,7 +25,7 @@ def oneBase10 : Numeral10 := {
 def twoBase3 : Numeral 3 (by decide) := {
     digits := [2],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval twoBase3
@@ -34,7 +34,7 @@ def twoBase3 : Numeral 3 (by decide) := {
 def threeBase2 : Numeral2 := {
     digits := [1, 1],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval threeBase2
@@ -43,7 +43,7 @@ def threeBase2 : Numeral2 := {
 def fourBase2 : Numeral2 := {
     digits := [0, 0, 1],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval fourBase2
@@ -52,7 +52,7 @@ def fourBase2 : Numeral2 := {
 def twelveBase10 : Numeral10 := {
     digits := [2, 1],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval twelveBase10
@@ -61,7 +61,7 @@ def twelveBase10 : Numeral10 := {
 def thirteenBase8 : Numeral8 := {
     digits := [5, 1],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval thirteenBase8
@@ -70,7 +70,7 @@ def thirteenBase8 : Numeral8 := {
 def abcdefBase16 : Numeral16 := {
     digits := [15, 14, 13, 12, 11, 10],
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval abcdefBase16
@@ -80,7 +80,7 @@ def threeHundredSixtyBase60 : Numeral 60 (by decide):= {
     digits := [0, 6],
 
     ltBase := by decide,
-    noTrailingZero := by decide
+    noTZ := by decide
   }
 
 #eval threeHundredSixtyBase60

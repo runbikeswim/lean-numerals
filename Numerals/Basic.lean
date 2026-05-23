@@ -121,6 +121,58 @@ instance instDecidableEqPrenumeral {base : Nat} {hb : 1 < base} (a b : Prenumera
 
 end Equality
 
+section ToNat_OfNat
+
+/--
+returns the value (of type `Nat`) of the given `Prenumeral`
+
+Examples:
+```
+#eval (⟨[], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 0
+#eval (⟨[0], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 0
+#eval (⟨[0,1,2], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 210
+#eval (⟨[0,1,2,0], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 210
+```
+-/
+def toNat {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) : Nat := toNatAux n.digits base
+
+/--
+returns a `Prenumeral` for the given number (of type `Nat`)
+
+Examples:
+```
+#eval Prenumeral.ofNat 0 10 (by decide) -- { digits := [], ltBase := _ }
+#eval Prenumeral.ofNat 10 2 (by decide) -- { digits := [0, 1, 0, 1], ltBase := _ }
+#eval Prenumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], ltBase := _ }
+```
+-/
+def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Prenumeral base hb where
+  digits := ofNatAux n base hb
+  ltBase := allDigitsLtBase_prune
+
+/--
+`toNat` is the inverse of `ofNat`
+-/
+theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (ofNat n base hb).toNat = n := by
+  rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
+
+/--
+For `Prenumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat`, since
+trailing zeros are not preserved by `toNat`. The following example shows this for a very
+simple case.
+-/
+example : ∃ p : Prenumeral10, (ofNat (p.toNat) 10 (by decide)) ≠ p := by
+  let p : Prenumeral10 := ⟨[0], by decide⟩
+  let q : Prenumeral10 := ⟨[], by decide⟩
+  refine ⟨p, ?_⟩
+  have : p.toNat = 0 := by decide
+  rw [this]
+  have : ofNat 0 10 (by decide) = q := by simp only [ofNat, ofNatAux, prune]; grind only
+  rw [this]
+  decide
+
+end ToNat_OfNat
+
 section Equivalence
 
 /--
@@ -128,6 +180,11 @@ two `Prenumeral` if the same `base` are `equiv`alent, if they only differ with r
 -/
 def equiv {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prop :=
   equivAux a.digits b.digits
+
+theorem toNat_eq_iff_equiv {base: Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
+  a.toNat = b.toNat ↔ equiv a b := by
+  unfold toNat equiv
+  exact toNatAux_eq_iff_equivAux a.ltBase b.ltBase hb
 
 /--
 `equiv` is an `Equivalence` i.e. [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation)
@@ -165,11 +222,60 @@ example {base: Nat} {hb : 1 < base} (a b c : Prenumeral base hb) : a ≈ b → c
 
 end Equivalence
 
+section HasTrainingZero
+
+/--
+`True` if `a` has no trailing zeros
+
+Examples:
+```
+#eval (⟨[], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- true
+#eval (⟨[0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- false
+#eval (⟨[0,1,2], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- true
+#eval (⟨[0,1,2,0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- false
+```
+-/
+def hasNoTrailingZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop :=
+  noTrailingZero a.digits
+
+def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
+  Decidable (a.hasNoTrailingZero) :=
+  if h : noTrailingZero a.digits then
+    isTrue h
+  else
+    isFalse h
+
+instance instDecHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
+  Decidable (a.hasNoTrailingZero) := decHasNoTrailingZeros a
+
+theorem eq_iff_equiv_of_hasNoTrailingZero {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb)
+  (ha: a.hasNoTrailingZero) (hb: b.hasNoTrailingZero) :
+  a = b ↔ equiv a b := by
+  unfold hasNoTrailingZero at ha hb
+  unfold equiv
+  rw [eq_iff_digits_eq]
+  exact eq_iff_equivAux_of_noTrailingZero ha hb
+
+end HasTrainingZero
+
 section IsZero
 /--
 `True` if the given `Prenumeral` is `0`
 -/
 def isZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop := isZeroAux a.digits
+
+theorem toNat_eq_zero_iff_isZero {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) :
+  n.toNat = 0 ↔ n.isZero := by
+  unfold toNat isZero
+  exact toNatAux_eq_zero_iff_isZeroAux hb
+
+/--
+`ofNat` returns a `Prenumeral` that `isZero` iff its input is `0`
+-/
+theorem ofNat_isZero_iff_eq_zero {n base : Nat} (hb : 1 < base) :
+  (ofNat n base hb).isZero ↔ n = 0 := by
+  unfold isZero ofNat
+  exact isZeroAux_ofNatAux_iff_eq_zero hb
 
 /--
 makes `isZero` decidable
@@ -183,34 +289,6 @@ instance instIsZeroPrenumeral {base : Nat} {hb : 1 < base} (a : Prenumeral base 
   decIsZero a
 
 end IsZero
-
-section TrainingZeros
-
-/--
-`True` if `a` has no trailing zeros
-
-Examples:
-```
-#eval (⟨[], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZeros -- true
-#eval (⟨[0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZeros -- false
-#eval (⟨[0,1,2], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZeros -- true
-#eval (⟨[0,1,2,0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZeros -- false
-```
--/
-def hasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop :=
-  noTrailingZero a.digits
-
-def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
-  Decidable (a.hasNoTrailingZeros) :=
-  if h : noTrailingZero a.digits then
-    isTrue h
-  else
-    isFalse h
-
-instance instDecHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
-  Decidable (a.hasNoTrailingZeros) := decHasNoTrailingZeros a
-
-end TrainingZeros
 
 section LessThanOrEqualTo
 
@@ -233,6 +311,11 @@ def le {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prop :=
   leAux a.digits b.digits
 
 instance instLePrenumeral {base : Nat} {hb : 1 < base} : LE (Prenumeral base hb) := ⟨le⟩
+
+theorem le_iff_toNat_le_toNat {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
+  a ≤ b ↔ a.toNat ≤ b.toNat := by
+  simp only [LE.le, le, toNat]
+  exact leAux_iff_toNatAux_le_toNatAux hb a.ltBase b.ltBase
 
 /--
 `le` is a [Preorder](https://en.wikipedia.org/wiki/Preorder), i.e. a
@@ -260,70 +343,6 @@ instance DecidableLE {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
 
 end LessThanOrEqualTo
 
-section ToNat_OfNat
-
-/--
-returns the value (of type `Nat`) of the given `Prenumeral`
-
-Examples:
-```
-#eval (⟨[], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 0
-#eval (⟨[0], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 0
-#eval (⟨[0,1,2], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 210
-#eval (⟨[0,1,2,0], by decide⟩ : Prenumeral 10 (by decide)).toNat -- 210
-```
--/
-def toNat {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) : Nat := toNatAux n.digits base
-
-theorem toNat_eq_zero_iff_isZero {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) :
-  n.toNat = 0 ↔ n.isZero := by
-  unfold toNat isZero
-  exact toNatAux_eq_zero_iff_isZeroAux hb
-
-/--
-returns a `Prenumeral` for the given number (of type `Nat`)
-
-Examples:
-```
-#eval Prenumeral.ofNat 0 10 (by decide) -- { digits := [], ltBase := _ }
-#eval Prenumeral.ofNat 10 2 (by decide) -- { digits := [0, 1, 0, 1], ltBase := _ }
-#eval Prenumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], ltBase := _ }
-```
--/
-def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Prenumeral base hb where
-  digits := ofNatAux n base hb
-  ltBase := allDigitsLtBase_prune
-
-/--
-`ofNat` returns a `Prenumeral` that `isZero` iff its input is `0`
--/
-theorem ofNat_isZero_iff {n base : Nat} (hb : 1 < base) :
-  (ofNat n base hb).isZero ↔ n = 0 := by
-  simp only [isZero, ofNat]
-  exact isZeroAux_ofNatAux_iff_eq_zero hb
-
-/--
-`toNat` is the inverse of `ofNat`
--/
-theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (ofNat n base hb).toNat = n := by
-  rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
-
-/--
-For `Prenumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat`, since
-trailing zeros are not preserved by `toNat`. The following example shows this for a very
-simple case.
--/
-example : ∃ p : Prenumeral10, (ofNat (p.toNat) 10 (by decide)) ≠ p := by
-  let p : Prenumeral10 := ⟨[0], by decide⟩
-  let q : Prenumeral10 := ⟨[], by decide⟩
-  refine ⟨p, ?_⟩
-  have : p.toNat = 0 := by decide
-  rw [this]
-  have : ofNat 0 10 (by decide) = q := by simp only [ofNat, ofNatAux, prune]; grind only
-  rw [this]
-  decide
-
-end ToNat_OfNat
 
 section Rebase
 
@@ -440,12 +459,12 @@ end ToString
 section Numerals
 
 /--
-`Numeral` are `Prenumerals` without leading zeros, which is ensured by `noTrailingZero`.
+`Numeral` are `Prenumerals` without leading zeros, which is ensured by `noTZ`, which stands for _has no trailing zeros_.
 By this, every natural number has a unique representation for the given `base`.
 -/
 @[ext]
 structure Numeral (base : Nat) (hb : 1 < base) extends Prenumeral base hb where
-  noTrailingZero : noTrailingZero digits
+  noTZ : noTrailingZero digits
   deriving Repr
 
 /--
@@ -489,7 +508,7 @@ def p : Prenumeral 10 (by decide) := ⟨[1,9,0], by  decide⟩
 #eval p -- { digits := [1, 9, 0], ltBase := _ }
 
 def n : Numeral 10 (by decide) := p.toNumeral
-#eval n -- { toPrenumeral := { digits := [1, 9], ltBase := _ }, noTrailingZero := _ }
+#eval n -- { toPrenumeral := { digits := [1, 9], ltBase := _ }, noTZ := _ }
 
 def q : Prenumeral 10 (by decide) := n.toPrenumeral
 #eval q -- { digits := [1, 9], ltBase := _ }
@@ -502,14 +521,14 @@ def Prenumeral.toNumeral {base : Nat} {hb : 1 < base} (p : Prenumeral base hb) :
   Numeral base hb where
   digits := discardTrailingZeros p.digits
   ltBase := allDigitsLtBase_discardTrailingZeros p.ltBase
-  noTrailingZero :=  noTrailingZero_discardTrailingZeros
+  noTZ :=  noTrailingZero_discardTrailingZeros
 
 /-
 zero (represented by `[]`) is the default `Numeral` - for any base
 -/
 instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral base hb) := ⟨{
     toPrenumeral := default,
-    noTrailingZero := noTrailingZero_nil
+    noTZ := noTrailingZero_nil
   }⟩
 
 instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) where
@@ -526,14 +545,14 @@ def length {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := n.digits.
 
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
   toPrenumeral := Prenumeral.ofNat n base hb
-  noTrailingZero := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
+  noTZ := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
 
 section Add
 
 /-- -/
 def hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : Numeral base hb where
   toPrenumeral := a + b
-  noTrailingZero := noTrailingZero_addAux_of a.noTrailingZero b.noTrailingZero hb
+  noTZ := noTrailingZero_addAux_of a.noTZ b.noTZ hb
 
 instance instHAddNumerals {base : Nat} {hb : 1 < base} :
   HAdd (Numeral base hb) (Numeral base hb) (Numeral base hb) := ⟨hAdd⟩
