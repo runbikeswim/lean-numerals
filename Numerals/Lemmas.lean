@@ -631,10 +631,12 @@ end ToNatAux_Equiv
 
 section NoTrailingZero
 
-/-- -/
+/--
+a list of numbers without trailing zeros is the shortest and thus simplest
+representative of equivalent lists (with respect to `equivAux`)
+-/
 def noTrailingZero (a : List Nat) : Prop := (h : a ≠ []) → a.getLast h ≠ 0
 
-/-- -/
 def decNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) :=
   if g1 : a = [] then
     have : noTrailingZero a := by
@@ -656,15 +658,19 @@ def decNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) :=
         exact g2
       isTrue this
 
-/-- -/
 instance instNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) := decNoTrailingZero a
 
-/-- -/
+/--
+the empty list has no trailing zeros
+-/
 theorem noTrailingZero_nil : noTrailingZero [] := by
   rw [noTrailingZero.eq_def]
   intro hnn
   contradiction
 
+/--
+a singleton has trailing zeros iff the number in the list is `0`
+-/
 theorem noTrailingZero_singleton_iff_ne_zero {n : Nat} : noTrailingZero [n] ↔ n ≠ 0 := by
   rw [noTrailingZero.eq_def]
   constructor
@@ -675,7 +681,6 @@ theorem noTrailingZero_singleton_iff_ne_zero {n : Nat} : noTrailingZero [n] ↔ 
   · intro h _
     rwa [List.getLast_singleton]
 
-/-- -/
 theorem noTrailingZero_tail_and_of {x : Nat} {xs : List Nat}
   (h : noTrailingZero (x::xs)) : noTrailingZero xs ∧ (xs = [] → x ≠ 0) := by
   simp only [noTrailingZero] at h ⊢
@@ -703,7 +708,6 @@ theorem noTrailingZero_cons_of {x : Nat} {xs : List Nat}
     rw [List.getLast_cons g]
     exact h.left g
 
-/-- -/
 theorem noTrailingZero_cons_iff_noTrailingZero_and {x : Nat} {xs : List Nat} :
   noTrailingZero (x::xs) ↔ noTrailingZero xs ∧ (xs = [] → x ≠ 0) := by
   constructor
@@ -877,6 +881,9 @@ end ConsAux
 
 section DiscardTrailingZeros
 
+/--
+returns a equivalent list without trailing zeros
+-/
 def discardTrailingZeros (a : List Nat) :=
   match a with
   | [] => []
@@ -894,6 +901,9 @@ theorem noTrailingZero_discardTrailingZeros {a : List Nat} :
     unfold discardTrailingZeros
     exact noTrailingZero_consAux_of ih
 
+/--
+`discardTrailingZeros` preserves `allDigitsLtBase`
+-/
 theorem allDigitsLtBase_discardTrailingZeros {base: Nat} {a : List Nat} (ha : allDigitsLtBase a base) :
   allDigitsLtBase (discardTrailingZeros a) base := by
   induction a with
@@ -904,6 +914,9 @@ theorem allDigitsLtBase_discardTrailingZeros {base: Nat} {a : List Nat} (ha : al
     have hxs : allDigitsLtBase (discardTrailingZeros xs) base := ih (allDigitsLtBase_cons_iff.mp ha).right
     exact allDigitsLtBase_consAux_of hx hxs
 
+/--
+the result of `discardTrailingZeros` is equivalent (with respect to `equivAux`) to the input
+-/
 theorem equivAux_discardTrailingZeros {a : List Nat} : equivAux (discardTrailingZeros a) a := by
   induction a with
   | nil => simp only [discardTrailingZeros, equivAux_refl]
@@ -1564,7 +1577,56 @@ theorem ltAux_of_leAux_of_ltAux {a b c : List Nat} (hab : leAux a b) (hbc : ltAu
   have h4 : ¬ equivAux a c := fun h : equivAux a c => absurd hbc (h3 h)
   exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro h1 h4)
 
+/--
+asserts that `ltAux` and `leAux` are a basis for an instance of class `Std.LawfulOrderLT`
+-/
+theorem ltAux_iff_leAux_and_not_leAux {a b : List Nat} : ltAux a b ↔ leAux a b ∧ ¬ leAux b a := by
+  constructor
+  · intro h
+    have : ltAux a b ↔ ¬ leAux b a := by
+      rw [Classical.iff_iff_not_iff_not, Classical.not_not, iff_comm]
+      exact leAux_iff_not_ltAux
+    have : ¬ leAux b a := this.mp h
+    exact And.intro (leAux_of_ltAux h) this
+  · intro h
+    have : ¬ equivAux a b := by
+      false_or_by_contra; rename _ => hc
+      exact absurd (equivAux_iff_leAux_and_leAux.mp hc).right h.right
+    exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro h.left this)
+
 end LeAux_LtAux
+
+section ToNatAux_LtAux
+
+theorem toNatAux_lt_toNatAux_of_ltAux {a b : List Nat} {base : Nat} (h : ltAux a b) (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
+  toNatAux a base < toNatAux b base := by
+  have h1 : toNatAux a base ≤ toNatAux b base := toNatAux_le_of_leAux (leAux_of_ltAux h) hb halt hblt
+  have h2 : ¬ equivAux a b := not_equivAux_of_ltAux h
+  have h3 : toNatAux a base = toNatAux b base ↔ equivAux a b := toNatAux_eq_iff_equivAux halt hblt hb
+  have h4 : ¬ toNatAux a base = toNatAux b base := (Classical.iff_iff_not_iff_not.mp h3).mpr h2
+  exact Nat.lt_of_le_of_ne h1 h4
+
+theorem ltAux_of_toNatAux_lt_toNatAux {a b : List Nat} {base : Nat}
+  (h : toNatAux a base < toNatAux b base) (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
+  ltAux a b := by
+  have h1 : toNatAux a base ≤ toNatAux b base := Nat.le_of_lt h
+  have h2 : ¬ toNatAux a base = toNatAux b base := Nat.ne_of_lt h
+  have h3 : toNatAux a base = toNatAux b base ↔ equivAux a b := toNatAux_eq_iff_equivAux halt hblt hb
+  have h4 : ¬ equivAux a b := (Classical.iff_iff_not_iff_not.mp h3).mp h2
+  exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro (leAux_of_toNatAux_le_toNatAux_of h1 hb halt hblt) h4)
+
+theorem ltAux_iff_toNatAux_lt_toNatAux {a b : List Nat} {base : Nat} (hb : 1 < base)
+  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
+  ltAux a b ↔ toNatAux a base < toNatAux b base := by
+  constructor
+  · intro h
+    exact toNatAux_lt_toNatAux_of_ltAux h hb halt hblt
+  · intro h
+    exact ltAux_of_toNatAux_lt_toNatAux h hb halt hblt
+
+end ToNatAux_LtAux
 
 theorem ltAux_trans {a b c : List Nat} (hab : ltAux a b) (hbc : ltAux b c) : ltAux a c := by
   induction a generalizing b c with
@@ -1644,38 +1706,6 @@ def decLtAux (a b : List Nat) : Decidable (ltAux a b) :=
 instance instLtAux (a b : List Nat) : Decidable (ltAux a b) := decLtAux a b
 
 end LtAux
-
-section ToNatAux_LtAux
-
-theorem toNatAux_lt_toNatAux_of_ltAux {a b : List Nat} {base : Nat} (h : ltAux a b) (hb : 1 < base)
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
-  toNatAux a base < toNatAux b base := by
-  have h1 : toNatAux a base ≤ toNatAux b base := toNatAux_le_of_leAux (leAux_of_ltAux h) hb halt hblt
-  have h2 : ¬ equivAux a b := not_equivAux_of_ltAux h
-  have h3 : toNatAux a base = toNatAux b base ↔ equivAux a b := toNatAux_eq_iff_equivAux halt hblt hb
-  have h4 : ¬ toNatAux a base = toNatAux b base := (Classical.iff_iff_not_iff_not.mp h3).mpr h2
-  exact Nat.lt_of_le_of_ne h1 h4
-
-theorem ltAux_of_toNatAux_lt_toNatAux {a b : List Nat} {base : Nat}
-  (h : toNatAux a base < toNatAux b base) (hb : 1 < base)
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
-  ltAux a b := by
-  have h1 : toNatAux a base ≤ toNatAux b base := Nat.le_of_lt h
-  have h2 : ¬ toNatAux a base = toNatAux b base := Nat.ne_of_lt h
-  have h3 : toNatAux a base = toNatAux b base ↔ equivAux a b := toNatAux_eq_iff_equivAux halt hblt hb
-  have h4 : ¬ equivAux a b := (Classical.iff_iff_not_iff_not.mp h3).mp h2
-  exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro (leAux_of_toNatAux_le_toNatAux_of h1 hb halt hblt) h4)
-
-theorem ltAux_iff_toNatAux_lt_toNtAux {a b : List Nat} {base : Nat} (hb : 1 < base)
-  (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
-  ltAux a b ↔ toNatAux a base < toNatAux b base := by
-  constructor
-  · intro h
-    exact toNatAux_lt_toNatAux_of_ltAux h hb halt hblt
-  · intro h
-    exact ltAux_of_toNatAux_lt_toNatAux h hb halt hblt
-
-end ToNatAux_LtAux
 
 section Prune
 

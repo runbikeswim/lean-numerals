@@ -87,9 +87,35 @@ def base {base' : Nat} {hb' : 1 < base'} (_ : Prenumeral base' hb') : Nat := bas
 /--
 `[]` (i.e. _zero_) is the default `Prenumeral` - for any base
 -/
-instance instInhabitedPrenumeral {base : Nat} {hb : 1 < base} : Inhabited (Prenumeral base hb) := ⟨{
+instance instInhabited {base : Nat} {hb : 1 < base} : Inhabited (Prenumeral base hb) := ⟨{
     digits := [],
     ltBase := List.all_nil
+  }⟩
+
+
+/--
+use `0` for zero
+
+Example:
+```
+#eval (0 : Prenumeral 10 (by decide)) -- { digits := [], ltBase := _ }
+```
+-/
+instance instZero {base : Nat} {hb : 1 < base} : Zero (Prenumeral base hb) := ⟨default⟩
+
+theorem zero_eq_default : 0 = default := rfl
+
+/--
+use `1` for one
+
+Example:
+```
+#eval (1 : Prenumeral 10 (by decide)) -- { digits := [1], ltBase := _ }
+```
+-/
+instance instOne {base : Nat} {hb : 1 < base} : One (Prenumeral base hb) := ⟨{
+    digits := [1],
+    ltBase := by simp only [allDigitsLtBase, List.all, Bool.and_true, hb, decide_true]
   }⟩
 
 section Equality
@@ -116,7 +142,7 @@ def decEq {base : Nat} (hb : 1 < base) (a b : Prenumeral base hb) : Decidable (a
     have : a.digits ≠ b.digits → a ≠ b := (Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq hb a b)).mpr
     isFalse (this h)
 
-instance instDecidableEqPrenumeral {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Decidable (a = b) :=
+instance instDecidableEq {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Decidable (a = b) :=
   decEq hb a b
 
 end Equality
@@ -149,6 +175,9 @@ Examples:
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Prenumeral base hb where
   digits := ofNatAux n base hb
   ltBase := allDigitsLtBase_prune
+
+instance instOfNat {base : Nat} {hb : 1 < base} (n : Nat) : OfNat (Prenumeral base hb) n where
+  ofNat := ofNat n base hb
 
 /--
 `toNat` is the inverse of `ofNat`
@@ -204,7 +233,7 @@ theorem equivalence_equiv {base: Nat} {hb : 1 < base} :
       by unfold equiv; intro a b c hab hbc; exact equivAux_trans hab hbc
     ⟩
 
-instance instHasEquivPrenumeral {base : Nat} {hb : 1 < base} : HasEquiv (Prenumeral base hb) := ⟨equiv⟩
+instance instHasEquiv {base : Nat} {hb : 1 < base} : HasEquiv (Prenumeral base hb) := ⟨equiv⟩
 
 example {base: Nat} {hb : 1 < base} (a : Prenumeral base hb) : a ≈ a := by
   exact equivalence_equiv.refl a
@@ -220,7 +249,44 @@ example {base: Nat} {hb : 1 < base} (a b c : Prenumeral base hb) : a ≈ b → c
   have hbc : b ≈ c := equivalence_equiv.symm hcb
   exact equivalence_equiv.trans hab hbc
 
+theorem not_equiv_iff_not_equiv {base: Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
+  ¬ a ≈ b ↔ ¬ b ≈ a := by
+  simp only [equiv]
+  exact not_equivAux_iff_not_equivAux
+
 end Equivalence
+
+section IsZero
+/--
+`True` if the given `Prenumeral` is `0`
+-/
+def isZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop := isZeroAux a.digits
+
+theorem toNat_eq_zero_iff_isZero {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) :
+  n.toNat = 0 ↔ n.isZero := by
+  unfold toNat isZero
+  exact toNatAux_eq_zero_iff_isZeroAux hb
+
+/--
+`ofNat` returns a `Prenumeral` that `isZero` iff its input is `0`
+-/
+theorem ofNat_isZero_iff_eq_zero {n base : Nat} (hb : 1 < base) :
+  (ofNat n base hb).isZero ↔ n = 0 := by
+  unfold isZero ofNat
+  exact isZeroAux_ofNatAux_iff_eq_zero hb
+
+/--
+makes `isZero` decidable
+-/
+def decIsZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Decidable a.isZero := decIsZeroAux a.digits
+
+/--
+instance of class `Decidable` for `isZero`
+-/
+instance instDecIsZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Decidable (isZero a) :=
+  decIsZero a
+
+end IsZero
 
 section HasTrainingZero
 
@@ -258,38 +324,6 @@ theorem eq_iff_equiv_of_hasNoTrailingZero {base : Nat} {hb : 1 < base} (a b : Pr
 
 end HasTrainingZero
 
-section IsZero
-/--
-`True` if the given `Prenumeral` is `0`
--/
-def isZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop := isZeroAux a.digits
-
-theorem toNat_eq_zero_iff_isZero {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) :
-  n.toNat = 0 ↔ n.isZero := by
-  unfold toNat isZero
-  exact toNatAux_eq_zero_iff_isZeroAux hb
-
-/--
-`ofNat` returns a `Prenumeral` that `isZero` iff its input is `0`
--/
-theorem ofNat_isZero_iff_eq_zero {n base : Nat} (hb : 1 < base) :
-  (ofNat n base hb).isZero ↔ n = 0 := by
-  unfold isZero ofNat
-  exact isZeroAux_ofNatAux_iff_eq_zero hb
-
-/--
-makes `isZero` decidable
--/
-def decIsZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Decidable a.isZero := decIsZeroAux a.digits
-
-/--
-instance of class `Decidable` for `isZero`
--/
-instance instIsZeroPrenumeral {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Decidable (isZero a) :=
-  decIsZero a
-
-end IsZero
-
 section LessThanOrEqualTo
 
 /--
@@ -310,7 +344,7 @@ def c : Prenumeral10 := ⟨[1, 0], by decide⟩
 def le {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prop :=
   leAux a.digits b.digits
 
-instance instLePrenumeral {base : Nat} {hb : 1 < base} : LE (Prenumeral base hb) := ⟨le⟩
+instance instLe {base : Nat} {hb : 1 < base} : LE (Prenumeral base hb) := ⟨le⟩
 
 theorem le_iff_toNat_le_toNat {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
   a ≤ b ↔ a.toNat ≤ b.toNat := by
@@ -326,11 +360,18 @@ Since `equiv a b` does **not** imply `a = b` for `Prenumeral`s, `le` is not
 [antisymmetric](https://en.wikipedia.org/wiki/Antisymmetric_relation) - but
 almost (see `equivAux_iff_leAux_and_leAux`).
 -/
-instance instLePrenumeralIsPreorder {base : Nat} {hb : 1 < base} : Std.IsPreorder (Prenumeral base hb) :=
+instance instLeIsPreorder {base : Nat} {hb : 1 < base} : Std.IsPreorder (Prenumeral base hb) :=
   ⟨
-    by unfold instLePrenumeral le; intro _ ; exact leAux_refl,
-    by unfold instLePrenumeral le; intro a b c; exact leAux_trans
+    by unfold instLe le; intro _ ; exact leAux_refl,
+    by unfold instLe le; intro a b c; exact leAux_trans
   ⟩
+
+theorem zero_le {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : 0 ≤ a := by
+  unfold instOfNat
+  simp only [ofNat, ofNatAux, prune, LE.le, le]
+  exact leAux_nil
+
+example {base : Nat} {hb : 1 < base} : (0 : Prenumeral base hb) ≤ 1 := zero_le 1
 
 def decLe {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Decidable (a ≤ b) :=
   if h : leAux a.digits b.digits then
@@ -343,6 +384,36 @@ instance DecidableLE {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
 
 end LessThanOrEqualTo
 
+section LessThan
+
+def lt {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prop :=
+  ltAux a.digits b.digits
+
+instance instLt {base : Nat} {hb : 1 < base} : LT (Prenumeral base hb) := ⟨lt⟩
+
+theorem lt_iff_toNat_lt_toNat {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
+  a < b ↔ a.toNat < b.toNat := by
+  simp only [LT.lt, lt, toNat]
+  exact ltAux_iff_toNatAux_lt_toNatAux hb a.ltBase b.ltBase
+
+theorem lt_iff_le_and_not_le {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
+  a < b ↔ a ≤ b ∧ ¬ b ≤ a := by
+  simp only [LT.lt, lt, LE.le, le]
+  exact ltAux_iff_leAux_and_not_leAux
+
+instance instLawfulOrderLT {base : Nat} {hb : 1 < base}  : Std.LawfulOrderLT (Prenumeral base hb) :=
+  ⟨lt_iff_le_and_not_le⟩
+
+theorem le_irrefl {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : ¬ a < a := by
+  simp only [LT.lt, lt]
+  exact ltAux_irrefl
+
+theorem lt_asymm {base : Nat} {hb : 1 < base} {a b : Prenumeral base hb} (h: a < b) : ¬ b < a := by
+  simp only [LT.lt, lt] at h ⊢
+  exact ltAux_asymm h
+
+
+end LessThan
 
 section Rebase
 
