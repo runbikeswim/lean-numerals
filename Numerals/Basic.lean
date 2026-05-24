@@ -9,6 +9,14 @@ import Numerals.Lemmas
 /-!
 # Numerals.Basic
 
+`Numeral.Basic` provides two types for the representation of natural numbers in a
+[positional numeral system](https://en.wikipedia.org/wiki/List_of_numeral_systems#Standard_positional_numeral_systems)
+for an arbitrary basis (i.e. any natural number larger than one):
+
+## Prenumerals
+
+## Numeral
+
 -/
 
 set_option linter.all true
@@ -16,14 +24,6 @@ set_option linter.all true
 TODO: remove and resolve
 -/
 set_option linter.missingDocs false
-
-/-!
-# Numerals
-
-`Numeral` provides theorems and algorithms for the representation of natural numbers in a
-[positional numeral system](https://en.wikipedia.org/wiki/List_of_numeral_systems#Standard_positional_numeral_systems)
-for an arbitrary basis (i.e. any natural number larger than one).
--/
 
 section Prenumerals
 
@@ -91,7 +91,6 @@ instance instInhabited {base : Nat} {hb : 1 < base} : Inhabited (Prenumeral base
     digits := [],
     ltBase := List.all_nil
   }⟩
-
 
 /--
 use `0` for zero
@@ -366,6 +365,15 @@ instance instLeIsPreorder {base : Nat} {hb : 1 < base} : Std.IsPreorder (Prenume
     by unfold instLe le; intro a b c; exact leAux_trans
   ⟩
 
+instance instLeIsLinearPreorder {base : Nat} {hb : 1 < base} : Std.IsLinearPreorder (Prenumeral base hb) :=
+  ⟨
+    by intro a b; simp only [LE.le, le]; exact leAux_total
+  ⟩
+
+instance instTransLe {base : Nat} {hb : 1 < base} :
+  Trans (· ≤ ·) (· ≤ ·) (fun a : Prenumeral base hb ↦ fun b : Prenumeral base hb ↦ a ≤ b) where
+  trans := @instLeIsPreorder.le_trans
+
 theorem zero_le {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : 0 ≤ a := by
   unfold instOfNat
   simp only [ofNat, ofNatAux, prune, LE.le, le]
@@ -383,6 +391,40 @@ instance DecidableLE {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
   Decidable (a ≤ b) := decLe a b
 
 end LessThanOrEqualTo
+
+section Min
+
+/--
+Example:
+```
+#eval min (0 : Prenumeral 10 (by decide)) 1 -- { digits := [], ltBase := _ }
+```
+-/
+instance instMin {base : Nat} {hb : 1 < base} : Min (Prenumeral base hb) := minOfLe
+
+instance instMinEqOr {base : Nat} {hb : 1 < base} : Std.MinEqOr (Prenumeral base hb) where
+  min_eq_or := by
+    intro a b
+    by_cases h: a ≤ b <;> simp only [Min.min, h, reduceIte, or_true, true_or]
+
+end Min
+
+section Max
+
+/--
+Example:
+```
+#eval max (0 : Prenumeral 10 (by decide)) 1 -- { digits := [1], ltBase := _ }
+```
+-/
+instance instMax {base : Nat} {hb : 1 < base} : Max (Prenumeral base hb) := maxOfLe
+
+instance instMaxEqOr {base : Nat} {hb : 1 < base} : Std.MaxEqOr (Prenumeral base hb) where
+  max_eq_or := by
+    intro a b
+    by_cases h: a ≤ b <;> simp only [Max.max, h, reduceIte, or_true, true_or]
+
+end Max
 
 section LessThan
 
@@ -412,8 +454,49 @@ theorem lt_asymm {base : Nat} {hb : 1 < base} {a b : Prenumeral base hb} (h: a <
   simp only [LT.lt, lt] at h ⊢
   exact ltAux_asymm h
 
+theorem lt_trans {base : Nat} {hb : 1 < base} {a b c : Prenumeral base hb} (ha: a < b) :
+  b < c → a < c := by
+  intro hb
+  simp_all only [LT.lt, lt]
+  exact ltAux_trans ha hb
+
+instance instTransLt {base : Nat} {hb : 1 < base} :
+  Trans (· < ·) (· < ·) (fun a : Prenumeral base hb ↦ fun b : Prenumeral base hb ↦ a < b) where
+  trans := lt_trans
+
+theorem lt_of_lt_of_le {base : Nat} {hb : 1 < base} {a b c : Prenumeral base hb}
+  (ha: a < b) (hb: b ≤ c) : a < c := by
+  exact ltAux_of_ltAux_of_leAux ha hb
+
+instance instTransLtLe {base : Nat} {hb : 1 < base} :
+  Trans (· < ·) (· ≤ ·) (fun a : Prenumeral base hb ↦ fun b : Prenumeral base hb ↦ a < b) where
+  trans := by
+    intro a b c ha hb
+    exact lt_of_lt_of_le ha hb
+
+theorem lt_of_le_of_lt {base : Nat} {hb : 1 < base} {a b c : Prenumeral base hb}
+  (ha: a ≤ b) (hb: b < c) : a < c := by
+  exact ltAux_of_leAux_of_ltAux ha hb
+
+instance instTransLeLt {base : Nat} {hb : 1 < base} :
+  Trans (· ≤ ·) (· < ·) (fun a : Prenumeral base hb ↦ fun b : Prenumeral base hb ↦ a < b) where
+  trans := by
+    intro a b c ha hb
+    exact lt_of_le_of_lt ha hb
 
 end LessThan
+
+section DiscardTrailingZeros
+
+def discardTZ {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prenumeral base hb where
+  digits := discardTrailingZeros a.digits
+  ltBase := allDigitsLtBase_discardTrailingZeros a.ltBase
+
+theorem discardTZ_equiv {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : a.discardTZ ≈ a := by
+  simp only [discardTZ, equiv]
+  exact equivAux_discardTrailingZeros
+
+end DiscardTrailingZeros
 
 section Rebase
 
@@ -602,12 +685,15 @@ instance instInhabitedNumeral {base : Nat} {hb : 1 < base} : Inhabited (Numeral 
     noTZ := noTrailingZero_nil
   }⟩
 
+/--
+Example:
+```
+def n : Numeral10 := ⟨⟨[1,2,3], by decide⟩, by decide⟩
+#eval n.toString -- "321"
+```
+-/
 instance instToStringNumeral {base : Nat} {hb : 1 < base} : ToString (Numeral base hb) where
   toString := fun n => n.toPrenumeral.toString
-
-def n : Numeral10 := ⟨⟨[1,2,3], by decide⟩, by decide⟩
-
-#eval n
 
 /--
 provides the number of digits used by the given `Numeral`
