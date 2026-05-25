@@ -287,42 +287,6 @@ instance instDecIsZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : D
 
 end IsZero
 
-section HasTrainingZero
-
-/--
-`True` if `a` has no trailing zeros
-
-Examples:
-```
-#eval (⟨[], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- true
-#eval (⟨[0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- false
-#eval (⟨[0,1,2], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- true
-#eval (⟨[0,1,2,0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- false
-```
--/
-def hasNoTrailingZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop :=
-  noTrailingZero a.digits
-
-def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
-  Decidable (a.hasNoTrailingZero) :=
-  if h : noTrailingZero a.digits then
-    isTrue h
-  else
-    isFalse h
-
-instance instDecHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
-  Decidable (a.hasNoTrailingZero) := decHasNoTrailingZeros a
-
-theorem eq_iff_equiv_of_hasNoTrailingZero {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb)
-  (ha: a.hasNoTrailingZero) (hb: b.hasNoTrailingZero) :
-  a = b ↔ equiv a b := by
-  unfold hasNoTrailingZero at ha hb
-  unfold equiv
-  rw [eq_iff_digits_eq]
-  exact eq_iff_equivAux_of_noTrailingZero ha hb
-
-end HasTrainingZero
-
 section LessThanOrEqualTo
 
 /--
@@ -486,7 +450,43 @@ instance instTransLeLt {base : Nat} {hb : 1 < base} :
 
 end LessThan
 
-section DiscardTrailingZeros
+section HasTrailingZero
+
+/--
+`True` if `a` has no trailing zeros
+
+Examples:
+```
+#eval (⟨[], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- true
+#eval (⟨[0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- false
+#eval (⟨[0,1,2], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- true
+#eval (⟨[0,1,2,0], by decide⟩ : Prenumeral 10 (by decide)).hasNoTrailingZero -- false
+```
+-/
+def hasNoTrailingZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prop :=
+  noTrailingZero a.digits
+
+def decHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
+  Decidable (a.hasNoTrailingZero) :=
+  if h : noTrailingZero a.digits then
+    isTrue h
+  else
+    isFalse h
+
+instance instDecHasNoTrailingZeros {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) :
+  Decidable (a.hasNoTrailingZero) := decHasNoTrailingZeros a
+
+theorem eq_iff_equiv_of_hasNoTrailingZero {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb)
+  (ha: a.hasNoTrailingZero) (hb: b.hasNoTrailingZero) :
+  a = b ↔ equiv a b := by
+  unfold hasNoTrailingZero at ha hb
+  unfold equiv
+  rw [eq_iff_digits_eq]
+  exact eq_iff_equivAux_of_noTrailingZero ha hb
+
+end HasTrailingZero
+
+section DiscardTrailingZero
 
 def discardTZ {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Prenumeral base hb where
   digits := discardTrailingZeros a.digits
@@ -496,7 +496,7 @@ theorem discardTZ_equiv {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : 
   simp only [discardTZ, equiv]
   exact equivAux_discardTrailingZeros
 
-end DiscardTrailingZeros
+end DiscardTrailingZero
 
 section Rebase
 
@@ -554,6 +554,12 @@ theorem add_isZero_iff_isZero_and_isZero {base : Nat} {hb : 1 < base} (a b : Pre
   exact Nat.add_eq_zero_iff
 
 end Add
+
+section Sub
+
+
+
+end Sub
 
 end Prenumeral
 end Prenumerals

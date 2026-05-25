@@ -17,7 +17,7 @@ of numerals and theorems that ensure that these functions are consistent with th
 This is useful for proofing theorems that refer to the representation of natural numbers as
 numerals in positional notation.
 
-Most of the functions and theorems defined here use one or several parameter of `List Nat` as input,
+Most of the functions and theorems defined here use one or several parameter(s) of type `List Nat` as input,
 which represent numerals in [little-endian notation](https://en.wikipedia.org/wiki/Endianness) with the
 elements in the lists as digits. Additionally, a parameter `base : Nat` is used whenever the
 [base (i.e. radix)](https://en.wikipedia.org/wiki/Radix) of the numeral matters.
@@ -1954,7 +1954,6 @@ end ToNatAux_AddDigits
 
 section AddAux
 
-/-- -/
 def addAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   match a, b, hn: n with
   | [], [], 0 => []
@@ -1968,7 +1967,6 @@ def addAux (a b : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   | x::xs, y::ys, n => ((x + y + n) % base)::(addAux xs ys ((x + y + n) / base) base hb)
   termination_by (a.length + b.length, n)
 
-/-- -/
 theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = [] ↔ n = 0 ∧ a = [] ∧ b = [] := by
   constructor
@@ -1982,16 +1980,15 @@ theorem addAux_eq_nil_iff {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   · intro h
     simp only [h.right.left, h.right.right, h.left, addAux]
 
-/-- -/
-theorem addAux_eq_singleton_of {a b : List Nat} (n : Nat) {base : Nat}
-  (han : a = []) (hbn : b = []) (hb : 1 < base) (hn : 0 < n ∧ n < base) :
-  addAux a b n base hb = [n] := by
+theorem addAux_eq_singleton_of (n : Nat) {base : Nat}
+  (hb : 1 < base) (hn : 0 < n ∧ n < base) :
+  addAux [] [] n base hb = [n] := by
   have h1 : n % base = n := Nat.mod_eq_of_lt hn.right
   have h2 : 0 < n := hn.left
   have h3 : n / base = 0 := Nat.div_eq_zero_iff.mpr (Or.inr hn.right)
   rw [addAux.eq_def]
-  match ga : a, gb : b, gn: n with
-  | [], [], k + 1 => simp only [List.cons.injEq, h1, true_and, h3, addAux_eq_nil_iff hb]
+  match n with
+  | k + 1 => simp only [List.cons.injEq, h1, true_and, h3, addAux_eq_nil_iff hb]
 
 theorem addAux_comm {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = addAux b a n base hb := by
@@ -2003,6 +2000,25 @@ theorem addAux_comm {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   | case5 x _ y _ _ ih => rw [addAux]; rw [ih]; rw [Nat.add_comm y x]
 
 end AddAux
+
+section AddAux_AllDigitsLtBase
+
+theorem addAux_nil {a : List Nat} {base : Nat} (hb : 1 < base) (ha: allDigitsLtBase a base) :
+  addAux [] a 0 base hb = a := by
+  induction a with
+  | nil => simp only [addAux]
+  | cons x xs ih =>
+    have h1 : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
+    have h2 : x % base = x := Nat.mod_eq_of_lt h1.left
+    have h3 : x / base = 0 := Nat.div_eq_of_lt h1.left
+    have h4 : addAux [] xs 0 base hb = xs := ih h1.right
+    simp only [addAux, Nat.add_zero, h2, h3, h4]
+
+example : addAux [] [10, 0] 0 10 (by decide) = [0, 1] := by
+  simp only [addAux, Nat.add_zero, Nat.mod_self, Nat.zero_lt_succ, Nat.div_self]
+  simp only [Nat.zero_add, Nat.one_mod, Nat.reduceDiv, addAux]
+
+end AddAux_AllDigitsLtBase
 
 section AddAux_Prune_AddDigits
 
@@ -2084,12 +2100,21 @@ end NoTrailingZero_AddAux
 
 section ToNatAux_AddAux
 
-/-- -/
 theorem toNatAux_addAux_left_distrib {a b : List Nat} {base : Nat} {hb : 1 < base} :
   toNatAux (addAux a b 0 base hb) base = (toNatAux a base) + (toNatAux b base) := by
   rw [addAux_eq_prune_addDigits hb, toNatAux_prune_eq_add_toNatAux hb, toNatAux_addDigits_left_distrib, Nat.zero_add]
 
 end ToNatAux_AddAux
+
+section AddAux_IsZeroAux
+
+theorem isZeroAux_addAux_iff_iZeroAux_and_is_zeroAux {a b : List Nat} {base : Nat} (hb : 1 < base) :
+  isZeroAux (addAux a b 0 base hb) ↔ isZeroAux a ∧ isZeroAux b := by
+  rw [← toNatAux_eq_zero_iff_isZeroAux hb, ← toNatAux_eq_zero_iff_isZeroAux hb, ← toNatAux_eq_zero_iff_isZeroAux hb]
+  rw [toNatAux_addAux_left_distrib]
+  exact Nat.add_eq_zero_iff
+
+end AddAux_IsZeroAux
 
 section SubAux
 
