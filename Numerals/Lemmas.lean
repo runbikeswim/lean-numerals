@@ -2003,7 +2003,7 @@ end AddAux
 
 section AddAux_AllDigitsLtBase
 
-theorem addAux_nil {a : List Nat} {base : Nat} (hb : 1 < base) (ha: allDigitsLtBase a base) :
+theorem addAux_nil_of_allDigitsLtBase {a : List Nat} {base : Nat} (hb : 1 < base) (ha: allDigitsLtBase a base) :
   addAux [] a 0 base hb = a := by
   induction a with
   | nil => simp only [addAux]
@@ -2014,6 +2014,10 @@ theorem addAux_nil {a : List Nat} {base : Nat} (hb : 1 < base) (ha: allDigitsLtB
     have h4 : addAux [] xs 0 base hb = xs := ih h1.right
     simp only [addAux, Nat.add_zero, h2, h3, h4]
 
+/--
+shows that `allDigitsLtBase a base` is necessary in `addAux_nil_of_allDigitsLtBase`, illustrating
+that `addAux` returns _normalized_ lists for which `allDigitsLtBase` is true.
+-/
 example : addAux [] [10, 0] 0 10 (by decide) = [0, 1] := by
   simp only [addAux, Nat.add_zero, Nat.mod_self, Nat.zero_lt_succ, Nat.div_self]
   simp only [Nat.zero_add, Nat.one_mod, Nat.reduceDiv, addAux]
