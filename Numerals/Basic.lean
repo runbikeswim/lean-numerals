@@ -557,7 +557,17 @@ end Add
 
 section Sub
 
-
+def hSub {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prenumeral base hb :=
+  if a ≤ b then
+    {
+      digits := [],
+      ltBase := allDigitsLtBase_nil
+    }
+  else
+    {
+      digits := subAux a.digits b.digits 0 base
+      ltBase := allDigitsLtBase_subAux a.digits b.digits a.ltBase
+    }
 
 end Sub
 

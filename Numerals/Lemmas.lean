@@ -48,6 +48,29 @@ for theorems used in proofs.
 -/
 theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
 
+theorem add_sub_lt_of {a b c : Nat} (h1 : b < a) (h2 : b < c) : a + b - c < a := by
+  if g1 : c ≤ a then
+    have h3 : a + b - c = a - (c - b) := Nat.Simproc.add_sub_le a (Nat.le_of_lt h2)
+    have h4 : 0 < a := Nat.lt_of_le_of_lt (Nat.zero_le b) h1
+    have h5 : 0 < c - b := Nat.sub_pos_of_lt h2
+    rw [h3]
+    exact (Nat.sub_lt h4) h5
+  else -- c > a
+    have h3 : a < c := Nat.lt_of_not_le g1
+    if g2 : b = 0 then
+      have h4 : a + b - c = 0 := by
+        simp only [g2, Nat.add_zero, Nat.sub_eq_zero_of_le (Nat.le_of_lt h3)]
+      have h5 : 0 < a := Nat.lt_of_le_of_lt (Nat.zero_le b) h1
+      rwa [h4]
+    else
+      have h4 : 0 < b := Nat.pos_of_ne_zero g2
+      have h5 : a + 0 < a + b := Nat.add_lt_add_left h4 a
+      have h6 : a < a + b := by rwa [Nat.add_zero] at h5
+      have h7 : a + b - a = b := by simp only [Nat.add_sub_cancel_left]
+      have h8 : a + b - c < a + b - a := Nat.sub_lt_sub_left h6 h3
+      have h9 : a + b - c < b := by rw (occs := .pos [2]) [← h7]; exact h8
+      exact Nat.lt_trans h9 h1
+
 theorem eq_zero_of_one_lt_of_mod_eq_zero_of_lt {a b : Nat}
   (h1 : 1 < b) (h2 : a % b = 0) (h3 : a < b) : a = 0 := by
   have h4 : b ∣ a  := Nat.dvd_iff_mod_eq_zero.mpr h2
@@ -2082,7 +2105,6 @@ end AddAux_Prune_AddDigits
 
 section AllDigitsLtBase_AddAux
 
-/-- -/
 theorem allDigitsLtBase_addAux {a b : List Nat} (n : Nat) {base : Nat} {hb : 1 < base} :
   allDigitsLtBase (addAux a b n base hb) base := by
   rw [addAux_eq_prune_addDigits hb]
@@ -2092,7 +2114,6 @@ end AllDigitsLtBase_AddAux
 
 section NoTrailingZero_AddAux
 
-/-- -/
 theorem noTrailingZero_addAux_of {a b : List Nat} {n base : Nat}
   (hantz : noTrailingZero a) (hbntz : noTrailingZero b) (hb : 1 < base) :
   noTrailingZero (addAux a b n base hb) := by
@@ -2141,6 +2162,14 @@ theorem subAux_nil_eq {a : List Nat} {base : Nat} : subAux a [] 0 base = a := by
   | nil => simp only [subAux]
   | cons x xs ih =>
     simp only [subAux, subAux.helper, Nat.zero_add, Nat.zero_le, reduceIte, Nat.sub_zero, ih]
+
+theorem subAux_cons_nil_eq {x n base : Nat} {xs : List Nat} :
+  subAux (x::xs) [] n base =
+    (if n ≤ x then
+      (x - n)::(subAux xs [] 0 base)
+    else
+      (base + x - n)::(subAux xs [] 1 base)) := by
+  simp only [subAux, subAux.helper, Nat.zero_add, Nat.sub_zero]
 
 theorem subAux_cons_cons_eq {x y n base : Nat} {xs ys : List Nat} :
   subAux (x::xs) (y::ys) n base =
@@ -2238,6 +2267,10 @@ theorem subAux_singleton_zero_eq {a : List Nat} {n base : Nat} : subAux a [n] 0 
   | [] => simp only
   | x::xs => simp only [Nat.add_zero, Nat.zero_add, Nat.sub_zero]
 
+end SubAux
+
+section EquivAux_SubAux
+
 theorem equivAux_subAux_nil_of_equivAux {a b : List Nat} {base : Nat} (h: equivAux a b) :
   equivAux (subAux a b 0 base) [] := by
   induction b generalizing a with
@@ -2250,21 +2283,14 @@ theorem equivAux_subAux_nil_of_equivAux {a b : List Nat} {base : Nat} (h: equivA
       simp only [← h.left, subAux_cons_cons_eq, Nat.add_zero, Nat.le_refl, reduceIte, Nat.sub_zero, Nat.sub_self]
       exact equivAux_cons_nil_of_equivAux_nil (ih h.right)
 
+end EquivAux_SubAux
+
+section ToNatAux_SubAux
+
 theorem toNatAux_subAux_nil_zero_eq_zero {a : List Nat} {base : Nat} :
   toNatAux (subAux [] a 0 base) base = 0 := by
   unfold subAux toNatAux toNatAux.helper
   rfl
-
-example {a : List Nat} {base : Nat} (ha : a = [0]) (hb: base = 10) :
-  toNatAux (subAux a [] 1 base) base ≠ (toNatAux a base) - 1 := by
-  have h1 : toNatAux (subAux a [] 1 base) base = 9 := by
-    simp only [ha, hb, subAux, subAux.helper, toNatAux]
-    decide
-  have h2 : (toNatAux a base) - 1 = 0 := by
-    simp only [ha, hb, toNatAux]
-    decide
-  rw [h1, h2]
-  decide
 
 theorem toNatAux_subAux_nil_one_eq_of {a : List Nat} {base : Nat} (hntza : noTrailingZero a) (hb : 1 < base) :
   toNatAux (subAux a [] 1 base) base = toNatAux a base - 1 := by
@@ -2298,6 +2324,20 @@ theorem toNatAux_subAux_nil_one_eq_of {a : List Nat} {base : Nat} (hntza : noTra
       simp only [toNatAux_cons_eq, Nat.zero_add]
       simp only [ih h3.left, Nat.mul_sub_left_distrib, Nat.mul_one, Nat.add_comm]
       simp only [← Nat.sub_add_comm h8, h9, Nat.add_sub_cancel]
+
+/--
+shows that `noTrailingZero a` is neccesary in `toNatAux_subAux_nil_one_eq_of`
+-/
+example : toNatAux (subAux [0] [] 1 10) 10 ≠ (toNatAux [0] 10) - 1 := by
+  have h1 : toNatAux (subAux [0] [] 1 10) 10 = 9 := by
+    simp only [subAux, subAux.helper, Nat.zero_add, Nat.le_zero_eq]
+    simp only [Nat.succ_ne_self, ↓reduceIte, Nat.add_zero, Nat.sub_zero]
+    decide
+  have h2 : (toNatAux [0] 10) - 1 = 0 := by
+    simp only [toNatAux]
+    decide
+  rw [h1, h2]
+  decide
 
 theorem lt_toNatAux_subAux_of_ltAux_of {a b : List Nat} {base : Nat} (h : ltAux b a)
   (hb : 1 < base) (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) :
@@ -2441,17 +2481,46 @@ theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
           simp only [toNatAux_subAux_one_eq_of h5 h1 h2.right h3.right hb, ih h4 h1 h2.right h3.right]
           exact Nat.add_sub_add_mul_sub_sub_eq_of h6 h3.left hb
 
-end SubAux
+end ToNatAux_SubAux
 
-section Sub
+section AllDigitsLtBase_SubAux
 
-def sub (a b : List Nat) (base : Nat) : List Nat :=
-  if leAux a b then
-    []
-  else
-    discardTrailingZeros (subAux a b 0 base)
+theorem allDigitsLtBase_subAux {n base : Nat} (a b : List Nat) (halt : allDigitsLtBase a base) :
+  allDigitsLtBase (subAux a b n base) base := by
+  induction a generalizing b n with
+  | nil => rwa [subAux_nil_eq_nil]
+  | cons x xs ih =>
+    have h1 : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halt
+    match b with
+    | [] =>
+      rw [subAux_cons_nil_eq]
+      if g : n ≤ x then
+        simp only [g, reduceIte]
+        have h2 : x - n < base := Nat.sub_lt_of_lt h1.left
+        have h3 : allDigitsLtBase (subAux xs [] 0 base) base := ih [] h1.right
+        exact allDigitsLtBase_cons_iff.mpr (And.intro h2 h3)
+      else -- n > x
+        simp only [g, reduceIte]
+        have h2 : base + x - n < base := Nat.add_sub_lt_of (h1.left) (Nat.lt_of_not_le g)
+        have h3 : allDigitsLtBase (subAux xs [] 1 base) base := ih [] h1.right
+        exact allDigitsLtBase_cons_iff.mpr (And.intro h2 h3)
+    | y::ys =>
+      rw [subAux_cons_cons_eq]
+      if g : y + n ≤ x then
+        simp only [g, reduceIte]
+        have h2 : x - y - n = x - (y + n) := Nat.sub_sub x y n
+        have h3 : x - y - n < base := by rw [h2]; exact Nat.sub_lt_of_lt h1.left
+        have h4 : allDigitsLtBase (subAux xs ys 0 base) base := ih ys h1.right
+        exact allDigitsLtBase_cons_iff.mpr (And.intro h3 h4)
+      else -- y + n > x
+        simp only [g, reduceIte]
+        have h2: base + x - (y + n) < base := Nat.add_sub_lt_of (h1.left) (Nat.lt_of_not_le g)
+        have h3: base + x - (y + n) = base + x - y - n := Nat.sub_add_eq (base + x) y n
+        have h4: base + x - y - n < base := by rwa [h3] at h2
+        have h5 : allDigitsLtBase (subAux xs ys 1 base) base := ih ys h1.right
+        exact allDigitsLtBase_cons_iff.mpr (And.intro h4 h5)
 
-end Sub
+end AllDigitsLtBase_SubAux
 
 section ListFinBase
 
