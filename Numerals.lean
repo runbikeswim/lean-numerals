@@ -5,4 +5,5 @@ Author: Stefan Kusterer
 -/
 
 import Numerals.Lemmas
+import Numerals.ToOfString
 import Numerals.Basic

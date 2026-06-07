@@ -5,6 +5,9 @@ Author: Stefan Kusterer
 -/
 
 import Numerals.Lemmas
+import Numerals.ToOfString
+
+open NumeralAux
 
 /-!
 # Numerals.Basic
@@ -29,15 +32,15 @@ section Prenumerals
 
 /--
 `Prenumeral` provides a representation of a natural number in positional notation for `base`, with `digits`
-in _reverse_ (little-endian) order. `base` can be any number larger than one.
-`ltBase` asserts that every digit is less than `base`.
+in _reverse_ (little-endian) order. `base` can be any natural number larger than one.
+`ltBase` asserts that all natural numbers in list `digits` are less than `base`.
 
 `Prenumeral`s can have leading zeros as in
 ```
 def p : Prenumeral 10 (by decide) := {digits := [2, 1, 0], ltBase := by decide}
 
 ```
-which represents the `12` in base ten.
+which represents the number `12` in base ten.
 -/
 @[ext]
 structure Prenumeral (base : Nat) (hb : 1 < base) where
@@ -46,51 +49,52 @@ structure Prenumeral (base : Nat) (hb : 1 < base) where
   deriving Repr
 
 /--
-Prenumerals in binary representation
+shorthand for `Prenumeral`s in binary representation
 -/
 abbrev Prenumeral2 := Prenumeral 2 (by decide)
 
 /--
-Prenumerals in octal representation
+shorthand for `Prenumeral`s octal representation
 -/
 abbrev Prenumeral8 := Prenumeral 8 (by decide)
 
 /--
-Prenumerals in decimal representation
+shorthand for `Prenumeral`s decimal representation
 -/
 abbrev Prenumeral10 := Prenumeral 10 (by decide)
 
 /--
-Prenumerals in hexadecimal representation
+shorthand for `Prenumeral`s hexadecimal representation
 -/
 abbrev Prenumeral16 := Prenumeral 16 (by decide)
-
-namespace Prenumeral
 
 /--
 
 Example:
 ```
-def p : Prenumeral 10 (by decide) := ofList [1, 2, 3, 0] (by decide)
+def p : Prenumeral 10 (by decide) := [1, 2, 3, 0].toPrenumeral (by decide)
 #eval p -- { digits := [1, 2, 3, 0], ltBase := _ }
 ```
 -/
-def ofList {base: Nat} {hb: 1 < base} (a: List Nat) (ha : allDigitsLtBase a base) : Prenumeral base hb where
+def List.toPrenumeral {base: Nat} {hb: 1 < base} (a: List Nat) (ha : allDigitsLtBase a base) : Prenumeral base hb where
   digits := a
   ltBase := ha
+
+namespace Prenumeral
 
 /--
 returns the base of the provided `Prenumeral`
 -/
 def base {base' : Nat} {hb' : 1 < base'} (_ : Prenumeral base' hb') : Nat := base'
 
+abbrev zero {base : Nat} {hb : 1 < base} : Prenumeral base hb := {digits := [], ltBase := List.all_nil}
+
 /--
 `[]` (i.e. _zero_) is the default `Prenumeral` - for any base
 -/
-instance instInhabited {base : Nat} {hb : 1 < base} : Inhabited (Prenumeral base hb) := ⟨{
-    digits := [],
-    ltBase := List.all_nil
-  }⟩
+instance instInhabited {base : Nat} {hb : 1 < base} : Inhabited (Prenumeral base hb) := ⟨zero⟩
+
+theorem zero_eq_default {base : Nat} {hb : 1 < base} : @zero base hb = default := rfl
 
 /--
 use `0` for zero
@@ -102,7 +106,11 @@ Example:
 -/
 instance instZero {base : Nat} {hb : 1 < base} : Zero (Prenumeral base hb) := ⟨default⟩
 
-theorem zero_eq_default : 0 = default := rfl
+theorem zero_eq_zero {base : Nat} {hb : 1 < base} : @zero base hb = 0 := rfl
+
+abbrev one {base : Nat} {hb : 1 < base} : Prenumeral base hb where
+  digits := [1]
+  ltBase := by simp only [allDigitsLtBase, List.all, Bool.and_true, hb, decide_true]
 
 /--
 use `1` for one
@@ -112,10 +120,8 @@ Example:
 #eval (1 : Prenumeral 10 (by decide)) -- { digits := [1], ltBase := _ }
 ```
 -/
-instance instOne {base : Nat} {hb : 1 < base} : One (Prenumeral base hb) := ⟨{
-    digits := [1],
-    ltBase := by simp only [allDigitsLtBase, List.all, Bool.and_true, hb, decide_true]
-  }⟩
+instance instOne {base : Nat} {hb : 1 < base} : One (Prenumeral base hb) where
+  one := one
 
 section Equality
 
@@ -161,6 +167,8 @@ Examples:
 -/
 def toNat {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) : Nat := toNatAux n.digits base
 
+theorem zero_toNat_eq_zero {base : Nat} {hb : 1 < base} : (@zero base hb).toNat = 0 := toNatAux_nil_eq
+
 /--
 returns a `Prenumeral` for the given number (of type `Nat`)
 
@@ -171,17 +179,29 @@ Examples:
 #eval Prenumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], ltBase := _ }
 ```
 -/
-def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Prenumeral base hb where
+def ofNat (n : Nat) {base : Nat} {hb : 1 < base} : Prenumeral base hb where
   digits := ofNatAux n base hb
   ltBase := allDigitsLtBase_prune
 
+theorem ofNat_zero_eq_zero {base : Nat} {hb : 1 < base} : @ofNat 0 base hb = zero := by
+  unfold ofNat ofNatAux prune zero
+  rfl
+
+theorem ofNat_one_eq_one {base : Nat} {hb : 1 < base} : @ofNat 1 base hb = one := by
+  unfold ofNat ofNatAux prune one
+  have h1 : 1 / base = 0 := Nat.div_eq_zero_iff.mpr (Or.inr hb)
+  have h2 : 1 % base = 1 := by
+    rw [Nat.mod_eq]
+    simp only [Nat.pos_of_one_lt hb, true_and, Nat.not_le_of_lt hb, reduceIte]
+  simp only [Nat.zero_add, h1, prune_nil_eq_nil, h2]
+
 instance instOfNat {base : Nat} {hb : 1 < base} (n : Nat) : OfNat (Prenumeral base hb) n where
-  ofNat := ofNat n base hb
+  ofNat := ofNat n
 
 /--
 `toNat` is the inverse of `ofNat`
 -/
-theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (ofNat n base hb).toNat = n := by
+theorem toNat_leftInverse_ofNat {n base : Nat} {hb : 1 < base} : (@ofNat n base hb).toNat = n := by
   rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
 
 /--
@@ -189,13 +209,13 @@ For `Prenumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat
 trailing zeros are not preserved by `toNat`. The following example shows this for a very
 simple case.
 -/
-example : ∃ p : Prenumeral10, (ofNat (p.toNat) 10 (by decide)) ≠ p := by
+example : ∃ p : Prenumeral10, ofNat (p.toNat) ≠ p := by
   let p : Prenumeral10 := ⟨[0], by decide⟩
   let q : Prenumeral10 := ⟨[], by decide⟩
   refine ⟨p, ?_⟩
   have : p.toNat = 0 := by decide
   rw [this]
-  have : ofNat 0 10 (by decide) = q := by simp only [ofNat, ofNatAux, prune]; grind only
+  have : ofNat 0 = q := by simp only [ofNat, ofNatAux, prune]; grind only
   rw [this]
   decide
 
@@ -270,9 +290,11 @@ theorem toNat_eq_zero_iff_isZero {base : Nat} {hb : 1 < base} (n : Prenumeral ba
 `ofNat` returns a `Prenumeral` that `isZero` iff its input is `0`
 -/
 theorem ofNat_isZero_iff_eq_zero {n base : Nat} (hb : 1 < base) :
-  (ofNat n base hb).isZero ↔ n = 0 := by
+  (@ofNat n base hb).isZero ↔ n = 0 := by
   unfold isZero ofNat
   exact isZeroAux_ofNatAux_iff_eq_zero hb
+
+example : (@ofNat 0 10 (by decide)).isZero := by rw [ofNat_isZero_iff_eq_zero]
 
 /--
 makes `isZero` decidable
@@ -284,6 +306,8 @@ instance of class `Decidable` for `isZero`
 -/
 instance instDecIsZero {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : Decidable (isZero a) :=
   decIsZero a
+
+example : (0 : Prenumeral10).isZero := by native_decide
 
 end IsZero
 
@@ -340,7 +364,7 @@ instance instTransLe {base : Nat} {hb : 1 < base} :
 
 theorem zero_le {base : Nat} {hb : 1 < base} (a : Prenumeral base hb) : 0 ≤ a := by
   unfold instOfNat
-  simp only [ofNat, ofNatAux, prune, LE.le, le]
+  simp only [ofNat_zero_eq_zero, LE.le, le]
   exact leAux_nil
 
 example {base : Nat} {hb : 1 < base} : (0 : Prenumeral base hb) ≤ 1 := zero_le 1
@@ -351,8 +375,12 @@ def decLe {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Decidable (a
   else
     isFalse h
 
-instance DecidableLE {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
+instance instDecLe {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) :
   Decidable (a ≤ b) := decLe a b
+
+example : @zero 10 (by decide) ≤ @one 10 (by decide) := by decide
+example : (0 : Prenumeral10) ≤ 1 := by native_decide
+example : (1966 : Prenumeral10) ≤ (2026 : Prenumeral10) := by native_decide
 
 end LessThanOrEqualTo
 
@@ -448,6 +476,16 @@ instance instTransLeLt {base : Nat} {hb : 1 < base} :
     intro a b c ha hb
     exact lt_of_le_of_lt ha hb
 
+def decLt {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Decidable (a < b) :=
+  if h : ltAux a.digits b.digits then
+    isTrue h
+  else
+    isFalse h
+
+instance instDecLt {base : Nat} {hb : 1 < base} : DecidableLT (Prenumeral base hb) := decLt
+
+example : @zero 10 (by decide) < @one 10 (by decide) := by native_decide
+
 end LessThan
 
 section HasTrailingZero
@@ -504,7 +542,7 @@ section Rebase
 returns a `Prenumeral` with the same value as the input but for a different `base`
 -/
 def rebase {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) (toBase : Nat) (htb : 1 < toBase) :
-  Prenumeral toBase htb := ofNat (n.toNat) toBase htb
+  Prenumeral toBase htb := ofNat (n.toNat)
 
 /--
 asserts that the result of `rebase` is a `Prenumeral` with `base` `toBase`
@@ -569,44 +607,31 @@ def hSub {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : Prenumeral ba
       ltBase := allDigitsLtBase_subAux a.digits b.digits a.ltBase
     }
 
+instance instHSubPrenumerals {base : Nat} {hb : 1 < base} :
+  HSub (Prenumeral base hb) (Prenumeral base hb) (Prenumeral base hb) := ⟨hSub⟩
+
+theorem sub_eq_hSub  {base : Nat} {hb : 1 < base} (a b : Prenumeral base hb) : a - b = a.hSub b := rfl
+
+theorem pos_toNat_sub_of_lt {base : Nat} {hb : 1 < base} {a b : Prenumeral base hb} (h : b < a) :
+  0 < toNat (a - b) := by
+  have : ¬ a ≤ b := ((lt_iff_le_and_not_le b a).mp h).right
+  simp only [sub_eq_hSub, hSub, this, reduceIte, toNat]
+  simp only [LT.lt, lt] at h
+  exact pos_toNatAux_subAux_of_ltAux_of h hb a.ltBase b.ltBase
+
+theorem pos_sub_of_lt {base : Nat} {hb : 1 < base} {a b : Prenumeral base hb} (h : b < a) :
+  (@zero base hb) < a - b := by
+  have : 0 < toNat (a - b) := pos_toNat_sub_of_lt h
+  rw [← @zero_toNat_eq_zero base hb] at this
+  exact (lt_iff_toNat_lt_toNat (@zero base hb) (a - b)).mpr this
+
+example : zero < (10 : Prenumeral10) - (9 : Prenumeral10) := by
+  have : (9 : Prenumeral10) < (10 : Prenumeral10) := by native_decide
+  exact pos_sub_of_lt this
+
 end Sub
 
-end Prenumeral
-end Prenumerals
-
 section ToString
-
-def digitToString (digit base : Nat) (hd : digit < base) : String :=
-  if g : base = 16 ∧ 10 ≤ digit then
-    /- needed for avoiding "Missing cases"-error in the following match -/
-    have : decide (digit < 16) := by
-      rw [g.left] at hd
-      simp only [hd, decide_true]
-    match digit with
-    | 10 => "a"
-    | 11 => "b"
-    | 12 => "c"
-    | 13 => "d"
-    | 14 => "e"
-    | 15 => "f"
-  else
-    s!"{digit}"
-
-def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : String:=
-  let s := natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base)
-  let r := if s = [] then ["0"] else s.reverse
-  match base with
-  | 2 => s!"0b{String.join r}"
-  | 8 => s!"0o{String.join r}"
-  | 10 => s!"{ String.join r}"
-  | 16 => s!"0x{String.join r}"
-  | _ => s!"{",".intercalate r}({base})"
-  where natsToStrings (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits base) : List String :=
-    match digits with
-    | [] => []
-    | x::xs =>
-      have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
-      (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
 
 /--
 For base 2, 8, 10 or 16, the [binary](https://en.wikipedia.org/wiki/Binary_number),
@@ -618,18 +643,21 @@ For all other values of base, the list of digits - starting with the most signif
 returned as sequence of natural numbers, separated by "," and succeeded by the
 the value of `base` (all in decimal notation).
 -/
-def Prenumeral.toString {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) : String :=
+def toString {base : Nat} {hb : 1 < base} (n : Prenumeral base hb) : String :=
   toStringAux n.digits base n.ltBase
 
 instance instToStringPrenumeral {base : Nat} {hb : 1 < base} : ToString (Prenumeral base hb) where
-  toString := Prenumeral.toString
+  toString := toString
 
 end ToString
+
+end Prenumeral
+end Prenumerals
 
 section Numerals
 
 /--
-`Numeral` are `Prenumerals` without leading zeros, which is ensured by `noTZ`, which stands for _has no trailing zeros_.
+`Numeral`s are `Prenumeral`s without leading zeros, which is ensured by `noTZ`, which stands for _has no trailing zeros_.
 By this, every natural number has a unique representation for the given `base`.
 -/
 @[ext]
@@ -717,12 +745,11 @@ provides the number of digits used by the given `Numeral`
 def length {base : Nat} {hb : 1 < base} (n : Numeral base hb) : Nat := n.digits.length
 
 def ofNat (n : Nat) (base : Nat) (hb : 1 < base) : Numeral base hb where
-  toPrenumeral := Prenumeral.ofNat n base hb
+  toPrenumeral := Prenumeral.ofNat n
   noTZ := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
 
 section Add
 
-/-- -/
 def hAdd {base : Nat} {hb : 1 < base} (a b : Numeral base hb) : Numeral base hb where
   toPrenumeral := a + b
   noTZ := noTrailingZero_addAux_of a.noTZ b.noTZ hb
