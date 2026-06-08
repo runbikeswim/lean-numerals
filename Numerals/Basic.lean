@@ -651,6 +651,41 @@ instance instToStringPrenumeral {base : Nat} {hb : 1 < base} : ToString (Prenume
 
 end ToString
 
+section OfString
+
+/--
+
+Examples:
+```
+#eval @ofString? "0b10110" 2 (by decide) -- some { digits := [0, 1, 1, 0, 1], ltBase := _ }
+#eval @ofString? "0o76543210" 8 (by decide) -- some { digits := [0, 1, 2, 3, 4, 5, 6, 7], ltBase := _ }
+#eval @ofString? "9876543210" 10 (by decide) -- some { digits := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], ltBase := _ }
+#eval @ofString? "0xfedcba9876543210" 16 (by decide) -- some { digits := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], ltBase := _ }
+#eval @ofString? "(60)12,59,59" 60 (by decide) -- some { digits := [59, 59, 12], ltBase := _ }
+#eval @ofString? "007" 10 (by decide) -- some { digits := [7, 0, 0], ltBase := _ }
+#eval @ofString? "not a valid string" 10 (by decide) -- none
+```
+-/
+def ofString? (s : String) {base : Nat} {hb : 1 < base} : Option (Prenumeral base hb) :=
+  match parse s with
+  | (_, .success d) =>
+    if h : base = d.base then
+      some {
+        digits := (fromListFinBase d.digits).reverse,
+        ltBase := by
+          rw [h]
+          simp only [allDigitsLtBase, List.all_reverse]
+          exact allDigitsLtBase_fromListFinBase d.digits
+      }
+    else
+      none
+  | _ => none
+
+def ofStringD (s : String) {base : Nat} {hb : 1 < base} : Prenumeral base hb := (ofString? s).getD default
+def ofString! (s : String) {base : Nat} {hb : 1 < base} : Prenumeral base hb := (ofString? s).get!
+
+end OfString
+
 end Prenumeral
 end Prenumerals
 
@@ -698,7 +733,7 @@ instance {base : Nat} {hb : 1 < base} : Coe (Numeral base hb) (Prenumeral base h
   coe := toPrenumeral
 
 /--
-Converts a `Prenumeral` into a `toNumeral` by discarding (potentially present) trailing zeros.
+converts a `Prenumeral` into a `Numeral` by discarding (potentially present) trailing zeros
 
 Examples:
 ```
@@ -707,19 +742,13 @@ def p : Prenumeral 10 (by decide) := ⟨[1,9,0], by  decide⟩
 
 def n : Numeral 10 (by decide) := p.toNumeral
 #eval n -- { toPrenumeral := { digits := [1, 9], ltBase := _ }, noTZ := _ }
-
-def q : Prenumeral 10 (by decide) := n.toPrenumeral
-#eval q -- { digits := [1, 9], ltBase := _ }
-
-def r : Prenumeral 10 (by decide) := n
-#eval r -- { digits := [1, 9], ltBase := _ }
 ```
 -/
 def Prenumeral.toNumeral {base : Nat} {hb : 1 < base} (p : Prenumeral base hb) :
   Numeral base hb where
   digits := discardTrailingZeros p.digits
   ltBase := allDigitsLtBase_discardTrailingZeros p.ltBase
-  noTZ :=  noTrailingZero_discardTrailingZeros
+  noTZ := noTrailingZero_discardTrailingZeros
 
 /-
 zero (represented by `[]`) is the default `Numeral` - for any base

@@ -170,48 +170,44 @@ instance {α : Type} [ToString α] : ToString (ParserResult α) := ⟨toString�
 
 end ParserResult
 
+abbrev NatGt1 := { n : Nat // 1 < n }
+
 structure DigitsOfBase where
-  base : Nat
-  digits : List Nat
+  base : NatGt1
+  digits : List (Fin base)
 deriving Repr
 
-def baseParser (s : String.Slice) : String.Slice × (ParserResult Nat) :=
+def parseBase (s : String.Slice) : String.Slice × (ParserResult NatGt1) :=
   match s.front with
   | '0' =>
     let t := s.drop 1
     match t.front with
-    | 'b' => (t.drop 1, .success 2)
-    | 'o' => (t.drop 1, .success 8)
-    | 'x' => (t.drop 1, .success 16)
-    | _ => (s, .success 10)
+    | 'b' => (t.drop 1, .success ⟨2, by decide⟩)
+    | 'o' => (t.drop 1, .success ⟨8, by decide⟩)
+    | 'x' => (t.drop 1, .success ⟨16, by decide⟩)
+    | _ => (s, .success ⟨10, by decide⟩)
   | '(' =>
     let u := (s.drop 1).takeWhile (· != ')')
     match u.toNat? with
-    | some n => (s.drop (2 + u.positions.length), .success n)
-    | none => (s, .failure { input := s, message := "does not start with a decimal numeral enclosed in '(' and ')'" })
-  | _ => (s, .success 10)
+    | some n =>
+      if g : 1 < n then
+        (s.drop (2 + u.positions.length), .success ⟨n,g⟩ )
+      else
+        (s, .failure { input := s, message := "the number enclosed in '(' and ')' is 1 or less" })
+    | none => (s, .failure {input := s, message := "does not start with a decimal numeral enclosed in '(' and ')'"})
+  | _ => (s, .success ⟨10, by decide⟩)
 
-def charToValue? (c : Char) : Option Nat :=
+def charToDigit? (c : Char) (base : NatGt1) : Option (Fin base) :=
+  let iteLtBase (n : Nat) : Option (Fin base) := if h : n < base then some ⟨n,h⟩ else none
   if '0' <= c && c <= '9' then
-    some (c.toNat - '0'.toNat)
+    iteLtBase (c.toNat - '0'.toNat)
   else if 'a' <= c && c <= 'f' then
-    some (10 + c.toNat - 'a'.toNat)
+    iteLtBase (10 + c.toNat - 'a'.toNat)
   else none
 
-def singleDigitParser (s : String.Slice) (base : Nat) : String.Slice × (ParserResult Nat) :=
-  match charToValue? s.front with
-  | some n =>
-    if n < base then
-      (s.take 1, .success n)
-    else
-      (
-        s,
-        .failure {
-          input := s
-          message := s!"starts with a digit that is larger than {base}",
-
-        }
-      )
+def parseSingleDigit (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResult (Fin base)) :=
+  match charToDigit? s.front base with
+  | some n => (s.take 1, .success n)
   | none => (
       s,
       .failure {
@@ -220,55 +216,56 @@ def singleDigitParser (s : String.Slice) (base : Nat) : String.Slice × (ParserR
       }
     )
 
-def digitsParser (s : String.Slice) (base : Nat) : String.Slice × (ParserResult DigitsOfBase) :=
-  helper s.positions.toList base where
-  helper (l : List { p // p ≠ s.endPos}) (base : Nat) :=
-    match l with
-    | [] => (s.sliceFrom s.endPos, .success {base := base, digits := []})
-    | x::xs =>
-      match singleDigitParser (s.sliceFrom x) base with
-      | (t, .failure e) => (t, .failure e)
-      | (_, .success n) =>
-        match helper xs base with
-        | (u, .success d) => (u, .success {d with digits := n :: d.digits})
-        | (u, .failure e) => (u, .failure e)
+def parseDigits (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResult (List (Fin base))) :=
+  helper s.positions.toList where
+  helper (l : List { p // p ≠ s.endPos}) :=
+  match l with
+  | [] => (s.sliceFrom s.endPos, .success [])
+  | x::xs =>
+    match parseSingleDigit (s.sliceFrom x) base with
+    | (t, .failure e) => (t, .failure e)
+    | (_, .success n) =>
+      match helper xs with
+      | (u, .success d) => (u, .success (n :: d))
+      | (u, .failure e) => (u, .failure e)
 
-def decimalNumbersParser (s : String.Slice) (base : Nat) : String.Slice × (ParserResult DigitsOfBase) :=
-  helper (s.split ',').toList base where
-  helper (l : List String.Slice) (base : Nat) :=
+def parseDecimalNumberSeq (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResult (List (Fin base))) :=
+  helper (s.split ',').toList where
+  helper (l : List String.Slice) :=
     match l with
-    | [] => (s.sliceFrom s.endPos, .success {base := base, digits := []})
+    | [] => (s.sliceFrom s.endPos, .success [])
     | x::xs =>
       match x.toNat? with
-      | none => (s.sliceFrom s.endPos, .failure {input := x, message := "is not a decimal number"})
+      | none => (
+          s.sliceFrom s.endPos,
+          .failure {input := x, message := "is not a decimal number"}
+        )
       | some n =>
-        if n < base then
-          match helper xs base with
+        if g : n < base then
+          match helper xs  with
           | (u, .failure e) => (u, .failure e)
-          | (u, .success d) => (u, .success {d with digits := n :: d.digits})
+          | (u, .success d) => (u, .success (⟨n, g⟩ :: d))
         else
           (
             s.sliceFrom s.endPos,
-            .failure {input := s, message := s!"contains '{n}' with is not less than base '{base}'"}
+            .failure {
+              input := s,
+              message := s!"contains '{n}' with is not less than base '{base}'"
+            }
           )
 
-def parser (s : String.Slice) : String.Slice × (ParserResult DigitsOfBase) :=
-  match baseParser s with
+def parse (s : String.Slice) : String.Slice × (ParserResult DigitsOfBase) :=
+  match parseBase s with
   | (t, .success b) =>
-    match b with
-    | 2 | 8 | 10 | 16 => digitsParser t b
-    | _ => decimalNumbersParser t b
+    match (b : Nat) with
+    | 2 | 8 | 10 | 16 =>
+      match parseDigits t b with
+      | (u, .success l) => (u, .success {base := b, digits := l})
+      | (u, .failure e) => (u, .failure e)
+    | _ =>
+      match parseDecimalNumberSeq t b with
+      | (u, .success l) => (u, .success {base := b, digits := l})
+      | (u, .failure e) => (u, .failure e)
   | (t, .failure e) => (t, .failure e)
-
-def ofStringAux? (s: String) : Option (Nat × (List Nat)) :=
-  match parser s.toSlice with
-  | (_, .success d) => some (d.base, d.digits)
-  | (_, .failure _) => none
-
-#eval ofStringAux? "0b10100"
-#eval ofStringAux? "0o01234567"
-#eval ofStringAux? "1234567890"
-#eval ofStringAux? "0x0123456789abcdef"
-#eval ofStringAux? "(60)12,34,56"
 
 end OfString
