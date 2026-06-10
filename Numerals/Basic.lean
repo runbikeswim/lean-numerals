@@ -174,9 +174,9 @@ returns a `Prenumeral` for the given number (of type `Nat`)
 
 Examples:
 ```
-#eval Prenumeral.ofNat 0 10 (by decide) -- { digits := [], ltBase := _ }
-#eval Prenumeral.ofNat 10 2 (by decide) -- { digits := [0, 1, 0, 1], ltBase := _ }
-#eval Prenumeral.ofNat (15 + 15 * 16) 16 (by decide) -- { digits := [15, 15], ltBase := _ }
+#eval @Prenumeral.ofNat 0 10 (by decide) -- { digits := [], ltBase := _ }
+#eval @Prenumeral.ofNat 11 2 (by decide) -- { digits := [1, 1, 0, 1], ltBase := _ }
+#eval @Prenumeral.ofNat (15 + 16) 16 (by decide) -- { digits := [15, 1], ltBase := _ }
 ```
 -/
 def ofNat (n : Nat) {base : Nat} {hb : 1 < base} : Prenumeral base hb where
