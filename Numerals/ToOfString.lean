@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
-import Numerals.Lemmas
+import Numerals.AllDigitsBase
 
 open NumeralAux
 
@@ -41,8 +41,6 @@ def toStringAux (digits : List Nat) (base : Nat) (ha : allDigitsLtBase digits ba
     | x::xs =>
       have hxs : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp ha
       (digitToString x base hxs.left)::(natsToStrings xs base hxs.right)
-
-#eval toStringAux [59,59] 60 (by decide)
 
 end ToString
 

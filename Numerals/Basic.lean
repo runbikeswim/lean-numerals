@@ -4,8 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
-import Numerals.Lemmas
+import Numerals.ToNat
+import Numerals.EquivIsZero
+import Numerals.AllDigitsBase
+import Numerals.NoTrailingZero
+import Numerals.DiscardTrailingZeros
+import Numerals.ToNatEquiv
+import Numerals.OfNat
+import Numerals.Prune
+import Numerals.LeLt
+import Numerals.Add
+import Numerals.Sub
 import Numerals.ToOfString
+import Numerals.ListFinBase
 
 open NumeralAux
 
@@ -15,6 +26,17 @@ open NumeralAux
 `Numeral.Basic` provides two types for the representation of natural numbers in a
 [positional numeral system](https://en.wikipedia.org/wiki/List_of_numeral_systems#Standard_positional_numeral_systems)
 for an arbitrary basis (i.e. any natural number larger than one):
+
+In particular, it provides non-primitive functions for basic operations such as addition and subtraction
+of numerals and theorems that ensure that these functions are consistent with the respective operations on
+[`Nat`](https://lean-lang.org/doc/reference/latest/Basic-Types/Natural-Numbers/#Nat).
+This is useful for proofing theorems that refer to the representation of natural numbers as
+numerals in positional notation.
+
+Most of the functions and theorems defined here use one or several parameter(s) of type `List Nat` as input,
+which represent numerals in [little-endian notation](https://en.wikipedia.org/wiki/Endianness) with the
+elements in the lists as digits. Additionally, a parameter `base : Nat` is used whenever the
+[base (i.e. radix)](https://en.wikipedia.org/wiki/Radix) of the numeral matters.
 
 ## Prenumerals
 
