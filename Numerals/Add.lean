@@ -12,7 +12,6 @@ namespace NumeralAux
 
 section AddDigits
 
-/-- -/
 def addDigits : List Nat → List Nat → List Nat
   | [], [] => []
   | x::xs, [] => x::xs
@@ -24,7 +23,6 @@ theorem addDigits_nil_eq {a : List Nat} : addDigits a [] = a := by
   match ha : a with
   | [] | x::xs => rfl
 
-/-- -/
 theorem addDigits_eq_nil_iff_eq_nil_and_eq_nil {a b : List Nat} :
   addDigits a b = [] ↔ a = [] ∧ b = [] := by
   constructor
@@ -38,7 +36,6 @@ theorem addDigits_eq_nil_iff_eq_nil_and_eq_nil {a b : List Nat} :
 theorem addDigits_cons_cons_eq_add_cons_addDigits {x y : Nat} {xs ys : List Nat} :
   addDigits (x::xs) (y::ys) = (x + y)::addDigits xs ys := rfl
 
-/-- -/
 theorem addDigits_comm {a b : List Nat} : addDigits a b = addDigits b a := by
   induction a generalizing b with
   | nil => match b with | [] | v::vs => rfl
@@ -54,7 +51,6 @@ end AddDigits
 
 section NoTrailingZero_AddDigits
 
-/-- -/
 theorem noTrailingZero_addDigits_of {a b : List Nat}
   (hantz : noTrailingZero a) (hbntz : noTrailingZero b) :
   noTrailingZero (addDigits a b) := by
@@ -82,7 +78,6 @@ end NoTrailingZero_AddDigits
 
 section ToNatAux_AddDigits
 
-/-- -/
 theorem toNatAux_addDigits_left_distrib {a b : List Nat} {base : Nat} :
   toNatAux (addDigits a b) base = (toNatAux a base) + (toNatAux b base) := by
   have h1 : toNatAux [] base = 0 := by rw [toNatAux.eq_def, toNatAux.helper.eq_def]
@@ -167,7 +162,7 @@ theorem addAux_nil_of_allDigitsLtBase {a : List Nat} {base : Nat} (hb : 1 < base
     have h4 : addAux [] xs 0 base hb = xs := ih h1.right
     simp only [addAux, Nat.add_zero, h2, h3, h4]
 
-/--
+/-
 shows that `allDigitsLtBase a base` is necessary in `addAux_nil_of_allDigitsLtBase`, illustrating
 that `addAux` returns _normalized_ lists for which `allDigitsLtBase` is true.
 -/
@@ -205,7 +200,6 @@ theorem addAux_nil_eq_prune_addDigits_nil {a : List Nat} {n base : Nat} (hb : 1 
       exact ihy
     exact And.intro rfl h2
 
-/-- -/
 theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base) :
   addAux a b n base hb = prune (addDigits a b) n base hb := by
   induction a generalizing b n with
@@ -224,7 +218,7 @@ theorem addAux_eq_prune_addDigits {a b : List Nat} {n base : Nat} (hb : 1 < base
       rw [List.cons.injEq]
       exact And.intro rfl ihx
 
-/--
+/-
 alternative proof for `addAux_comm`
 -/
 example {a b : List Nat} {n base : Nat} (hb : 1 < base) :

@@ -11,7 +11,7 @@ namespace NumeralAux
 
 section EquivAux
 
-/--
+/-
 Equivalence for lists of natural numbers - two lists are _equivalent_ if they only
 differ with respect to _trailing zeros_.
 
@@ -48,7 +48,7 @@ theorem equivAux_nil_iff (a : List Nat) : equivAux [] a ↔ a.all (· == 0) := b
       fun t ↦ And.intro t.left (ih.mpr t.right)
     exact Iff.intro hmp hmpr
 
-/--
+/-
 [Reflexivity](https://en.wikipedia.org/wiki/Reflexive_relation) for `equivAux`.
 
 Together with `equivAux_symm` and `equivAux_trans` this ensures that `equivAux` is an
@@ -60,7 +60,7 @@ theorem equivAux_refl {a : List Nat} : equivAux a a := by
   | cons x xs ih =>
     simp only [equivAux, ih, true_and]
 
-/--
+/-
 [Symmetry](https://en.wikipedia.org/wiki/Symmetric_relation) for `equivAux`.
 
 Together with `equivAux_refl` and `equivAux_trans` this ensures that `equivAux` is an
@@ -81,13 +81,13 @@ theorem equivAux_symm {a b : List Nat} (hab : equivAux a b) : equivAux b a := by
       rw [hab.left]
       exact And.intro rfl (ihx hab.right)
 
-/--
+/-
 This lemma makes it possible to apply the `rw`-tactic.
 -/
 theorem equivAux_iff_equivAux {a b : List Nat} : equivAux a b ↔ equivAux b a :=
   Iff.intro (equivAux_symm ·) (equivAux_symm ·)
 
-/--
+/-
 [Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equivAux` with
 `[] : List Nat` as first and two arbitrary parameters of type `List Nat` as second
 and third element.
@@ -107,7 +107,7 @@ theorem equivAux_trans_nil {a b : List Nat} (ha : equivAux [] a) (hab : equivAux
         have : z = 0 := by rw [ha.left] at hab; exact (Eq.symm hab.left)
         exact And.intro this (ih ha.right hab.right)
 
-/--
+/-
 [Transitivity](https://en.wikipedia.org/wiki/Transitive_relation) for `equivAux`.
 
 Together with `equivAux_refl` and `equivAux_symm` this ensures that `equivAux` is an
@@ -169,7 +169,7 @@ theorem equivAux_cons_iff_eq_and_equivAux {x y : Nat} {xs ys : List Nat} :
   equivAux (x::xs) (y::ys) ↔ x = y ∧ equivAux xs ys := by
   rw [equivAux]
 
-/--
+/-
 Decidable equivalence as defined by `equivAux` of a parameter
 of type `List Nat` with `[] : List Nat`.
 -/
@@ -190,7 +190,7 @@ example : equivAux [] [0, 0, 0, 0] := by decide
 example : ¬ equivAux [] [1] := by decide
 example : ¬ equivAux [] [1, 1, 0, 0] := by decide
 
-/--
+/-
 Decidable equivalence as defined by `equivAux` for two arbitrary parameters of type `List Nat`.
 -/
 def decEquivAux (a b : List Nat) : Decidable (equivAux a b)  :=
@@ -233,7 +233,7 @@ end EquivAux
 
 section IsZeroAux
 
-/--
+/-
 A value of type `List Nat` is considered a representation of _zero_, if is is
 equivalent with respect to `equivAux` to the empty list, means means that all elements of
 the list must be `0 : Nat`.
@@ -242,7 +242,7 @@ This property is independent of the `base` of the respective numeral.
 -/
 abbrev isZeroAux (a : List Nat) : Prop := equivAux [] a
 
-/--
+/-
 `[] : List Nat` is itself a representation of _zero_.
 -/
 theorem isZeroAux_nil : isZeroAux [] := equivAux_refl
@@ -252,7 +252,7 @@ theorem ne_nil_of_not_isZeroAux {a : List Nat} (h : ¬ isZeroAux a) : a ≠ [] :
   | [] => absurd isZeroAux_nil h
   | x::xs => List.cons_ne_nil x xs
 
-/--
+/-
 A non-empty list can only be a representation of _zero_, if its head is `0 : Nat`
 and the tail is also a representation of _zero_.
 -/
@@ -261,7 +261,7 @@ theorem isZeroAux_cons_iff_eq_zero_and_isZeroAux {x : Nat} {xs : List Nat} :
   unfold isZeroAux
   rw [equivAux.eq_def]
 
-/--
+/-
 This lemma is used in the proof of `toNatAux_eq_zero_iff_isZeroAux`.
 -/
 theorem isZeroAux_of_toNatAux_eq_zero {a : List Nat} {base : Nat} (h: toNatAux a base = 0) (hb : 1 < base) :
@@ -278,7 +278,7 @@ theorem isZeroAux_of_toNatAux_eq_zero {a : List Nat} {base : Nat} (h: toNatAux a
     have h3 : isZeroAux xs := ih h2
     exact isZeroAux_cons_iff_eq_zero_and_isZeroAux.mpr (And.intro h1.left h3)
 
-/--
+/-
 This lemma is used in the proofs of `toNatAux_eq_zero_iff_isZeroAux`
 and `toNatAux_subAux_left_distrib_of_leAux`.
 
@@ -294,7 +294,7 @@ theorem toNatAux_eq_zero_of_isZeroAux {a : List Nat} {base : Nat} (h: isZeroAux 
     have : toNatAux xs base = 0 := ih h.right
     rw [this, h.left, Nat.zero_add, Nat.mul_zero]
 
-/--
+/-
 This lemma makes it possible to use the `rw`-tactic.
 -/
 theorem toNatAux_eq_zero_iff_isZeroAux {a : List Nat} {base : Nat} (hb : 1 < base) :

@@ -10,7 +10,7 @@ namespace NumeralAux
 
 section NoTrailingZero
 
-/--
+/-
 a list of numbers without trailing zeros is the shortest and thus simplest
 representative of equivalent lists (with respect to `equivAux`)
 -/
@@ -39,7 +39,7 @@ def decNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) :=
 
 instance instNoTrailingZero (a : List Nat) : Decidable (noTrailingZero a) := decNoTrailingZero a
 
-/--
+/-
 the empty list has no trailing zeros
 -/
 theorem noTrailingZero_nil : noTrailingZero [] := by
@@ -47,7 +47,7 @@ theorem noTrailingZero_nil : noTrailingZero [] := by
   intro hnn
   contradiction
 
-/--
+/-
 a singleton has trailing zeros iff the number in the list is `0`
 -/
 theorem noTrailingZero_singleton_iff_ne_zero {n : Nat} : noTrailingZero [n] ↔ n ≠ 0 := by

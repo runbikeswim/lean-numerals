@@ -10,7 +10,7 @@ namespace NumeralAux
 
 section DiscardTrailingZeros
 
-/--
+/-
 returns a equivalent list without trailing zeros
 -/
 def discardTrailingZeros (a : List Nat) :=
@@ -30,7 +30,7 @@ theorem noTrailingZero_discardTrailingZeros {a : List Nat} :
     unfold discardTrailingZeros
     exact noTrailingZero_consAux_of ih
 
-/--
+/-
 `discardTrailingZeros` preserves `allDigitsLtBase`
 -/
 theorem allDigitsLtBase_discardTrailingZeros {base: Nat} {a : List Nat} (ha : allDigitsLtBase a base) :
@@ -43,7 +43,7 @@ theorem allDigitsLtBase_discardTrailingZeros {base: Nat} {a : List Nat} (ha : al
     have hxs : allDigitsLtBase (discardTrailingZeros xs) base := ih (allDigitsLtBase_cons_iff.mp ha).right
     exact allDigitsLtBase_consAux_of hx hxs
 
-/--
+/-
 the result of `discardTrailingZeros` is equivalent (with respect to `equivAux`) to the input
 -/
 theorem equivAux_discardTrailingZeros {a : List Nat} : equivAux (discardTrailingZeros a) a := by

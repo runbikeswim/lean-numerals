@@ -11,7 +11,6 @@ namespace NumeralAux
 
 section Prune
 
-/-- -/
 def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   match a, n with
   | [], 0 => []
@@ -23,12 +22,10 @@ def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   | x::xs, n => ((x + n) % base)::(prune xs ((x + n) / base) base hb)
   termination_by (a.length, n)
 
-/-- -/
 theorem prune_nil_eq_nil {base : Nat} (hb : 1 < base) :
   prune [] 0 base hb = [] := by
   rw [prune.eq_def]
 
-/-- -/
 theorem prune_eq_nil_iff_eq_nil_and_eq_zero {a : List Nat} {n base : Nat}  (hb : 1 < base) :
   prune a n base hb = [] ↔ a = [] ∧ n = 0 := by
   constructor
@@ -47,7 +44,6 @@ end Prune
 
 section AllDigitsLtBase_Prune
 
-/-- -/
 theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} {hb : 1 < base} :
   allDigitsLtBase (prune a n base hb) base := by
   induction a generalizing n with
@@ -119,7 +115,6 @@ end NoTrailingZero_Prune
 
 section ToNatAux_Prune
 
-/-- -/
 theorem toNatAux_prune_eq_add_toNatAux {a : List Nat} {n base : Nat} (hb : 1 < base) :
   toNatAux (prune a n base hb) base = n + toNatAux a base := by
   induction a generalizing n with

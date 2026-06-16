@@ -69,7 +69,7 @@ theorem leAux_nil_iff_equivAux_nil {a : List Nat} : leAux a [] ↔ equivAux [] a
 
 end Equiv_LeAux
 
-/--
+/-
 `leAux` is _almost_ antisymmetric
 -/
 theorem equivAux_iff_leAux_and_leAux {a b : List Nat}:
@@ -667,7 +667,7 @@ theorem ltAux_of_leAux_of_ltAux {a b c : List Nat} (hab : leAux a b) (hbc : ltAu
   have h4 : ¬ equivAux a c := fun h : equivAux a c => absurd hbc (h3 h)
   exact ltAux_iff_leAux_and_not_equivAux.mpr (And.intro h1 h4)
 
-/--
+/-
 asserts that `ltAux` and `leAux` are a basis for an instance of class `Std.LawfulOrderLT`
 -/
 theorem ltAux_iff_leAux_and_not_leAux {a b : List Nat} : ltAux a b ↔ leAux a b ∧ ¬ leAux b a := by

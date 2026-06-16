@@ -8,7 +8,7 @@ namespace NumeralAux
 
 section ToNatAux
 
-/--
+/-
 Returns value of the numeral represented by the lists of digits (little-endian) with respect to `basis`.
 
 Examples:

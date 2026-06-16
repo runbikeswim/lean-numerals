@@ -22,7 +22,7 @@ end Classical
 
 namespace Nat
 
-/--
+/-
 This lemma is often used for asserting that `basis` is greater than `0`.
 `1 < basis` is always requested but sometimes `0 < basis` is need as assumption
 for theorems used in proofs.
@@ -146,7 +146,7 @@ section List
 
 namespace List
 
-/--
+/-
 asserts the obvious fact that if `p` is true for all elements of a non-empty
 list `l`, it particular holds for the last element in the list provided by `List.getLast`.
 -/

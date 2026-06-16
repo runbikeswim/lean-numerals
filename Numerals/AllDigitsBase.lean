@@ -8,7 +8,7 @@ namespace NumeralAux
 
 section AllDigitsLtBase
 
-/--
+/-
 True, if all elements (i.e. _digits_) in a list of natural numbers are all
 less than the given `base`.
 -/
@@ -34,23 +34,20 @@ def decAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase 
     else
       isFalse (h (.inl hx))
 
-/-- -/
 instance instAllDigitsLtBase (a : List Nat) (base : Nat) : Decidable (allDigitsLtBase a base) :=
   decAllDigitsLtBase a base
 
-/-- -/
 theorem allDigitsLtBase_nil {base : Nat}  :
   allDigitsLtBase [] base := by
   rw [allDigitsLtBase.eq_def]
   exact List.all_nil
 
-/-- -/
 theorem allDigitsLtBase_cons_iff {x base : Nat} {xs : List Nat} :
   allDigitsLtBase (x::xs) base ↔ x < base ∧ allDigitsLtBase xs base := by
   unfold allDigitsLtBase
   simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
 
-/-- -/
+
 theorem allDigitsLtBase_singleton {n : Nat} {base : Nat} (hn : n < base) :
   allDigitsLtBase [n] base := by
   exact allDigitsLtBase_cons_iff.mpr (And.intro hn allDigitsLtBase_nil)

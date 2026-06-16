@@ -48,7 +48,7 @@ section OfString
 
 namespace String.Slice
 
-/--
+/-
 `String.Slice` has no `Repr` but uses `ToString` instead.
 However, the default implementation does not provide the surrounding quotes (") and that's
 an own instance is provided that overrides the default.
@@ -70,7 +70,7 @@ After defining the own instance:
 instance : Repr String.Slice where
   reprPrec s _ := s.toString.quote
 
-/--
+/-
 Returns the `n` preceding characters of `s` in underlying string as `String.Slice`.
 If there are less then `n` characters before `s`, all characters preceding `s` are returned.
 ```
@@ -88,7 +88,7 @@ def getPrefixn (s : String.Slice) (n : Nat) : String.Slice :=
     exact String.Pos.prevn_le
   s.str.slice p s.startInclusive this
 
-/--
+/-
 Returns the full prefix of `s` (i.e. all characters before `s`) in the underlying string
 as `String.Slice`.
 -/
@@ -97,7 +97,7 @@ def getPrefix (s : String.Slice) : String.Slice :=
     simp only [String.Pos.startPos_le]
   s.str.slice s.str.startPos s.startInclusive this
 
-/--
+/-
 Returns the `n` succeeding characters of `s` in underlying string as `String.Slice`.
 If there are less then `n` characters after `s`, all characters following `s` are returned.
 ```
@@ -115,7 +115,7 @@ def getSuffixn (s : String.Slice) (n : Nat) : String.Slice :=
     exact String.Pos.le_nextn
   s.str.slice s.endExclusive p this
 
-/--
+/-
 Returns the full suffix of `s` (i.e. all characters after `s`) within the underlying string
 as `String.Slice`.
 -/
@@ -132,7 +132,7 @@ deriving Repr
 
 namespace ParserError
 
-/--
+/-
 Returns a formatted string that contains the error message some context if some slice is provided.
 -/
 def toString (e : ParserError) : String :=
@@ -142,14 +142,14 @@ def toString (e : ParserError) : String :=
 
 instance : ToString ParserError := ⟨toString⟩
 
-/--
+/-
 unknown error
 -/
 instance : Inhabited ParserError := ⟨{input := none, message := "unknown error"}⟩
 
 end ParserError
 
-/--
+/-
 Parsers return a `ParserResult`. If parsing was successful, some value of type `α` is included,
 which has by retrieved from the input. If the input was incorrect, `ParserResult` is wrapper of a `ParserError`.
 -/
