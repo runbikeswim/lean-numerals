@@ -242,6 +242,10 @@ This property is independent of the `base` of the respective numeral.
 -/
 abbrev isZeroAux (a : List Nat) : Prop := equivAux [] a
 
+theorem equivAux_nil_iff_isZeroAux (a : List Nat) : equivAux a [] ↔ isZeroAux a := by
+  simp only [isZeroAux]
+  exact equivAux_iff_equivAux
+
 /-
 `[] : List Nat` is itself a representation of _zero_.
 -/

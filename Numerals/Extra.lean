@@ -23,8 +23,8 @@ end Classical
 namespace Nat
 
 /-
-This lemma is often used for asserting that `basis` is greater than `0`.
-`1 < basis` is always requested but sometimes `0 < basis` is need as assumption
+This lemma is used for asserting that `base` is greater than `0`.
+`1 < base` is always requested but sometimes `0 < base` is need as assumption
 for theorems used in proofs.
 -/
 theorem pos_of_one_lt {a : Nat} (h : 1 < a) : 0 < a := (Nat.lt_trans (by decide)) h
@@ -67,6 +67,11 @@ theorem mod_ne_zero_of_one_lt_of_div_zero_of_ne {a b : Nat}
 
 theorem add_mul_mod_eq {a b base : Nat} (halt : a < base) : (a + base * b) % base = a := by
   rw [Nat.add_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt halt]
+
+theorem add_mul_div_eq {a b base : Nat} (halt : a < base) : (a + base * b) / base = b := by
+  have : 0 < base := Nat.lt_of_le_of_lt (Nat.zero_le a) halt
+  rw [Nat.add_mul_div_left a b this]
+  simp only [(div_eq_zero_iff_lt this).mpr halt, Nat.zero_add]
 
 theorem add_mul_mod_eq_iff_eq_of {a b c d base : Nat} (halt : a < base) (hclt : c < base) :
   (a + base * b) % base = (c + base * d) % base ↔ a = c := by

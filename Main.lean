@@ -22,7 +22,7 @@ def oneBase10 : Numeral10 := {
 #eval oneBase10
 #eval s!"{oneBase10}"
 
-def twoBase3 : Numeral 3 (by decide) := {
+def twoBase3 : Numeral ⟨3, by decide⟩  := {
     digits := [2],
     ltBase := by decide,
     noTZ := by decide
@@ -76,7 +76,7 @@ def abcdefBase16 : Numeral16 := {
 #eval abcdefBase16
 #eval s!"{abcdefBase16}"
 
-def threeHundredSixtyBase60 : Numeral 60 (by decide):= {
+def threeHundredSixtyBase60 : Numeral ⟨60, by decide⟩ := {
     digits := [0, 6],
 
     ltBase := by decide,
