@@ -110,7 +110,7 @@ returns the base of the provided `TZNumeral`
 -/
 def base {base' : NatGtOne} (_ : TZNumeral base') : NatGtOne := base'
 
-abbrev zero {base : NatGtOne} : TZNumeral base := {digits := [], ltBase := List.all_nil}
+abbrev zero {base : NatGtOne} : TZNumeral base := ⟨[], List.all_nil⟩
 
 /--
 `[]` (i.e. _zero_) is the default `TZNumeral` - for any base
@@ -197,9 +197,9 @@ returns a `TZNumeral` for the given number (of type `Nat`)
 
 Examples:
 ```
-#eval @TZNumeral.ofNat 0 10 (by decide) -- { digits := [], ltBase := _ }
-#eval @TZNumeral.ofNat 11 2 (by decide) -- { digits := [1, 1, 0, 1], ltBase := _ }
-#eval @TZNumeral.ofNat (15 + 16) 16 (by decide) -- { digits := [15, 1], ltBase := _ }
+#eval @TZNumeral.ofNat 0 ⟨10, by decide⟩  -- { digits := [], ltBase := _ }
+#eval @TZNumeral.ofNat 11 ⟨2, by decide⟩  -- { digits := [1, 1, 0, 1], ltBase := _ }
+#eval @TZNumeral.ofNat (15 + 16) ⟨16, by decide⟩  -- { digits := [15, 1], ltBase := _ }
 ```
 -/
 def ofNat (n : Nat) {base : NatGtOne} : TZNumeral base where
