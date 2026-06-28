@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
+import Numerals.NatGtOne
 import Numerals.AllDigitsBase
 
 open NumeralAux
@@ -168,14 +169,11 @@ instance {α : Type} [ToString α] : ToString (ParserResult α) := ⟨toString�
 
 end ParserResult
 
-abbrev NatGt1 := { n : Nat // 1 < n }
-
 structure DigitsOfBase where
-  base : NatGt1
-  digits : List (Fin base)
-deriving Repr
+  base : NatGtOne
+  digits : List (Fin base.val)
 
-def parseBase (s : String.Slice) : String.Slice × (ParserResult NatGt1) :=
+def parseBase (s : String.Slice) : String.Slice × (ParserResult NatGtOne) :=
   match s.front with
   | '0' =>
     let t := s.drop 1
@@ -195,15 +193,15 @@ def parseBase (s : String.Slice) : String.Slice × (ParserResult NatGt1) :=
     | none => (s, .failure {input := s, message := "does not start with a decimal numeral enclosed in '(' and ')'"})
   | _ => (s, .success ⟨10, by decide⟩)
 
-def charToDigit? (c : Char) (base : NatGt1) : Option (Fin base) :=
-  let iteLtBase (n : Nat) : Option (Fin base) := if h : n < base then some ⟨n,h⟩ else none
+def charToDigit? (c : Char) (base : NatGtOne) : Option (Fin base.val) :=
+  let iteLtBase (n : Nat) : Option (Fin base.val) := if h : n < base.val then some ⟨n,h⟩ else none
   if '0' <= c && c <= '9' then
     iteLtBase (c.toNat - '0'.toNat)
   else if 'a' <= c && c <= 'f' then
     iteLtBase (10 + c.toNat - 'a'.toNat)
   else none
 
-def parseSingleDigit (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResult (Fin base)) :=
+def parseSingleDigit (s : String.Slice) (base : NatGtOne) : String.Slice × (ParserResult (Fin base.val)) :=
   match charToDigit? s.front base with
   | some n => (s.take 1, .success n)
   | none => (
@@ -214,7 +212,7 @@ def parseSingleDigit (s : String.Slice) (base : NatGt1) : String.Slice × (Parse
       }
     )
 
-def parseDigits (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResult (List (Fin base))) :=
+def parseDigits (s : String.Slice) (base : NatGtOne) : String.Slice × (ParserResult (List (Fin base.val))) :=
   helper s.positions.toList where
   helper (l : List { p // p ≠ s.endPos}) :=
   match l with
@@ -227,7 +225,7 @@ def parseDigits (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResu
       | (u, .success d) => (u, .success (n :: d))
       | (u, .failure e) => (u, .failure e)
 
-def parseDecimalNumberSeq (s : String.Slice) (base : NatGt1) : String.Slice × (ParserResult (List (Fin base))) :=
+def parseDecimalNumberSeq (s : String.Slice) (base : NatGtOne) : String.Slice × (ParserResult (List (Fin base.val))) :=
   helper (s.split ',').toList where
   helper (l : List String.Slice) :=
     match l with
@@ -239,7 +237,7 @@ def parseDecimalNumberSeq (s : String.Slice) (base : NatGt1) : String.Slice × (
           .failure {input := x, message := "is not a decimal number"}
         )
       | some n =>
-        if g : n < base then
+        if g : n < base.val then
           match helper xs  with
           | (u, .failure e) => (u, .failure e)
           | (u, .success d) => (u, .success (⟨n, g⟩ :: d))
@@ -248,14 +246,14 @@ def parseDecimalNumberSeq (s : String.Slice) (base : NatGt1) : String.Slice × (
             s.sliceFrom s.endPos,
             .failure {
               input := s,
-              message := s!"contains '{n}' with is not less than base '{base}'"
+              message := s!"contains '{n}' with is not less than base '{base.val}'"
             }
           )
 
 def parse (s : String.Slice) : String.Slice × (ParserResult DigitsOfBase) :=
   match parseBase s with
   | (t, .success b) =>
-    match (b : Nat) with
+    match b.val with
     | 2 | 8 | 10 | 16 =>
       match parseDigits t b with
       | (u, .success l) => (u, .success {base := b, digits := l})

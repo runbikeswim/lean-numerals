@@ -19,8 +19,8 @@ theorem ofNatAux_zero_eq_nil {base : Nat} {hb : 1 < base} : ofNatAux 0 base hb =
 theorem eq_zero_of_iZeroAux_ofNatAux {n base : Nat} {hb : 1 < base} (h: isZeroAux (ofNatAux n base hb)) :
   n = 0 := by
   simp only [ofNatAux] at h
-  have h1 : noTrailingZero (prune [] n base hb) := noTrailingZero_prune_nil
-  have h2 : (prune [] n base hb) = [] := (isZeroAux_iff_eq_nil_of_noTrailingZero h1).mp h
+  have h1 : noTrailingZeroAux (prune [] n base hb) := noTrailingZeroAux_prune_nil
+  have h2 : (prune [] n base hb) = [] := (isZeroAux_iff_eq_nil_of_noTrailingZeroAux h1).mp h
   exact ((prune_eq_nil_iff_eq_nil_and_eq_zero hb).mp h2).right
 
 theorem isZeroAux_ofNatAux_iff_eq_zero {n base : Nat} {hb : 1 < base} :
@@ -68,6 +68,10 @@ theorem ofNatAux_add_mul_eq_of {x y base : Nat} {hb : 1 < base} (hx : x < base) 
 theorem toNatAux_ofNatAux_cancel (n : Nat) {base: Nat} (hb : 1 < base) :
   toNatAux (ofNatAux n base hb) base = n := by
     simp only [ofNatAux, toNatAux_prune_eq_add_toNatAux hb, toNatAux_nil_eq, Nat.add_zero]
+
+theorem noTrailingZeroAux_ofNatAux {n base : Nat} {hb : 1 < base} : noTrailingZeroAux (ofNatAux n base hb) := by
+  unfold ofNatAux
+  exact noTrailingZeroAux_prune_nil
 
 end OfNatAux
 

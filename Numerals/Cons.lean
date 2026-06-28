@@ -93,16 +93,16 @@ theorem allDigitsLtBase_consAux_of {n base: Nat} {a : List Nat}
   | k + 1, [] => simp only; exact allDigitsLtBase_singleton hn
   | n, x::xs => simp only; exact allDigitsLtBase_cons_iff.mpr (And.intro hn ha)
 
-theorem noTrailingZero_consAux_of {n : Nat} {a : List Nat} (ha : noTrailingZero a) :
-  noTrailingZero (consAux n a) := by
+theorem noTrailingZeroAux_consAux_of {n : Nat} {a : List Nat} (ha : noTrailingZeroAux a) :
+  noTrailingZeroAux (consAux n a) := by
   unfold consAux
   match gn: n, ga: a with
-  | 0, [] => simp only; exact noTrailingZero_nil
-  | k + 1, [] => simp only; exact noTrailingZero_singleton_iff_ne_zero.mpr (Nat.succ_ne_zero k)
+  | 0, [] => simp only; exact noTrailingZeroAux_nil
+  | k + 1, [] => simp only; exact noTrailingZeroAux_singleton_iff_ne_zero.mpr (Nat.succ_ne_zero k)
   | n, x::xs =>
     simp only
     have : x::xs = [] → n ≠ 0 := fun t : x::xs = [] => absurd t (List.cons_ne_nil x xs)
-    exact noTrailingZero_cons_of (And.intro ha this)
+    exact noTrailingZeroAux_cons_of (And.intro ha this)
 
 end ConsAux
 

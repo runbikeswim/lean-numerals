@@ -9,7 +9,7 @@ import Numerals.ToNat
 import Numerals.EquivIsZero
 import Numerals.AllDigitsBase
 import Numerals.NoTrailingZero
-import Numerals.DiscardTrailingZeros
+import Numerals.DiscardTZ
 import Numerals.ToNatEquiv
 import Numerals.OfNat
 import Numerals.Prune
@@ -54,6 +54,7 @@ set_option linter.missingDocs false
 section TZNumerals
 
 /--
+TODO: correct
 `TZNumeral` provides a representation of a natural number in positional notation for `base`, with `digits`
 in _reverse_ (little-endian) order. `base` can be any natural number larger than one.
 `ltBase` asserts that all natural numbers in list `digits` are less than `base`.
@@ -64,11 +65,17 @@ def p : TZNumeral 10 (by decide) := {digits := [2, 1, 0], ltBase := by decide}
 
 ```
 which represents the number `12` in base ten.
--/
+
 @[ext]
 structure TZNumeral (base : NatGtOne) where
   digits : List Nat
   ltBase : allDigitsLtBase digits base.val
+  deriving Repr
+-/
+
+@[ext]
+structure TZNumeral (base : NatGtOne) where
+  digits : List (Fin base.val)
   deriving Repr
 
 /--
@@ -99,9 +106,8 @@ def p : TZNumeral 10 (by decide) := [1, 2, 3, 0].toTZNumeral (by decide)
 #eval p -- { digits := [1, 2, 3, 0], ltBase := _ }
 ```
 -/
-def List.toTZNumeral {base: NatGtOne} (a: List Nat) (ha : allDigitsLtBase a base.val) : TZNumeral base where
+def List.toTZNumeral {base: NatGtOne} (a: List (Fin base.val)) : TZNumeral base where
   digits := a
-  ltBase := ha
 
 namespace TZNumeral
 
@@ -110,7 +116,7 @@ returns the base of the provided `TZNumeral`
 -/
 def base {base' : NatGtOne} (_ : TZNumeral base') : NatGtOne := base'
 
-abbrev zero {base : NatGtOne} : TZNumeral base := ⟨[], List.all_nil⟩
+abbrev zero {base : NatGtOne} : TZNumeral base := ⟨[]⟩
 
 /--
 `[]` (i.e. _zero_) is the default `TZNumeral` - for any base
@@ -132,8 +138,7 @@ instance instZero {base : NatGtOne} : Zero (TZNumeral base) := ⟨default⟩
 theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
 
 abbrev one {base : NatGtOne} : TZNumeral base where
-  digits := [1]
-  ltBase := by simp only [allDigitsLtBase, List.all, Bool.and_true, base.property, decide_true]
+  digits := [⟨1, base.property⟩ ]
 
 /--
 use `1` for one
@@ -188,23 +193,24 @@ Examples:
 #eval (⟨[0,1,2,0], by decide⟩ : TZNumeral10).toNat -- 210
 ```
 -/
-def toNat {base : NatGtOne} (n : TZNumeral base) : Nat := toNatAux n.digits base.val
+def toNat {base : NatGtOne} (n : TZNumeral base) : Nat :=
+  toNatAux (fromListFinBase n.digits) base.val
 
-theorem zero_toNat_eq_zero {base : NatGtOne} : (@zero base).toNat = 0 := toNatAux_nil_eq
+theorem zero_toNat_eq_zero {base : NatGtOne} : (@zero base).toNat = 0 :=
+  toNatAux_nil_eq
 
 /--
 returns a `TZNumeral` for the given number (of type `Nat`)
 
 Examples:
 ```
-#eval @TZNumeral.ofNat 0 ⟨10, by decide⟩  -- { digits := [], ltBase := _ }
-#eval @TZNumeral.ofNat 11 ⟨2, by decide⟩  -- { digits := [1, 1, 0, 1], ltBase := _ }
-#eval @TZNumeral.ofNat (15 + 16) ⟨16, by decide⟩  -- { digits := [15, 1], ltBase := _ }
+#eval @TZNumeral.ofNat 0 ⟨10, by decide⟩  -- { digits := [] }
+#eval @TZNumeral.ofNat 11 ⟨2, by decide⟩  -- { digits := [1, 1, 0, 1] }
+#eval @TZNumeral.ofNat (15 + 16) ⟨16, by decide⟩  -- { digits := [15, 1] }
 ```
 -/
 def ofNat (n : Nat) {base : NatGtOne} : TZNumeral base where
-  digits := ofNatAux n base.val base.property
-  ltBase := allDigitsLtBase_prune
+  digits := toListFinBase (ofNatAux n base.val base.property) allDigitsLtBase_prune
 
 theorem ofNat_zero_eq_zero {base : NatGtOne} : @ofNat 0 base = zero := by
   unfold ofNat ofNatAux prune zero
@@ -212,13 +218,10 @@ theorem ofNat_zero_eq_zero {base : NatGtOne} : @ofNat 0 base = zero := by
 
 theorem digits_zero_eq_nil  {base : NatGtOne} : @digits base 0 = [] := rfl
 
-theorem ofNat_one_eq_one {base : NatGtOne} : @ofNat 1 base  = one := by
-  unfold ofNat ofNatAux prune one
-  have h1 : 1 / base.val = 0 := Nat.div_eq_zero_iff.mpr (Or.inr base.property)
-  have h2 : 1 % base.val = 1 := by
-    rw [Nat.mod_eq]
-    simp only [Nat.pos_of_one_lt base.property, true_and, Nat.not_le_of_lt base.property, reduceIte]
-  simp only [Nat.zero_add, h1, prune_nil_eq_nil, h2]
+theorem ofNat_one_eq_one {base : NatGtOne} : @ofNat 1 base = one := by
+  unfold ofNat one
+  simp only [ofNatAux_eq_of_lt_base base.property, Nat.one_ne_zero, reduceIte]
+  rfl
 
 instance instOfNat {base : NatGtOne} (n : Nat) : OfNat (TZNumeral base) n where
   ofNat := ofNat n
@@ -227,11 +230,12 @@ instance instOfNat {base : NatGtOne} (n : Nat) : OfNat (TZNumeral base) n where
 `toNat` is the inverse of `ofNat`
 -/
 theorem toNat_leftInverse_ofNat {n : Nat} {base : NatGtOne} : (@ofNat n base).toNat = n := by
-  rw [toNat, ofNat, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
+  simp only [toNat, ofNat, fromListFinBase_toListFinBase_cancel (ofNatAux n base.val _) _]
+  simp only [ofNatAux, toNatAux_prune_eq_add_toNatAux, toNatAux_nil_eq, Nat.add_zero]
 
 theorem zero_eq_zero' {base : NatGtOne} : (0 : TZNumeral base) = zero := by
   unfold OfNat.ofNat instOfNat ofNat zero
-  simp only [ofNatAux, prune]
+  simp only [ofNatAux, prune, (toListFinBase_nil_iff_nil _ _ ).mpr _]
 
 /--
 For `TZNumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat`, since
@@ -239,12 +243,14 @@ trailing zeros are not preserved by `toNat`. The following example shows this fo
 simple case.
 -/
 example : ∃ p : TZNumeral10, ofNat (p.toNat) ≠ p := by
-  let p : TZNumeral10 := ⟨[0], by decide⟩
-  let q : TZNumeral10 := ⟨[], by decide⟩
+  let p : TZNumeral10 := ⟨[0]⟩
+  let q : TZNumeral10 := ⟨[]⟩
   refine ⟨p, ?_⟩
   have : p.toNat = 0 := by decide
   rw [this]
-  have : ofNat 0 = q := by simp only [ofNat, ofNatAux, prune]; grind only
+  have : ofNat 0 = q := by
+    simp only [ofNat, ofNatAux, prune, (toListFinBase_nil_iff_nil _ _ ).mpr _]
+    rfl
   rw [this]
   decide
 
@@ -257,30 +263,31 @@ two `TZNumeral`s of the same `base` are `equiv`alent, if they only differ with r
 _leading_ (or technically correctly, _trailing_) zeros.
 -/
 def equiv {base : NatGtOne} (a b : TZNumeral base) : Prop :=
-  equivAux a.digits b.digits
+  equivAux (fromListFinBase a.digits) (fromListFinBase b.digits)
 
 theorem toNat_eq_iff_equiv {base: NatGtOne} (a b : TZNumeral base) :
   a.toNat = b.toNat ↔ equiv a b := by
   unfold toNat equiv
-  exact toNatAux_eq_iff_equivAux a.ltBase b.ltBase base.property
+  exact toNatAux_eq_iff_equivAux (allDigitsLtBase_fromListFinBase a.digits)
+    (allDigitsLtBase_fromListFinBase b.digits) base.property
 
 /--
 `equiv` is an `Equivalence` i.e. [equivalence relation](https://en.wikipedia.org/wiki/Equivalence_relation)
 
 Example:
 ```
-#check equivalence_equiv.refl -- ∀ (x : TZNumeral ?m.1 ?m.2), x.equiv x
-#check equivalence_equiv.symm -- equiv ?m.5 ?m.6 → equiv ?m.6 ?m.5
-#check equivalence_equiv.trans -- equiv ?m.5 ?m.6 → equiv ?m.6 ?m.7 → equiv ?m.5 ?m.7
+#check equivalence_equiv.refl -- ∀ (x : TZNumeral ?m.1), x.equiv x
+#check equivalence_equiv.symm -- equiv ?m.4 ?m.5 → equiv ?m.5 ?m.4
+#check equivalence_equiv.trans -- equiv ?m.4 ?m.5 → equiv ?m.5 ?m.6 → equiv ?m.4 ?m.6
 ```
 -/
 theorem equivalence_equiv {base: NatGtOne} :
   Equivalence (equiv : (TZNumeral base) → (TZNumeral base) → Prop) :=
-    ⟨
-      by unfold equiv; exact fun _ ↦ equivAux_refl,
-      by unfold equiv; intro a b hab; exact equivAux_symm hab,
-      by unfold equiv; intro a b c hab hbc; exact equivAux_trans hab hbc
-    ⟩
+  ⟨
+    by unfold equiv; exact fun _ ↦ equivAux_refl,
+    by unfold equiv; intro a b hab; exact equivAux_symm hab,
+    by unfold equiv; intro a b c hab hbc; exact equivAux_trans hab hbc
+  ⟩
 
 instance instHasEquiv {base : NatGtOne} : HasEquiv (TZNumeral base) := ⟨equiv⟩
 
@@ -309,11 +316,11 @@ section IsZero
 /--
 `True` if the given `TZNumeral` is `0`
 -/
-def isZero {base : NatGtOne} (a : TZNumeral base) : Prop := isZeroAux a.digits
+def isZero {base : NatGtOne} (a : TZNumeral base) : Prop := isZeroAux (fromListFinBase a.digits)
 
 theorem equiv_zero_iff_isZero {base : NatGtOne} (a : TZNumeral base) : a ≈ 0 ↔ a.isZero := by
   rw [zero_eq_zero', isZero]
-  exact equivAux_nil_iff_isZeroAux a.digits
+  exact equivAux_nil_iff_isZeroAux (fromListFinBase a.digits)
 
 theorem toNat_eq_zero_iff_isZero {base : NatGtOne} (n : TZNumeral base) :
   n.toNat = 0 ↔ n.isZero := by
@@ -325,7 +332,7 @@ theorem toNat_eq_zero_iff_isZero {base : NatGtOne} (n : TZNumeral base) :
 -/
 theorem ofNat_isZero_iff_eq_zero {n : Nat} {base : NatGtOne} :
   (@ofNat n base).isZero ↔ n = 0 := by
-  unfold isZero ofNat
+  simp only [isZero, ofNat, fromListFinBase_toListFinBase_cancel]
   exact isZeroAux_ofNatAux_iff_eq_zero
 
 example : (@ofNat 0 ⟨10, by decide⟩).isZero := by
@@ -334,7 +341,8 @@ example : (@ofNat 0 ⟨10, by decide⟩).isZero := by
 /--
 makes `isZero` decidable
 -/
-def decIsZero {base : NatGtOne} (a : TZNumeral base) : Decidable a.isZero := decIsZeroAux a.digits
+def decIsZero {base : NatGtOne} (a : TZNumeral base) : Decidable a.isZero :=
+  decIsZeroAux (fromListFinBase a.digits)
 
 /--
 instance of class `Decidable` for `isZero`
@@ -364,14 +372,15 @@ def c : TZNumeral10 := ⟨[1, 0], by decide⟩
 ```
 -/
 def le {base : NatGtOne} (a b : TZNumeral base) : Prop :=
-  leAux a.digits b.digits
+  leAux (fromListFinBase a.digits) (fromListFinBase b.digits)
 
 instance instLe {base : NatGtOne} : LE (TZNumeral base) := ⟨le⟩
 
 theorem le_iff_toNat_le_toNat {base : NatGtOne} (a b : TZNumeral base) :
   a ≤ b ↔ a.toNat ≤ b.toNat := by
   simp only [LE.le, le, toNat]
-  exact leAux_iff_toNatAux_le_toNatAux base.property a.ltBase b.ltBase
+  exact leAux_iff_toNatAux_le_toNatAux base.property
+    (allDigitsLtBase_fromListFinBase a.digits) (allDigitsLtBase_fromListFinBase b.digits)
 
 /--
 `le` is a [Preorder](https://en.wikipedia.org/wiki/Preorder), i.e. a
@@ -405,7 +414,7 @@ theorem zero_le {base : NatGtOne} (a : TZNumeral base) : 0 ≤ a := by
 example {base : NatGtOne} : (0 : TZNumeral base) ≤ 1 := zero_le 1
 
 def decLe {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≤ b) :=
-  if h : leAux a.digits b.digits then
+  if h : leAux (fromListFinBase a.digits) (fromListFinBase b.digits) then
     isTrue h
   else
     isFalse h
@@ -456,14 +465,15 @@ end Max
 section LessThan
 
 def lt {base : NatGtOne} (a b : TZNumeral base) : Prop :=
-  ltAux a.digits b.digits
+  ltAux (fromListFinBase a.digits) (fromListFinBase b.digits)
 
 instance instLt {base : NatGtOne} : LT (TZNumeral base) := ⟨lt⟩
 
 theorem lt_iff_toNat_lt_toNat {base : NatGtOne} (a b : TZNumeral base) :
   a < b ↔ a.toNat < b.toNat := by
   simp only [LT.lt, lt, toNat]
-  exact ltAux_iff_toNatAux_lt_toNatAux base.property a.ltBase b.ltBase
+  exact ltAux_iff_toNatAux_lt_toNatAux base.property
+    (allDigitsLtBase_fromListFinBase a.digits) (allDigitsLtBase_fromListFinBase b.digits)
 
 theorem lt_iff_le_and_not_le {base : NatGtOne} (a b : TZNumeral base) :
   a < b ↔ a ≤ b ∧ ¬ b ≤ a := by
@@ -512,7 +522,7 @@ instance instTransLeLt {base : NatGtOne} :
     exact lt_of_le_of_lt ha hb
 
 def decLt {base : NatGtOne} (a b : TZNumeral base) : Decidable (a < b) :=
-  if h : ltAux a.digits b.digits then
+  if h : ltAux (fromListFinBase a.digits) (fromListFinBase b.digits) then
     isTrue h
   else
     isFalse h
@@ -523,17 +533,68 @@ example : @zero ⟨10, by decide⟩  < @one ⟨10, by decide⟩ := by native_dec
 
 end LessThan
 
-section HasTrailingZero
+section NoTrailingZero
+
+def noTrailingZero {base : NatGtOne} (n : TZNumeral base) : Prop :=
+  (h : n.digits ≠ []) → n.digits.getLast h ≠ ⟨0, Nat.pos_of_one_lt base.property⟩
+
+theorem noTrailingZero_zero {base : NatGtOne} : (@zero base).noTrailingZero := by
+  unfold zero noTrailingZero; intro; contradiction
+
+theorem noTrailingZero_iff {base : NatGtOne} (n : TZNumeral base) :
+  noTrailingZero n ↔ noTrailingZeroAux (fromListFinBase n.digits) := by
+  constructor
+  · intro h
+    match g : n.digits with
+    | [] => simp only [fromListFinBase]; exact noTrailingZeroAux_nil
+    | x::xs =>
+      simp only [g, noTrailingZero] at h
+      unfold noTrailingZeroAux
+      intro h1
+      have h2 : x::xs ≠ [] := List.cons_ne_nil x xs
+      have h3 : (x::xs).getLast h2 ≠ ⟨0, Nat.pos_of_one_lt base.property⟩ := h h2
+      have h4 : ↑((x::xs).getLast h2) ≠ (0 : Nat) := (ne_iff_coe_ne _ _).mp h3
+      have h5 : (fromListFinBase (x::xs)).getLast h1 ≠ 0 := by
+        false_or_by_contra ; rename _ => h6
+        rw [fromListFinBase_getLast_eq_getLast_of (x::xs) h2] at h6
+        contradiction
+      exact h5
+  · intro h
+    unfold noTrailingZero
+    match g : n.digits with
+    | [] => intro; contradiction
+    | x::xs =>
+      intro h1
+      simp only [g, noTrailingZeroAux] at h
+      have h2 : fromListFinBase (x :: xs) ≠ [] := (fromListFinBase_ne_nil_iff_ne_nil _).mpr h1
+      have h3 : (fromListFinBase (x :: xs)).getLast h2 ≠ 0 := h h2
+      false_or_by_contra ; rename _ => h4
+      have h5 : (fromListFinBase (x :: xs)).getLast h2 = 0 := by
+        simp only [fromListFinBase_getLast_eq_getLast_of (x::xs) h1, h4]
+      contradiction
+
+theorem neg_noTrailingZero_iff {base : NatGtOne} (n : TZNumeral base) :
+  ¬ noTrailingZero n ↔ ¬ noTrailingZeroAux (fromListFinBase n.digits) :=
+    Classical.iff_iff_not_iff_not.mp (noTrailingZero_iff n)
+
+def decNoTrailingZero {base : NatGtOne} (n : TZNumeral base) : Decidable (noTrailingZero n) :=
+  if g : noTrailingZeroAux (fromListFinBase n.digits) then
+    isTrue ((noTrailingZero_iff n).mpr g)
+  else
+    isFalse ((neg_noTrailingZero_iff n).mpr g)
+
+instance instDecNoTrailingZero {base : NatGtOne} (a : TZNumeral base) :
+  Decidable (a.noTrailingZero) := decNoTrailingZero a
 
 /--
 `True` if `a` has no trailing zeros
 -/
 def hasNoTrailingZero {base : NatGtOne} (a : TZNumeral base) : Prop :=
-  noTrailingZero a.digits
+  noTrailingZeroAux (fromListFinBase a.digits)
 
 def decHasNoTrailingZeros {base : NatGtOne} (a : TZNumeral base) :
   Decidable (a.hasNoTrailingZero) :=
-  if h : noTrailingZero a.digits then
+  if h : noTrailingZeroAux (fromListFinBase a.digits) then
     isTrue h
   else
     isFalse h
@@ -551,26 +612,27 @@ Examples:
 instance instDecHasNoTrailingZeros {base : NatGtOne} (a : TZNumeral base) :
   Decidable (a.hasNoTrailingZero) := decHasNoTrailingZeros a
 
-
 theorem eq_iff_equiv_of_hasNoTrailingZero {base : NatGtOne} (a b : TZNumeral base)
   (ha: a.hasNoTrailingZero) (hb: b.hasNoTrailingZero) :
   a = b ↔ equiv a b := by
   unfold hasNoTrailingZero at ha hb
   unfold equiv
   rw [eq_iff_digits_eq]
-  exact eq_iff_equivAux_of_noTrailingZero ha hb
+  let h1 := eq_iff_equivAux_of_noTrailingZeroAux ha hb
+  rwa [fromListFinBase_eq_iff_eq] at h1
 
-end HasTrailingZero
+end NoTrailingZero
 
 section DiscardTrailingZero
 
 def discardTZ {base : NatGtOne} (a : TZNumeral base) : TZNumeral base where
-  digits := discardTrailingZeros a.digits
-  ltBase := allDigitsLtBase_discardTrailingZeros a.ltBase
+  digits :=
+    toListFinBase (discardTZAux (fromListFinBase a.digits))
+      (allDigitsLtBase_discardTZAux (allDigitsLtBase_fromListFinBase a.digits))
 
 theorem discardTZ_equiv {base : NatGtOne} (a : TZNumeral base) : a.discardTZ ≈ a := by
-  simp only [discardTZ, equiv]
-  exact equivAux_discardTrailingZeros
+  simp only [discardTZ, equiv, fromListFinBase_toListFinBase_cancel]
+  exact equivAux_discardTZAux
 
 end DiscardTrailingZero
 
@@ -592,16 +654,17 @@ theorem rebase_base_eq_toBase {base : NatGtOne} (n : TZNumeral base) (toBase : N
 
 theorem toNat_rebase_eq_toNat {base : NatGtOne} (n : TZNumeral base) (toBase : NatGtOne) :
   toNat (rebase n toBase) = toNat n := by
-  simp only [rebase, ofNat, toNat]
-  exact toNatAux_ofNatAux_cancel (toNat n) toBase.property
+  simp only [rebase, ofNat, toNat, fromListFinBase_toListFinBase_cancel, toNatAux_ofNatAux_cancel]
 
 end Rebase
 
 section Add
 
 def hAdd {base : NatGtOne} (a b : TZNumeral base) : TZNumeral base where
-  digits := addAux a.digits b.digits 0 base.val base.property
-  ltBase := allDigitsLtBase_addAux 0
+  digits :=
+    toListFinBase (
+      addAux (fromListFinBase a.digits) (fromListFinBase b.digits) 0 base.val base.property
+    ) (allDigitsLtBase_addAux 0)
 
 instance instHAddTZNumerals {base : NatGtOne} :
   HAdd (TZNumeral base) (TZNumeral base) (TZNumeral base) := ⟨hAdd⟩
@@ -623,7 +686,8 @@ instance instCommutativeHAddTZNumerals {base : NatGtOne} :
 
 theorem toNat_add_left_distrib {base : NatGtOne} (a b : TZNumeral base) :
   (a + b).toNat = a.toNat + b.toNat := by
-  simp only [add_eq_hAdd, TZNumeral.toNat, hAdd, toNatAux_addAux_left_distrib]
+  simp only [add_eq_hAdd, TZNumeral.toNat, hAdd]
+  simp only [fromListFinBase_toListFinBase_cancel, toNatAux_addAux_left_distrib]
 
 /--
 the sum of two `TZNumeral`s `isZero` iff `isZero` holds for both of them
@@ -639,15 +703,13 @@ section Sub
 
 def hSub {base : NatGtOne} (a b : TZNumeral base) : TZNumeral base :=
   if a ≤ b then
-    {
-      digits := [],
-      ltBase := allDigitsLtBase_nil
-    }
+    zero
   else
-    {
-      digits := subAux a.digits b.digits 0 base.val
-      ltBase := allDigitsLtBase_subAux a.digits b.digits a.ltBase
-    }
+    ⟨
+      toListFinBase (subAux (fromListFinBase a.digits) (fromListFinBase b.digits) 0 base.val)
+        (allDigitsLtBase_subAux (fromListFinBase a.digits) (fromListFinBase b.digits)
+          (allDigitsLtBase_fromListFinBase a.digits))
+    ⟩
 
 instance instHSubTZNumerals {base : NatGtOne} :
   HSub (TZNumeral base) (TZNumeral base) (TZNumeral base) := ⟨hSub⟩
@@ -657,9 +719,10 @@ theorem sub_eq_hSub {base : NatGtOne} (a b : TZNumeral base) : a - b = a.hSub b 
 theorem pos_toNat_sub_of_lt {base : NatGtOne} {a b : TZNumeral base} (h : b < a) :
   0 < toNat (a - b) := by
   have : ¬ a ≤ b := ((lt_iff_le_and_not_le b a).mp h).right
-  simp only [sub_eq_hSub, hSub, this, reduceIte, toNat]
   simp only [LT.lt, lt] at h
-  exact pos_toNatAux_subAux_of_ltAux_of h base.property a.ltBase b.ltBase
+  simp only [sub_eq_hSub, hSub, this, reduceIte, toNat, fromListFinBase_toListFinBase_cancel]
+  exact pos_toNatAux_subAux_of_ltAux_of h base.property
+    (allDigitsLtBase_fromListFinBase a.digits) (allDigitsLtBase_fromListFinBase b.digits)
 
 theorem pos_sub_of_lt {base : NatGtOne} {a b : TZNumeral base} (h : b < a) : @zero base < a - b := by
   have : 0 < toNat (a - b) := pos_toNat_sub_of_lt h
@@ -685,7 +748,9 @@ returned as sequence of natural numbers, separated by "," and succeeded by the
 the value of `base` (all in decimal notation).
 -/
 def toString {base : NatGtOne} (n : TZNumeral base) : String :=
-  toStringAux n.digits base.val n.ltBase
+  let d := fromListFinBase n.digits
+  have hd : allDigitsLtBase d base.val := allDigitsLtBase_fromListFinBase n.digits
+  toStringAux d base.val hd
 
 instance instToStringTZNumeral {base : NatGtOne} : ToString (TZNumeral base) where
   toString := toString
@@ -710,13 +775,9 @@ Examples:
 def ofString? (s : String) {base : NatGtOne} : Option (TZNumeral base) :=
   match parse s with
   | (_, .success d) =>
-    if h : base.val = d.base then
+    if h : d.base.val = base.val then
       some {
-        digits := (fromListFinBase d.digits).reverse,
-        ltBase := by
-          rw [h]
-          simp only [allDigitsLtBase, List.all_reverse]
-          exact allDigitsLtBase_fromListFinBase d.digits
+        digits := List.reverse (d.digits.map (fun i => Fin.cast h i))
       }
     else
       none
@@ -738,7 +799,7 @@ By this, every natural number has a unique representation for the given `base`.
 -/
 @[ext]
 structure Numeral (base : NatGtOne) extends TZNumeral base where
-  noTZ : noTrailingZero digits
+  noTZ : toTZNumeral.noTrailingZero
   deriving Repr
 
 /--
@@ -761,12 +822,13 @@ Numerals in hexadecimal representation
 -/
 abbrev Numeral16 := Numeral ⟨16, by decide⟩
 
-/--
+/-
+TODO: remove
 Coercion of a `Numeral` into a `TZNumeral`.
--/
+
 @[coe]
-def toTZNumeral {base : NatGtOne} (n : Numeral base) : TZNumeral base :=
-  {digits := n.digits, ltBase := n.ltBase}
+def toTZNumeral {base : NatGtOne} (n : Numeral base) : TZNumeral base := n.toTZNumeral
+-/
 
 namespace Numeral
 
@@ -785,18 +847,24 @@ def n : Numeral 10 (by decide) := p.toNumeral
 #eval n -- { toTZNumeral := { digits := [1, 9], ltBase := _ }, noTZ := _ }
 ```
 -/
-def TZNumeral.toNumeral {base : NatGtOne} (p : TZNumeral base) :
-  Numeral base where
-  digits := discardTrailingZeros p.digits
-  ltBase := allDigitsLtBase_discardTrailingZeros p.ltBase
-  noTZ := noTrailingZero_discardTrailingZeros
+def TZNumeral.toNumeral {base : NatGtOne} (p : TZNumeral base) : Numeral base :=
+  let d := discardTZAux (fromListFinBase p.digits)
+  have h1 : allDigitsLtBase d base.val := allDigitsLtBase_discardTZAux (allDigitsLtBase_fromListFinBase p.digits)
+  have h2 : noTrailingZeroAux d := noTrailingZeroAux_discardTZAux
+  have h3 : noTrailingZeroAux (fromListFinBase (toListFinBase d h1)) := by
+    rwa [fromListFinBase_toListFinBase_cancel d h1]
+  {
+    digits := toListFinBase d h1,
+    noTZ := (TZNumeral.noTrailingZero_iff _).mpr h3
+  }
 
 /-
 zero (represented by `[]`) is the default `Numeral` - for any base
 -/
-instance instInhabitedNumeral {base : NatGtOne} : Inhabited (Numeral base) := ⟨{
-    toTZNumeral := default,
-    noTZ := noTrailingZero_nil
+instance instInhabitedNumeral {base : NatGtOne} : Inhabited (Numeral base) :=
+  ⟨{
+    toTZNumeral := TZNumeral.zero,
+    noTZ := TZNumeral.noTrailingZero_zero
   }⟩
 
 /--
@@ -816,13 +884,20 @@ def length {base : NatGtOne} (n : Numeral base) : Nat := n.digits.length
 
 def ofNat (n : Nat) (base : NatGtOne) : Numeral base where
   toTZNumeral := TZNumeral.ofNat n
-  noTZ := noTrailingZero_prune_of_noTrailingZero noTrailingZero_nil
+  noTZ := by
+    simp only [TZNumeral.noTrailingZero_iff, TZNumeral.ofNat, fromListFinBase_toListFinBase_cancel]
+    exact noTrailingZeroAux_ofNatAux
 
 section Add
 
 def hAdd {base : NatGtOne} (a b : Numeral base) : Numeral base where
-  toTZNumeral := a + b
-  noTZ := noTrailingZero_addAux_of a.noTZ b.noTZ base.property
+  toTZNumeral := a.toTZNumeral + b.toTZNumeral
+  noTZ := by
+    unfold TZNumeral.instHAddTZNumerals
+    simp only [TZNumeral.noTrailingZero_iff, TZNumeral.hAdd, fromListFinBase_toListFinBase_cancel]
+    have h1 : noTrailingZeroAux (fromListFinBase a.digits) := (TZNumeral.noTrailingZero_iff a.toTZNumeral).mp a.noTZ
+    have h2 : noTrailingZeroAux (fromListFinBase b.digits) := (TZNumeral.noTrailingZero_iff b.toTZNumeral).mp b.noTZ
+    exact noTrailingZeroAux_addAux_of h1 h2 base.property
 
 instance instHAddNumerals {base : NatGtOne} :
   HAdd (Numeral base) (Numeral base) (Numeral base) := ⟨hAdd⟩

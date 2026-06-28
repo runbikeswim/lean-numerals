@@ -49,11 +49,11 @@ theorem addDigits_comm {a b : List Nat} : addDigits a b = addDigits b a := by
 
 end AddDigits
 
-section NoTrailingZero_AddDigits
+section NoTrailingZeroAux_AddDigits
 
-theorem noTrailingZero_addDigits_of {a b : List Nat}
-  (hantz : noTrailingZero a) (hbntz : noTrailingZero b) :
-  noTrailingZero (addDigits a b) := by
+theorem noTrailingZeroAux_addDigits_of {a b : List Nat}
+  (hantz : noTrailingZeroAux a) (hbntz : noTrailingZeroAux b) :
+  noTrailingZeroAux (addDigits a b) := by
   induction a generalizing b with
   | nil =>
     match b with
@@ -65,16 +65,16 @@ theorem noTrailingZero_addDigits_of {a b : List Nat}
     match b with
     | [] => simp only [addDigits_nil_eq]; exact hantz
     | y::ys =>
-      rw [noTrailingZero_cons_iff_noTrailingZero_and] at hantz hbntz
-      have : noTrailingZero (addDigits xs ys) := ih hantz.left hbntz.left
-      simp only [addDigits_cons_cons_eq_add_cons_addDigits, noTrailingZero_cons_iff_noTrailingZero_and]
+      rw [noTrailingZeroAux_cons_iff_noTrailingZeroAux_and] at hantz hbntz
+      have : noTrailingZeroAux (addDigits xs ys) := ih hantz.left hbntz.left
+      simp only [addDigits_cons_cons_eq_add_cons_addDigits, noTrailingZeroAux_cons_iff_noTrailingZeroAux_and]
       simp only [this, true_and, addDigits_eq_nil_iff_eq_nil_and_eq_nil]
       intro h
       have h1 : 0 < x := Nat.pos_iff_ne_zero.mpr (hantz.right h.left)
       have h2 : 0 < x + y := Nat.add_pos_left h1 y
       exact Nat.pos_iff_ne_zero.mp h2
 
-end NoTrailingZero_AddDigits
+end NoTrailingZeroAux_AddDigits
 
 section ToNatAux_AddDigits
 
@@ -236,16 +236,16 @@ theorem allDigitsLtBase_addAux {a b : List Nat} (n : Nat) {base : Nat} {hb : 1 <
 
 end AllDigitsLtBase_AddAux
 
-section NoTrailingZero_AddAux
+section NoTrailingZeroAux_AddAux
 
-theorem noTrailingZero_addAux_of {a b : List Nat} {n base : Nat}
-  (hantz : noTrailingZero a) (hbntz : noTrailingZero b) (hb : 1 < base) :
-  noTrailingZero (addAux a b n base hb) := by
-  have : noTrailingZero (addDigits a b) := noTrailingZero_addDigits_of hantz hbntz
+theorem noTrailingZeroAux_addAux_of {a b : List Nat} {n base : Nat}
+  (hantz : noTrailingZeroAux a) (hbntz : noTrailingZeroAux b) (hb : 1 < base) :
+  noTrailingZeroAux (addAux a b n base hb) := by
+  have : noTrailingZeroAux (addDigits a b) := noTrailingZeroAux_addDigits_of hantz hbntz
   rw [addAux_eq_prune_addDigits hb]
-  exact noTrailingZero_prune_of_noTrailingZero this
+  exact noTrailingZeroAux_prune_of_noTrailingZeroAux this
 
-end NoTrailingZero_AddAux
+end NoTrailingZeroAux_AddAux
 
 section ToNatAux_AddAux
 

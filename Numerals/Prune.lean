@@ -66,43 +66,43 @@ theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} {hb : 1 < base} :
 
 end AllDigitsLtBase_Prune
 
-section NoTrailingZero_Prune
+section NoTrailingZeroAux_Prune
 
-theorem noTrailingZero_prune_nil {n base : Nat} {hb : 1 < base} : noTrailingZero (prune [] n base hb) := by
+theorem noTrailingZeroAux_prune_nil {n base : Nat} {hb : 1 < base} : noTrailingZeroAux (prune [] n base hb) := by
   induction n using Nat.strongRecOn with
   | _ l ihl =>
     match gl : l with
-      | 0 => rw [prune.eq_def]; simp only [noTrailingZero_nil]
+      | 0 => rw [prune.eq_def]; simp only [noTrailingZeroAux_nil]
       | k + 1 =>
         simp only [prune]
         have h1 : (k + 1) / base < k + 1  := Nat.div_lt_self (Nat.succ_pos k) hb
         if g : (k + 1) / base = 0 then
           have h2 : prune [] ((k + 1) / base) base hb = [] := (prune_eq_nil_iff_eq_nil_and_eq_zero hb).mpr (And.intro rfl g)
           have h3 : (k + 1) % base ≠ 0 := Nat.mod_ne_zero_of_one_lt_of_div_zero_of_ne hb g (Nat.succ_ne_zero k)
-          have h4 : noTrailingZero (prune [] ((k + 1) / base) base hb)
+          have h4 : noTrailingZeroAux (prune [] ((k + 1) / base) base hb)
                       ∧ (prune [] ((k + 1) / base) base hb = [] → (k + 1) % base ≠ 0) :=
             And.intro (ihl ((k + 1) / base) h1) (fun _ : prune [] ((k + 1) / base) base hb = [] => h3)
-          exact noTrailingZero_cons_of h4
+          exact noTrailingZeroAux_cons_of h4
         else
           have h2 : ¬(([] : List Nat) = [] ∧ (k + 1) / base = 0) := by
             intro h
             exact absurd h.right g
           have h3 : prune [] ((k + 1) / base) base hb ≠ [] :=
             Classical.imp_iff_not_imp_not.mp (prune_eq_nil_iff_eq_nil_and_eq_zero hb).mp h2
-          have h4 : noTrailingZero (prune [] ((k + 1) / base) base hb)
+          have h4 : noTrailingZeroAux (prune [] ((k + 1) / base) base hb)
                       ∧ (prune [] ((k + 1) / base) base hb = [] → (k + 1) % base ≠ 0) :=
             And.intro (ihl ((k + 1) / base) h1) (fun t : prune [] ((k + 1) / base) base hb = [] => absurd t h3)
-          exact noTrailingZero_cons_of h4
+          exact noTrailingZeroAux_cons_of h4
 
-theorem noTrailingZero_prune_of_noTrailingZero {a : List Nat} {n base : Nat} {hb : 1 < base} (hntz : noTrailingZero a) :
-  noTrailingZero (prune a n base hb) := by
+theorem noTrailingZeroAux_prune_of_noTrailingZeroAux {a : List Nat} {n base : Nat} {hb : 1 < base} (hntz : noTrailingZeroAux a) :
+  noTrailingZeroAux (prune a n base hb) := by
   induction a generalizing n with
-  | nil => exact noTrailingZero_prune_nil
+  | nil => exact noTrailingZeroAux_prune_nil
   | cons x xs iha =>
     simp only [prune]
-    have h1 : noTrailingZero xs ∧ (xs = [] → x ≠ 0) := noTrailingZero_cons_iff_noTrailingZero_and.mp hntz
-    have h2 : noTrailingZero (prune xs ((x + n) / base) base hb) := iha h1.left
-    simp only [noTrailingZero_cons_iff_noTrailingZero_and, h2, true_and]
+    have h1 : noTrailingZeroAux xs ∧ (xs = [] → x ≠ 0) := noTrailingZeroAux_cons_iff_noTrailingZeroAux_and.mp hntz
+    have h2 : noTrailingZeroAux (prune xs ((x + n) / base) base hb) := iha h1.left
+    simp only [noTrailingZeroAux_cons_iff_noTrailingZeroAux_and, h2, true_and]
     intro h
     simp only [prune_eq_nil_iff_eq_nil_and_eq_zero] at h
     have h3 : x ≠ 0 := h1.right h.left
@@ -111,7 +111,7 @@ theorem noTrailingZero_prune_of_noTrailingZero {a : List Nat} {n base : Nat} {hb
     have h6 : x + n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr h5
     exact Nat.mod_ne_zero_of_one_lt_of_div_zero_of_ne hb h.right h6
 
-end NoTrailingZero_Prune
+end NoTrailingZeroAux_Prune
 
 section ToNatAux_Prune
 

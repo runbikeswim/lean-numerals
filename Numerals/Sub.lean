@@ -162,7 +162,7 @@ theorem toNatAux_subAux_nil_zero_eq_zero {a : List Nat} {base : Nat} :
   unfold subAux toNatAux toNatAux.helper
   rfl
 
-theorem toNatAux_subAux_nil_one_eq_of {a : List Nat} {base : Nat} (hntza : noTrailingZero a) (hb : 1 < base) :
+theorem toNatAux_subAux_nil_one_eq_of {a : List Nat} {base : Nat} (hntza : noTrailingZeroAux a) (hb : 1 < base) :
   toNatAux (subAux a [] 1 base) base = toNatAux a base - 1 := by
   induction a with
   | nil => simp only [subAux_nil_eq_nil, toNatAux_nil_eq]
@@ -173,13 +173,13 @@ theorem toNatAux_subAux_nil_one_eq_of {a : List Nat} {base : Nat} (hntza : noTra
     else
       have h1 : 1 ≤ base := Nat.le_of_lt hb
       have h2 : x = 0 := Nat.lt_one_iff.mp (Nat.not_le.mp g)
-      have h3 : noTrailingZero xs ∧ (xs = [] → x ≠ 0) := noTrailingZero_tail_and_of hntza
+      have h3 : noTrailingZeroAux xs ∧ (xs = [] → x ≠ 0) := noTrailingZeroAux_tail_and_of hntza
       have h4 : xs ≠ [] := by
         false_or_by_contra; rename _ => hc
         exact absurd h2 (h3.right hc)
       have h5 : ¬ isZeroAux xs := by
         false_or_by_contra; rename _ => hc
-        exact absurd ((isZeroAux_iff_eq_nil_of_noTrailingZero h3.left).mp hc) h4
+        exact absurd ((isZeroAux_iff_eq_nil_of_noTrailingZeroAux h3.left).mp hc) h4
       have h6 : toNatAux xs base ≠ 0 := by
          false_or_by_contra; rename _ => hc
          exact absurd ((toNatAux_eq_zero_iff_isZeroAux hb).mp hc) h5
@@ -196,7 +196,7 @@ theorem toNatAux_subAux_nil_one_eq_of {a : List Nat} {base : Nat} (hntza : noTra
       simp only [← Nat.sub_add_comm h8, h9, Nat.add_sub_cancel]
 
 /-
-this example shows that `noTrailingZero a` is neccesary in `toNatAux_subAux_nil_one_eq_of`
+this example shows that `noTrailingZeroAux a` is neccesary in `toNatAux_subAux_nil_one_eq_of`
 -/
 example : toNatAux (subAux [0] [] 1 10) 10 ≠ (toNatAux [0] 10) - 1 := by
   have h1 : toNatAux (subAux [0] [] 1 10) 10 = 9 := by
@@ -246,7 +246,7 @@ theorem pos_toNatAux_subAux_of_ltAux_of {a b : List Nat} {base : Nat} (h : ltAux
           exact Nat.lt_add_right (base * toNatAux (subAux xs ys 1 base) base) h4
 
 theorem toNatAux_subAux_one_eq_of {a b : List Nat} {base : Nat}
-  (h : ltAux b a) (hntza : noTrailingZero a)
+  (h : ltAux b a) (hntza : noTrailingZeroAux a)
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
   toNatAux (subAux a b 1 base) base = toNatAux (subAux a b 0 base) base - 1 := by
   induction b generalizing a with
@@ -272,7 +272,7 @@ theorem toNatAux_subAux_one_eq_of {a b : List Nat} {base : Nat}
           have h2 : ltAux ys xs := by
             rw [g2] at h
             exact ltAux_of_ltAux_cons h
-          have h3 : noTrailingZero xs := (noTrailingZero_tail_and_of hntza).left
+          have h3 : noTrailingZeroAux xs := (noTrailingZeroAux_tail_and_of hntza).left
           have h4 : allDigitsLtBase xs base := (allDigitsLtBase_cons_iff.mp halt).right
           have h5 : allDigitsLtBase ys base := (allDigitsLtBase_cons_iff.mp hblt).right
           have h6 : toNatAux (subAux xs ys 1 base) base = toNatAux (subAux xs ys 0 base) base - 1 :=
@@ -310,7 +310,7 @@ theorem toNatAux_subAux_left_distrib_of_equivAux {a b : List Nat} {base : Nat} (
   simp only [h1, h2, Nat.sub_self]
 
 theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
-  (h : leAux b a) (hntza : noTrailingZero a)
+  (h : leAux b a) (hntza : noTrailingZeroAux a)
   (halt : allDigitsLtBase a base) (hblt : allDigitsLtBase b base) (hb : 1 < base) :
   toNatAux (subAux a b 0 base) base = (toNatAux a base) - (toNatAux b base) := by
   induction a generalizing b with
@@ -323,7 +323,7 @@ theorem toNatAux_subAux_left_distrib_of_leAux {a b : List Nat} {base : Nat}
     match b with
     | [] => simp only [subAux_nil_eq, toNatAux_nil_eq, Nat.sub_zero]
     | y::ys =>
-      have h1 : noTrailingZero xs := (noTrailingZero_cons_iff_noTrailingZero_and.mp hntza).left
+      have h1 : noTrailingZeroAux xs := (noTrailingZeroAux_cons_iff_noTrailingZeroAux_and.mp hntza).left
       have h2 : x < base ∧ allDigitsLtBase xs base := allDigitsLtBase_cons_iff.mp halt
       have h3 : y < base ∧ allDigitsLtBase ys base := allDigitsLtBase_cons_iff.mp hblt
       if g1 : equivAux ys xs then

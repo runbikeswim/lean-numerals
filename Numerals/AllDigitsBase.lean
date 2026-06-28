@@ -47,7 +47,6 @@ theorem allDigitsLtBase_cons_iff {x base : Nat} {xs : List Nat} :
   unfold allDigitsLtBase
   simp only [List.all_cons, Bool.and_eq_true, decide_eq_true_eq]
 
-
 theorem allDigitsLtBase_singleton {n : Nat} {base : Nat} (hn : n < base) :
   allDigitsLtBase [n] base := by
   exact allDigitsLtBase_cons_iff.mpr (And.intro hn allDigitsLtBase_nil)
