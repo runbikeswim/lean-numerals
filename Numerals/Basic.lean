@@ -54,25 +54,15 @@ set_option linter.missingDocs false
 section TZNumerals
 
 /--
-TODO: correct
 `TZNumeral` provides a representation of a natural number in positional notation for `base`, with `digits`
 in _reverse_ (little-endian) order. `base` can be any natural number larger than one.
-`ltBase` asserts that all natural numbers in list `digits` are less than `base`.
 
 `TZNumeral`s can have leading zeros as in
 ```
-def p : TZNumeral 10 (by decide) := {digits := [2, 1, 0], ltBase := by decide}
-
+def p : TZNumeral ⟨10, by decide⟩  := ⟨[2, 1, 0]⟩
 ```
 which represents the number `12` in base ten.
-
-@[ext]
-structure TZNumeral (base : NatGtOne) where
-  digits : List Nat
-  ltBase : allDigitsLtBase digits base.val
-  deriving Repr
 -/
-
 @[ext]
 structure TZNumeral (base : NatGtOne) where
   digits : List (Fin base.val)
@@ -260,7 +250,7 @@ section Equivalence
 
 /--
 two `TZNumeral`s of the same `base` are `equiv`alent, if they only differ with respect to
-_leading_ (or technically correctly, _trailing_) zeros.
+trailing zeros.
 -/
 def equiv {base : NatGtOne} (a b : TZNumeral base) : Prop :=
   equivAux (fromListFinBase a.digits) (fromListFinBase b.digits)
@@ -313,6 +303,7 @@ theorem not_equiv_iff_not_equiv {base: NatGtOne} (a b : TZNumeral base) :
 end Equivalence
 
 section IsZero
+
 /--
 `True` if the given `TZNumeral` is `0`
 -/

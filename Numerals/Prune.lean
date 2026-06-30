@@ -11,6 +11,18 @@ namespace NumeralAux
 
 section Prune
 
+/--
+returns a list that represents the same _value_ as the given list with `n` combined,
+only that all digits are less than `base`
+
+Examples:
+```
+#eval prune [20] 0 10 (by decide) -- [0, 2] representing 20 as decimal number
+#eval prune [20] 5 10 (by decide) -- [5, 2] representing 25 as decimal number
+#eval prune [8,8] 0 2 (by decide) -- [0, 0, 0, 1, 1] representing 24 in base 2
+#eval prune [] (8 + 16) 2 (by decide) -- also [0, 0, 0, 1, 1]
+```
+-/
 def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
   match a, n with
   | [], 0 => []
