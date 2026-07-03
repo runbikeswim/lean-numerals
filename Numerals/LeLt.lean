@@ -18,7 +18,7 @@ def leAux (a b : List Nat) : Prop :=
   | x::xs, [] => x = 0 ∧ leAux xs []
   | x::xs, y::ys => if equivAux xs ys then x ≤ y else leAux xs ys
 
-theorem leAux_nil {a : List Nat} : leAux [] a := by simp only [leAux]
+def leAux_nil {a : List Nat} : leAux [] a := by simp only [leAux]
 
 theorem leAux_refl {a : List Nat} : leAux a a := by
   match a with
