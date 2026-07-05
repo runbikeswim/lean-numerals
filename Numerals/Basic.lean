@@ -182,6 +182,9 @@ theorem eq_iff_digits_eq {base : NatGtOne} (a b : TZNumeral base) :
     ext
     simp only [h]
 
+theorem ne_iff_digits_ne {base : NatGtOne} (a b : TZNumeral base) :
+  a ≠ b ↔ a.digits ≠ b.digits := Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq a b)
+
 /--
 decidable equality
 -/
@@ -205,6 +208,8 @@ def cons {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) : TZNumeral b
   digits := x :: (y.digits)
 
 notation:68 x:67 " :: " y:67 => cons x y
+
+theorem cons_zero_eq {base : NatGtOne} (x : Fin base.val) : x :: 0 = ⟨[x]⟩ := rfl
 
 example : 5 :: (@zero ⟨10, by decide⟩ ) = { digits := [5] } := rfl
 example : 5 :: (⟨[1,2,3]⟩ : TZNumeral10) = { digits := [5, 1, 2, 3] } := rfl
@@ -251,9 +256,9 @@ theorem neg_noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
   exact absurd h2 (h3 h1)
 
 theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : Fin base.val} {xs : TZNumeral base}
-  (h : (x :: xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = zero → x ≠ 0) := by
-  if g: xs = zero then
-    simp only [g, cons] at h
+  (h : (x :: xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
+  if g: xs = 0 then
+    simp only [g, cons_zero_eq] at h
     let h1 := h (List.cons_ne_nil x [])
     simp only [List.getLast_singleton] at h1
     simp only [g, true_imp_iff]
@@ -262,10 +267,34 @@ theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : Fin base.val} {xs : TZ
     have h1 : x :: xs.digits ≠ [] := List.cons_ne_nil x xs.digits
     have h2 : (x :: xs.digits).getLast h1 ≠ 0 := h h1
     have h3 : xs.digits ≠ [] := by
-      rwa [zero, eq_iff_digits_eq, ← ne_eq] at g
+      rwa [← zero_eq_zero, zero, eq_iff_digits_eq, ← ne_eq] at g
     have h4 : (x :: xs.digits).getLast h1 = xs.digits.getLast h3 := List.getLast_cons h3
     have h5 : xs.digits.getLast h3 ≠ 0 := by rwa [← h4]
     exact And.intro (noTrailingZero_of h3 h5) (fun t => absurd t g)
+
+theorem cons_noTrailingZero_of {base : NatGtOne} {x : Fin base.val} {xs : TZNumeral base}
+  (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0)) : (x :: xs).noTrailingZero := by
+  if g : xs = 0 then
+    simp only [g, cons_zero_eq]
+    exact singleton_noTrailingZero_of (h.right g)
+  else
+    have h1 : xs.digits ≠ [] := (ne_iff_digits_ne xs 0).mp g
+    have h2 : xs.digits.getLast h1 ≠ 0 := by
+      simp only [noTrailingZero] at h
+      exact h.left h1
+    have h3 : x :: xs.digits ≠ [] := List.cons_ne_nil x xs.digits
+    have h4 : (x :: xs.digits).getLast h3 = xs.digits.getLast h1 := List.getLast_cons h1
+    have h5 : (x :: xs.digits).getLast h3 ≠ 0 := by rwa [h4]
+    exact noTrailingZero_of h3 h5
+
+theorem cons_noTrailingZero_iff_tail_noTrailingZero_and {base : NatGtOne}
+  {x : Fin base.val} {xs : TZNumeral base} :
+  (x :: xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
+  constructor
+  · intro h
+    exact tail_noTrailingZero_and_of h
+  · intro h
+    exact cons_noTrailingZero_of h
 
 /--
 
