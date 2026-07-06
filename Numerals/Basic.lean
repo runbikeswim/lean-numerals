@@ -69,6 +69,7 @@ theorem zero_ne_one {base : NatGtOne} : base.zero ≠ base.one := by
 theorem one_ne_zero {base : NatGtOne} : base.one ≠ base.zero := Ne.symm zero_ne_one
 
 end NatGtOne
+end NatGtOne
 
 section TZNumerals
 
@@ -120,6 +121,7 @@ def List.toTZNumeral {base: NatGtOne} (a: List (Fin base.val)) : TZNumeral base 
 
 namespace TZNumeral
 
+section Base
 /--
 returns the base of the provided `TZNumeral`
 
@@ -130,6 +132,10 @@ def p : TZNumeral10 := [1, 2, 3, 0].toTZNumeral
 ```
 -/
 def base {_base : NatGtOne} (_ : TZNumeral _base) : NatGtOne := _base
+
+end Base
+
+section Zero
 
 abbrev zero {base : NatGtOne} : TZNumeral base := ⟨[]⟩
 
@@ -152,6 +158,12 @@ instance instZero {base : NatGtOne} : Zero (TZNumeral base) := ⟨zero⟩
 
 theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
 
+theorem digits_zero_eq_nil  {base : NatGtOne} : digits 0 = ([] : List (Fin base.val)) := rfl
+
+end Zero
+
+section One
+
 abbrev one {base : NatGtOne} : TZNumeral base where
   digits := [base.one]
 
@@ -167,6 +179,11 @@ instance instOne {base : NatGtOne} : One (TZNumeral base) where
   one := one
 
 theorem one_eq_one {base : NatGtOne} : one = (⟨[⟨1, base.property⟩]⟩ : TZNumeral base) := rfl
+theorem one_eq_one' {base : NatGtOne} : one = (1 : TZNumeral base) := rfl
+
+theorem digits_one_eq_singleton_one {base : NatGtOne} : digits 1 = [base.one] := rfl
+
+end One
 
 section Equality
 
@@ -189,20 +206,17 @@ theorem ne_iff_digits_ne {base : NatGtOne} (a b : TZNumeral base) :
 decidable equality
 -/
 def decEq {base : NatGtOne} (a b : TZNumeral base) : Decidable (a = b) :=
-  if h : a.digits = b.digits then
-    isTrue ((eq_iff_digits_eq a b).mpr h)
+  if g : a.digits = b.digits then
+    isTrue ((eq_iff_digits_eq a b).mpr g)
   else
-    have : a.digits ≠ b.digits → a ≠ b := (Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq a b)).mpr
-    isFalse (this h)
+    isFalse ((ne_iff_digits_ne a b).mpr g)
 
 instance instDecidableEq {base : NatGtOne} (a b : TZNumeral base) : Decidable (a = b) :=
   decEq a b
 
-theorem digits_zero_eq_nil  {base : NatGtOne} : @digits base 0 = [] := rfl
-
 end Equality
 
-section cons
+section Cons
 
 def cons {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) : TZNumeral base where
   digits := x :: (y.digits)
@@ -214,7 +228,7 @@ theorem cons_zero_eq {base : NatGtOne} (x : Fin base.val) : x :: 0 = ⟨[x]⟩ :
 example : 5 :: (@zero ⟨10, by decide⟩ ) = { digits := [5] } := rfl
 example : 5 :: (⟨[1,2,3]⟩ : TZNumeral10) = { digits := [5, 1, 2, 3] } := rfl
 
-end cons
+end Cons
 
 section NoTrailingZero
 
@@ -354,8 +368,14 @@ abbrev Numeral16 := Numeral ⟨16, by decide⟩
 
 namespace Numeral
 
+section ToTZNumeral
+
 instance {base : NatGtOne} : Coe (Numeral base) (TZNumeral base) where
   coe := toTZNumeral
+
+end ToTZNumeral
+
+section Zero
 
 abbrev zero {base : NatGtOne} : Numeral base := {
       toTZNumeral := TZNumeral.zero,
@@ -375,6 +395,13 @@ Example:
 -/
 instance instZero {base : NatGtOne} : Zero (Numeral base) := ⟨zero⟩
 
+theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
+theorem zero_toTZNumeral_eq_TZNumeral_zero {base : NatGtOne} : (@zero base).toTZNumeral = TZNumeral.zero := rfl
+
+end Zero
+
+section One
+
 abbrev one {base : NatGtOne} : Numeral base := {
       toTZNumeral := TZNumeral.one,
       noTZ := TZNumeral.one_noTrailingZero
@@ -391,10 +418,72 @@ Example:
 instance instOne {base : NatGtOne} : One (Numeral base) where
   one := one
 
+theorem one_eq_one {base : NatGtOne} : one = ⟨@TZNumeral.one base, TZNumeral.one_noTrailingZero⟩ := rfl
+theorem one_eq_one' {base : NatGtOne} : one = (1 : Numeral base) := rfl
+
+end One
+
+section Length
+
 /--
 provides the number of digits used by the given `Numeral`
 -/
 def length {base : NatGtOne} (n : Numeral base) : Nat := n.digits.length
+
+end Length
+
+section Equality
+
+theorem eq_iff_toTZNumeral_eq {base : NatGtOne} (a b : Numeral base) :
+  a = b ↔ a.toTZNumeral = b.toTZNumeral := by
+  constructor
+  · intro h
+    simp only [h]
+  · intro h
+    ext
+    simp only [h]
+
+theorem ne_iff_toTZNumeral_ne {base : NatGtOne} (a b : Numeral base) :
+  a ≠ b ↔ a.toTZNumeral ≠ b.toTZNumeral :=
+  Classical.iff_iff_not_iff_not.mp (eq_iff_toTZNumeral_eq a b)
+
+def decEq {base : NatGtOne} (a b : Numeral base) : Decidable (a = b) :=
+  if g : a.toTZNumeral = b.toTZNumeral then
+    isTrue ((eq_iff_toTZNumeral_eq a b).mpr g)
+  else
+    isFalse ((ne_iff_toTZNumeral_ne a b).mpr g)
+
+instance instDecidableEq {base : NatGtOne} (a b : Numeral base) : Decidable (a = b) :=
+  decEq a b
+
+end Equality
+
+section Cons
+
+def cons {base : NatGtOne} (x : Fin base.val) (y : Numeral base) : Numeral base :=
+  if g : x = 0 ∧ y = 0 then
+    y -- do not create trailing zeros
+  else
+    have h1 : x ≠ 0 ∨ y ≠ 0 := Decidable.not_and_iff_not_or_not.mp g
+    have h2 : y.toTZNumeral = 0 → x ≠ 0 := by
+      intro h
+      cases h1 with
+      | inl hl => assumption
+      | inr hr =>
+        rw [← TZNumeral.zero_eq_zero, ← zero_toTZNumeral_eq_TZNumeral_zero, ← eq_iff_toTZNumeral_eq] at h
+        contradiction
+    have h3 : (x :: (y.toTZNumeral)).noTrailingZero :=
+      TZNumeral.cons_noTrailingZero_of (And.intro y.noTZ h2)
+    ⟨x :: (y.toTZNumeral), h3⟩
+
+/--
+```
+#eval 0 :: ⟨(⟨[1, 2, 3]⟩ : TZNumeral10), by decide⟩ -- { toTZNumeral := { digits := [0, 1, 2, 3] }, noTZ := _ }
+```
+-/
+notation:68 x:67 " :: " y:67 => cons x y
+
+end Cons
 
 end Numeral
 end Numerals
