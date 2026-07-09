@@ -12,13 +12,13 @@ import Numerals.Extra
 `Numeral.Basic` provides two types for the representation of natural numbers in a
 [positional numeral system](https://en.wikipedia.org/wiki/List_of_numeral_systems#Standard_positional_numeral_systems)
 for an arbitrary basis (i.e. any natural number larger than one):
-* `TZNumeral` for which _trailing_ (have the same effect as _leading_ zeros in regular numerals due to the inverted
-  order in which digits are stored) zeros are permitted, which means that there are multiple `equiv`alent representations
+* `TZNumeral` for which _trailing_ zeros (having the same effect as _leading_ zeros in regular numerals due to the inverted
+  order in which digits are stored) are permitted, which means that there are multiple equivalent representations
   of the same natural number and
 * `Numeral`, which is a subtype of `TZNumeral` but without ambiguity in the representation, which is achieved by excluding
   trailing zeros.
 
-In particular, it provides non-primitive functions for basic operations such as `add`ition and `sub`traction
+In particular, it provides non-primitive functions for basic operations such as addition and subtraction
 of numerals and theorems that ensure that these functions are consistent with the respective operations on
 [`Nat`](https://lean-lang.org/doc/reference/latest/Basic-Types/Natural-Numbers/#Nat).
 This is useful for proofing theorems that refer to the representation of natural numbers as
@@ -32,7 +32,7 @@ TODO: remove and resolve
 -/
 set_option linter.missingDocs false
 
-section NatGtOne
+section NaturalNumbersGreaterThanOne
 
 def NatGtOne := { n : Nat // 1 < n} deriving DecidableEq
 
@@ -69,9 +69,9 @@ theorem zero_ne_one {base : NatGtOne} : base.zero ≠ base.one := by
 theorem one_ne_zero {base : NatGtOne} : base.one ≠ base.zero := Ne.symm zero_ne_one
 
 end NatGtOne
-end NatGtOne
+end  NaturalNumbersGreaterThanOne
 
-section TZNumerals
+section NumeralsThatCanHaveTrailingZeros
 
 /--
 `TZNumeral` provides a representation of a natural number in positional notation for `base`, with `digits`
@@ -202,6 +202,9 @@ theorem eq_iff_digits_eq {base : NatGtOne} (a b : TZNumeral base) :
 theorem ne_iff_digits_ne {base : NatGtOne} (a b : TZNumeral base) :
   a ≠ b ↔ a.digits ≠ b.digits := Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq a b)
 
+theorem eq_zero_of_digits_eq_nil {base : NatGtOne} (a : TZNumeral base) (h : a.digits = []) : a = 0 := by
+  simp only [eq_iff_digits_eq, OfNat.ofNat, Zero.zero]; assumption
+
 /--
 decidable equality
 -/
@@ -216,17 +219,41 @@ instance instDecidableEq {base : NatGtOne} (a b : TZNumeral base) : Decidable (a
 
 end Equality
 
+section Length
+
+/--
+provides the number of digits used by the given `TZNumeral`
+-/
+def length {base : NatGtOne} (n : TZNumeral base) : Nat := n.digits.length
+
+end Length
+
 section Cons
 
+/--
+puts `x` as additional digit in front of the digits of `y`
+-/
 def cons {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) : TZNumeral base where
-  digits := x :: (y.digits)
+  digits := List.cons x (y.digits)
 
-notation:68 x:67 " :: " y:67 => cons x y
+theorem cons_zero_eq {base : NatGtOne} (x : Fin base.val) : cons x 0 = ⟨[x]⟩ := rfl
 
-theorem cons_zero_eq {base : NatGtOne} (x : Fin base.val) : x :: 0 = ⟨[x]⟩ := rfl
+theorem cons_ne_zero {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) :
+  cons x y ≠ 0 := by
+  intro h1
+  rw [eq_iff_digits_eq, digits_zero_eq_nil] at h1
+  have h2 : (cons x y).digits = x :: y.digits := by simp only [cons]
+  have h3 : (cons x y).digits ≠ [] := by rw [h2]; exact List.cons_ne_nil x y.digits
+  exact absurd h1 h3
 
-example : 5 :: (@zero ⟨10, by decide⟩ ) = { digits := [5] } := rfl
-example : 5 :: (⟨[1,2,3]⟩ : TZNumeral10) = { digits := [5, 1, 2, 3] } := rfl
+def uncons {base : NatGtOne} (a : TZNumeral base) (h : a ≠ 0) : (Fin base.val) × (TZNumeral base) :=
+  match g : a.digits with
+  | [] => absurd (eq_zero_of_digits_eq_nil a g) h
+  | x::xs => (x, ⟨xs⟩)
+
+theorem uncons_cons_cancel  {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) :
+  uncons (cons x y) (cons_ne_zero x y) = (x,y) := by
+  simp only [uncons, cons]
 
 end Cons
 
@@ -270,7 +297,7 @@ theorem neg_noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
   exact absurd h2 (h3 h1)
 
 theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : Fin base.val} {xs : TZNumeral base}
-  (h : (x :: xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
+  (h : (cons x xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
   if g: xs = 0 then
     simp only [g, cons_zero_eq] at h
     let h1 := h (List.cons_ne_nil x [])
@@ -287,7 +314,7 @@ theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : Fin base.val} {xs : TZ
     exact And.intro (noTrailingZero_of h3 h5) (fun t => absurd t g)
 
 theorem cons_noTrailingZero_of {base : NatGtOne} {x : Fin base.val} {xs : TZNumeral base}
-  (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0)) : (x :: xs).noTrailingZero := by
+  (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0)) : (cons x xs).noTrailingZero := by
   if g : xs = 0 then
     simp only [g, cons_zero_eq]
     exact singleton_noTrailingZero_of (h.right g)
@@ -303,7 +330,7 @@ theorem cons_noTrailingZero_of {base : NatGtOne} {x : Fin base.val} {xs : TZNume
 
 theorem cons_noTrailingZero_iff_tail_noTrailingZero_and {base : NatGtOne}
   {x : Fin base.val} {xs : TZNumeral base} :
-  (x :: xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
+  (cons x xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
   constructor
   · intro h
     exact tail_noTrailingZero_and_of h
@@ -333,7 +360,8 @@ instance instDecNoTrailingZero {base : NatGtOne} (a : TZNumeral base) :
 end NoTrailingZero
 
 end TZNumeral
-end TZNumerals
+
+end NumeralsThatCanHaveTrailingZeros
 
 section Numerals
 
@@ -423,15 +451,6 @@ theorem one_eq_one' {base : NatGtOne} : one = (1 : Numeral base) := rfl
 
 end One
 
-section Length
-
-/--
-provides the number of digits used by the given `Numeral`
--/
-def length {base : NatGtOne} (n : Numeral base) : Nat := n.digits.length
-
-end Length
-
 section Equality
 
 theorem eq_iff_toTZNumeral_eq {base : NatGtOne} (a b : Numeral base) :
@@ -460,6 +479,10 @@ end Equality
 
 section Cons
 
+/--
+puts `x` as additional digit in front of the digits of `y` if it will not create
+trailing zeros
+-/
 def cons {base : NatGtOne} (x : Fin base.val) (y : Numeral base) : Numeral base :=
   if g : x = 0 ∧ y = 0 then
     y -- do not create trailing zeros
@@ -472,18 +495,11 @@ def cons {base : NatGtOne} (x : Fin base.val) (y : Numeral base) : Numeral base 
       | inr hr =>
         rw [← TZNumeral.zero_eq_zero, ← zero_toTZNumeral_eq_TZNumeral_zero, ← eq_iff_toTZNumeral_eq] at h
         contradiction
-    have h3 : (x :: (y.toTZNumeral)).noTrailingZero :=
-      TZNumeral.cons_noTrailingZero_of (And.intro y.noTZ h2)
-    ⟨x :: (y.toTZNumeral), h3⟩
-
-/--
-```
-#eval 0 :: ⟨(⟨[1, 2, 3]⟩ : TZNumeral10), by decide⟩ -- { toTZNumeral := { digits := [0, 1, 2, 3] }, noTZ := _ }
-```
--/
-notation:68 x:67 " :: " y:67 => cons x y
+    have h3 : (TZNumeral.cons x (y.toTZNumeral)).noTrailingZero := TZNumeral.cons_noTrailingZero_of (And.intro y.noTZ h2)
+    ⟨TZNumeral.cons x y, h3⟩
 
 end Cons
 
 end Numeral
+
 end Numerals

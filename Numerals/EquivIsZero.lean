@@ -220,8 +220,6 @@ def decEquivAux (a b : List Nat) : Decidable (equivAux a b)  :=
         exact absurd (equivAux_cons_iff.mp h).left g
       isFalse this
 
-  termination_by a.length + b.length
-
 instance instDecEquivAux {a b : List Nat} : Decidable (equivAux a b) := decEquivAux a b
 
 example : ¬ equivAux [] [1] := by decide
