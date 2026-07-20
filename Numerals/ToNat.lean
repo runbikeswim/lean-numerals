@@ -4,51 +4,46 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
-namespace NumeralAux
+import Numerals.Extra
+import Numerals.Basic
 
-section ToNatAux
+section toNat
 
-/-
-Returns value of the numeral represented by the lists of digits (little-endian) with respect to `basis`.
+namespace TZNumeral
 
-Examples:
-```
-#eval toNatAux [0, 1, 0] 2 -- 2
-#eval toNatAux [0, 11, 7] 10 -- 810
-```
--/
-def toNatAux (a : List Nat) (base : Nat) : Nat :=
-  (helper a base 1 0).snd where
-    helper (a : List Nat) (base factor acc : Nat) : Nat × Nat :=
-      match a with
-      | [] => (factor, acc)
-      | x::xs => helper xs base (factor * base) (x * factor + acc)
+def toNat {base : NatGtOne} (n : TZNumeral base) : Nat :=
+  helper base n.toListNat 1 0 where
+  helper (base : NatGtOne) (a : List Nat) (factor acc : Nat) : Nat  :=
+    match a with
+    | [] => acc
+    | x::xs => helper base xs (factor * base.val) (x * factor + acc)
 
-theorem toNatAux_helper_nil_eq {base factor acc : Nat} : toNatAux.helper [] base factor acc = (factor, acc) := by
-  unfold toNatAux.helper
-  rfl
+theorem toNat_helper_nil_eq {base : NatGtOne} {factor acc : Nat} :
+  @toNat.helper base [] factor acc = acc := rfl
 
-theorem toNatAux_helper_snd_eq {a : List Nat} {base factor acc : Nat} :
-  (toNatAux.helper a base factor acc).snd = acc + factor * (toNatAux.helper a base 1 0).snd := by
+theorem toNat_helper_eq {base : NatGtOne} {a : List Nat} {factor acc : Nat} :
+  toNat.helper base a factor acc = acc + factor * (toNat.helper base a 1 0) := by
   induction a generalizing factor acc with
-  | nil => simp_all only [toNatAux_helper_nil_eq, Nat.mul_zero, Nat.add_zero]
+  | nil => simp_all only [toNat_helper_nil_eq, Nat.mul_zero, Nat.add_zero]
   | cons head tail ih =>
-    unfold toNatAux.helper
+    unfold toNat.helper
     simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
     rw [ih, Nat.add_comm (head * factor) acc]
     rw (occs := .pos [2]) [ih]
     rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
 
-theorem toNatAux_nil_eq {base : Nat} : toNatAux [] base = 0 := by
-  unfold toNatAux
+theorem toNat_zero_eq_zero {base : NatGtOne} : @toNat base zero = 0 := rfl
+
+theorem toNat_helper_cons_eq {base : NatGtOne} {x : Nat} {xs : List Nat}  :
+  toNat.helper base (x::xs) 1 0 = x + base.val * (toNat.helper base xs 1 0) := by
+  simp only [toNat.helper, Nat.one_mul, Nat.add_zero, Nat.mul_one]
+  rw [toNat_helper_eq]
+
+theorem toNat_cons_eq {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}  :
+  toNat (cons x xs) = x + base.val * (toNat xs) := by
+  simp only [toNat, cons, toListNat, List.toListNatAux, List.map_cons, toNat_helper_cons_eq]
   rfl
 
-theorem toNatAux_cons_eq {xs : List Nat} {x base : Nat} :
-  toNatAux (x::xs) base = x + base * (toNatAux xs base) := by
-  rw [toNatAux.eq_def, toNatAux.helper.eq_def]
-  simp only
-  rw [toNatAux.eq_def, toNatAux_helper_snd_eq, Nat.mul_one, Nat.one_mul, Nat.add_zero]
+end TZNumeral
 
-end ToNatAux
-
-end NumeralAux
+end toNat

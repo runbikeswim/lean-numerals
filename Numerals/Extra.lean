@@ -4,6 +4,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
+/-
+TODO : remove
+for showing that a proposition and its opposite cannot both be true, classical logic
+(with exclusion of the middle) is not required
+-/
+example (p : Prop) : ¬(p ∧ ¬p) := fun t : p ∧ ¬p ↦ absurd t.left t.right
+
+/-
+TODO : remove
+classical logic is required to show that if the opposite of a proposition leads to a
+contradiction (False), the proposition itself is true
+-/
+example (p : Prop) (h : ¬p → False) : p := Classical.not_not.mp (fun t : ¬p ↦ h t)
+
 namespace  Classical
 
 theorem imp_iff_not_imp_not {p q : Prop} : (p → q) ↔ (¬q → ¬p) := by
@@ -61,7 +75,7 @@ theorem eq_zero_of_one_lt_of_mod_eq_zero_of_lt {a b : Nat}
 theorem mod_ne_zero_of_one_lt_of_div_zero_of_ne {a b : Nat}
   (h1 : 1 < b) (h2 : a / b = 0) (h3 : a ≠ 0) : a % b ≠ 0 := by
   have h4 : a < b := Nat.lt_of_div_eq_zero (Nat.pos_of_one_lt h1) h2
-  false_or_by_contra; rename _ => h5
+  intro h5
   have h6 : a = 0 := eq_zero_of_one_lt_of_mod_eq_zero_of_lt h1 h5 h4
   contradiction
 

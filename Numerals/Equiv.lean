@@ -6,9 +6,9 @@ Author: Stefan Kusterer
 
 import Numerals.Basic
 
-section Equivalence
-
 namespace TZNumeral
+
+section Equivalence
 
 def equiv {base : NatGtOne} (a b : TZNumeral base) : Prop :=
   helper a.digits b.digits where
@@ -32,16 +32,20 @@ theorem equiv_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : TZNumeral
   simp only [equiv, cons]
   exact equiv_helper_cons_iff
 
-theorem equiv_zero_iff {base : NatGtOne} {a : TZNumeral base} : 0 ≈ a ↔ a.digits.all (· == 0) := by
-  simp only [equiv, ← zero_eq_zero]
-  induction a.digits with
+theorem equiv_helper_nil_iff {base : NatGtOne} {a : List base.Fin} :
+  equiv.helper [] a ↔ a.all (· == 0) := by
+  induction a with
   | nil =>
     simp only [List.all_nil, equiv.helper]
   | cons x xs ih =>
     simp only [equiv.helper, List.all_cons, Bool.and_eq_true, ih, beq_iff_eq]
 
+theorem equiv_zero_iff {base : NatGtOne} {a : TZNumeral base} : 0 ≈ a ↔ a.digits.all (· == 0) := by
+  simp only [equiv, ← zero_eq_zero]
+  exact equiv_helper_nil_iff
+
 theorem ne_zero_of_not_zero_equiv {base : NatGtOne} {a : TZNumeral base} (h : ¬ 0 ≈ a) : a ≠ 0 := by
-  false_or_by_contra; rename _ => hc
+  intro hc
   have : a.digits.all (· == 0) := by rw [hc]; exact List.all_nil
   exact absurd (equiv_zero_iff.mpr this) h
 
@@ -123,7 +127,7 @@ theorem equiv_trans {base : NatGtOne} {a b c : TZNumeral base}
   unfold instHasEquiv equiv at ⊢ hab hbc
   exact equiv_helper_trans hab hbc
 
-def equivalence {base: NatGtOne} :
+theorem equivalence {base: NatGtOne} :
   Equivalence (equiv : (TZNumeral base) → (TZNumeral base) → Prop) :=
   ⟨
     by unfold equiv; exact fun _ ↦ equiv_refl,
@@ -133,13 +137,13 @@ def equivalence {base: NatGtOne} :
 
 theorem not_equiv_of_not_equiv {base : NatGtOne} {a b : TZNumeral base}
   (h : ¬ a ≈ b) : ¬ b ≈ a := by
-  false_or_by_contra; rename _ => h1
+  intro h1
   have : a ≈ b := equivalence.symm h1
   contradiction
 
 theorem not_equiv_of_equiv_of_not_equiv {base : NatGtOne} {a b c : TZNumeral base}
   (hab : a ≈ b) (hbc : ¬ b ≈ c) : ¬ a ≈ c := by
-  false_or_by_contra; rename _ => hac
+  intro hac
   have : b ≈ c := equivalence.trans (equivalence.symm hab) hac
   contradiction
 
@@ -188,6 +192,6 @@ instance instdecEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a �
 #eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[1, 2, 3, 0, 0]⟩
 #eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[2, 3, 0, 0]⟩
 
-end TZNumeral
-
 end Equivalence
+
+end TZNumeral

@@ -4,148 +4,153 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
-import Numerals.AllDigitsBase
-import Numerals.NoTrailingZero
+import Numerals.Extra
+import Numerals.Basic
+import Numerals.ToNat
 
-namespace NumeralAux
+namespace TZNumeral
 
 section Prune
 
-/--
-returns a list that represents the same _value_ as the given list with `n` combined,
-only that all digits are less than `base`
+def prune {base : NatGtOne} (a : List Nat) (n : Nat) : TZNumeral base where
+  digits := helper base (a : List Nat) (n : Nat) where
+  helper (base : NatGtOne) (a : List Nat) (n : Nat) : List (@FinBase base) :=
+    match a, n with
+    | [], 0 => []
+    | [], k + 1 =>
+      -- for asserting termination
+      have h : 0 < (k + 1) := Nat.zero_lt_succ k
+      have : (k + 1) / base.val < k + 1 := Nat.div_lt_self h base.property
+      FinBase.ofNat (k + 1) :: helper base [] ((k + 1) / base.val)
+    | x::xs, n => FinBase.ofNat (x + n) :: helper base xs ((x + n) / base.val)
+    termination_by (a.length, n)
 
-Examples:
-```
-#eval prune [20] 0 10 (by decide) -- [0, 2] representing 20 as decimal number
-#eval prune [20] 5 10 (by decide) -- [5, 2] representing 25 as decimal number
-#eval prune [8,8] 0 2 (by decide) -- [0, 0, 0, 1, 1] representing 24 in base 2
-#eval prune [] (8 + 16) 2 (by decide) -- also [0, 0, 0, 1, 1]
-```
--/
-def prune (a : List Nat) (n base : Nat) (hb : 1 < base) : List Nat :=
-  match a, n with
-  | [], 0 => []
-  | [], k + 1 =>
-    -- for asserting termination
-    have h : 0 < (k + 1) := Nat.zero_lt_succ k
-    have : (k + 1) / base < k + 1 := Nat.div_lt_self h hb
-    ((k + 1) % base)::(prune [] ((k + 1) / base) base hb)
-  | x::xs, n => ((x + n) % base)::(prune xs ((x + n) / base) base hb)
-  termination_by (a.length, n)
+theorem prune_helper_nil_zero_eq_nil {base : NatGtOne} :
+  prune.helper base [] 0 = ([] : List (Fin base.val)) := by
+  simp only [prune.helper]
 
-theorem prune_nil_eq_nil {base : Nat} (hb : 1 < base) :
-  prune [] 0 base hb = [] := by
-  rw [prune.eq_def]
+theorem prune_nil_zero_eq_zero {base : NatGtOne} : prune [] 0 = @zero base := by
+  simp only [prune, prune_helper_nil_zero_eq_nil]
 
-theorem prune_eq_nil_iff_eq_nil_and_eq_zero {a : List Nat} {n base : Nat}  (hb : 1 < base) :
-  prune a n base hb = [] ↔ a = [] ∧ n = 0 := by
+theorem prune_helper_eq_nil_iff_eq_nil_and_eq_zero {base : NatGtOne} {a : List Nat} {n : Nat} :
+  prune.helper base a n = ([] : List (Fin base.val)) ↔ a = [] ∧ n = 0 := by
   constructor
   · intro h
     match a, n with
     | [], 0 => exact And.intro rfl rfl
-    | [], k + 1 | x::xs, n => simp only [prune, List.cons_ne_nil] at h
+    | [], k + 1 | x::xs, n => simp only [prune.helper, List.cons_ne_nil] at h
   · intro h
-    simp only [h.left, h.right, prune_nil_eq_nil]
+    simp only [h.left, h.right, prune_helper_nil_zero_eq_nil]
 
-theorem prune_nil_eq_cons_of_pos {n base : Nat} (hn : 0 < n) (hb : 1 < base) :
-  prune [] n base hb = (n % base)::(prune [] (n / base) base hb) := by
-  match n with | 0 => contradiction | k + 1 => rw [prune.eq_def]
+theorem prune_helper_cons_eq {base : NatGtOne} {x n : Nat} {xs : List Nat} :
+  prune.helper base (x :: xs) n = FinBase.ofNat (x + n) :: prune.helper base xs ((x + n) / base.val) := by
+  simp only [prune.helper]
+
+theorem prune_eq_zero_iff_eq_nil_and_eq_zero {base : NatGtOne} {a : List Nat} {n : Nat} :
+  prune a n = @zero base ↔ a = [] ∧ n = 0 := by
+  simp only [prune, zero, eq_iff_digits_eq]
+  exact prune_helper_eq_nil_iff_eq_nil_and_eq_zero
+
+theorem prune_helper_nil_eq_cons_of_pos {base : NatGtOne} {n : Nat} (hn : 0 < n)  :
+  @prune.helper base [] n = FinBase.ofNat n :: (prune.helper base [] (n / base.val) ) := by
+  match n with
+  | 0 => contradiction
+  | k + 1 => simp only [prune.helper]
+
+theorem prune_nil_eq_cons_of_pos {base : NatGtOne} {n : Nat} (hn : 0 < n) :
+  @prune base [] n = cons (FinBase.ofNat n) (prune [] (n / base.val) ) := by
+  simp only [prune, cons, eq_iff_digits_eq]
+  exact prune_helper_nil_eq_cons_of_pos hn
+
+theorem prune_helper_of_lt {base : NatGtOne} {n : Nat} (hn : n < base.val) :
+  prune.helper base [] n = if n = 0 then [] else [⟨n, hn⟩] := by
+  match n with
+  | 0 => simp only [prune.helper, reduceIte]
+  | k + 1 =>
+    simp only [prune.helper, Nat.div_eq_zero_iff.mpr (.inr hn), Nat.succ_ne_zero, reduceIte]
+    simp only [FinBase.ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr hn]
+
+theorem prune_of_lt {base : NatGtOne} {n : Nat} (hn : n < base.val) :
+  prune [] n = if n = 0 then 0 else ⟨[⟨n, hn⟩]⟩ := by
+  simp only [prune, eq_iff_digits_eq, ← zero_eq_zero, zero, prune_helper_of_lt hn]
+  match n with
+  | 0 => simp only [reduceIte]
+  | k + 1 => simp only [Nat.succ_ne_zero, reduceIte]
 
 end Prune
 
-section AllDigitsLtBase_Prune
+section NoTrailingZero_Prune
 
-theorem allDigitsLtBase_prune {a : List Nat} {n base : Nat} {hb : 1 < base} :
-  allDigitsLtBase (prune a n base hb) base := by
-  induction a generalizing n with
-  | nil =>
-    induction n using Nat.strongRecOn with
-    | _ l ihl =>
-      match gl : l with
-      | 0 =>
-        rw [prune.eq_def]
-        simp only [allDigitsLtBase_nil]
-      | k + 1 =>
-        rw [prune.eq_def]
-        simp only [allDigitsLtBase_cons_iff]
-        have h1 : (k + 1) / base < (k + 1) := Nat.div_lt_self (Nat.succ_pos k) hb
-        exact And.intro (Nat.mod_lt (k + 1) (Nat.lt_trans (by decide) hb)) (ihl ((k + 1) / base) h1)
-  | cons x xs iha =>
-    rw [prune.eq_def]
-    simp only [allDigitsLtBase_cons_iff]
-    exact And.intro (Nat.mod_lt (x + n) (Nat.lt_trans (by decide) hb)) iha
-
-end AllDigitsLtBase_Prune
-
-section NoTrailingZeroAux_Prune
-
-theorem noTrailingZeroAux_prune_nil {n base : Nat} {hb : 1 < base} : noTrailingZeroAux (prune [] n base hb) := by
+theorem noTrailingZeroAux_prune_helper_nil {base : NatGtOne} {n : Nat} :
+  @noTrailingZeroAux base (prune.helper base [] n) := by
   induction n using Nat.strongRecOn with
   | _ l ihl =>
     match gl : l with
-      | 0 => rw [prune.eq_def]; simp only [noTrailingZeroAux_nil]
+      | 0 => simp only [prune_helper_nil_zero_eq_nil]; exact noTrailingZeroAux_nil
       | k + 1 =>
-        simp only [prune]
-        have h1 : (k + 1) / base < k + 1  := Nat.div_lt_self (Nat.succ_pos k) hb
-        if g : (k + 1) / base = 0 then
-          have h2 : prune [] ((k + 1) / base) base hb = [] := (prune_eq_nil_iff_eq_nil_and_eq_zero hb).mpr (And.intro rfl g)
-          have h3 : (k + 1) % base ≠ 0 := Nat.mod_ne_zero_of_one_lt_of_div_zero_of_ne hb g (Nat.succ_ne_zero k)
-          have h4 : noTrailingZeroAux (prune [] ((k + 1) / base) base hb)
-                      ∧ (prune [] ((k + 1) / base) base hb = [] → (k + 1) % base ≠ 0) :=
-            And.intro (ihl ((k + 1) / base) h1) (fun _ : prune [] ((k + 1) / base) base hb = [] => h3)
+        simp only [prune.helper]
+        have h1 : (k + 1) / base.val < k + 1  := Nat.div_lt_self (Nat.succ_pos k) base.property
+        if g : (k + 1) / base.val = 0 then
+          have h2 : prune.helper base [] ((k + 1) / base.val) = [] :=
+            (@prune_helper_eq_nil_iff_eq_nil_and_eq_zero base).mpr (And.intro rfl g)
+          have h3 : FinBase.ofNat (k + 1) ≠ base.zero :=
+            FinBase.ofNat_ne_zero_of_div_zero_of_ne g (Nat.succ_ne_zero k)
+          have h4 : noTrailingZeroAux (prune.helper base [] ((k + 1) / base.val))
+                      ∧ (@prune.helper base [] ((k + 1) / base.val)  = [] → FinBase.ofNat (k + 1) ≠ base.zero) :=
+            And.intro (ihl ((k + 1) / base.val) h1) (fun _ : prune.helper base [] ((k + 1) / base.val) = [] => h3)
           exact noTrailingZeroAux_cons_of h4
         else
-          have h2 : ¬(([] : List Nat) = [] ∧ (k + 1) / base = 0) := by
+          have h2 : ¬(([] : List Nat) = [] ∧ (k + 1) / base.val = 0) := by
             intro h
             exact absurd h.right g
-          have h3 : prune [] ((k + 1) / base) base hb ≠ [] :=
-            Classical.imp_iff_not_imp_not.mp (prune_eq_nil_iff_eq_nil_and_eq_zero hb).mp h2
-          have h4 : noTrailingZeroAux (prune [] ((k + 1) / base) base hb)
-                      ∧ (prune [] ((k + 1) / base) base hb = [] → (k + 1) % base ≠ 0) :=
-            And.intro (ihl ((k + 1) / base) h1) (fun t : prune [] ((k + 1) / base) base hb = [] => absurd t h3)
+          have h3 : @prune.helper base [] ((k + 1) / base.val) ≠ [] :=
+            Classical.imp_iff_not_imp_not.mp prune_helper_eq_nil_iff_eq_nil_and_eq_zero.mp h2
+          have h4 : noTrailingZeroAux (prune.helper base [] ((k + 1) / base.val) )
+                      ∧ (prune.helper base [] ((k + 1) / base.val)  = [] → FinBase.ofNat (k + 1) ≠ base.zero) :=
+            And.intro (ihl ((k + 1) / base.val) h1) (fun t : prune.helper base [] ((k + 1) / base.val) = [] => absurd t h3)
           exact noTrailingZeroAux_cons_of h4
 
-theorem noTrailingZeroAux_prune_of_noTrailingZeroAux {a : List Nat} {n base : Nat} {hb : 1 < base} (hntz : noTrailingZeroAux a) :
-  noTrailingZeroAux (prune a n base hb) := by
+theorem prune_nil_noTrailingZero {base : NatGtOne} {n : Nat} : (@prune base [] n).noTrailingZero := by
+  unfold prune noTrailingZero
+  exact noTrailingZeroAux_prune_helper_nil
+
+end NoTrailingZero_Prune
+
+section ToNat_Prune
+
+theorem toNat_helper_prune_helper_nil_eq {base : NatGtOne} {n : Nat} :
+  toNat.helper base (prune.helper base [] n).toListNatAux 1 0 = n := by
+  induction n using Nat.strongRecOn with
+  | _ l ih =>
+    match gl : l with
+    | 0 => simp only [prune_helper_nil_zero_eq_nil, List.toListNatAux, List.map_nil, toNat.helper]
+    | k + 1 =>
+      have : (k + 1) / base.val < k + 1 := Nat.div_lt_self (Nat.succ_pos k) base.property
+      simp only [prune.helper, cons_toListNatAux_eq_coe_cons_toList, toNat_helper_cons_eq]
+      simp only [ih ((k + 1) / base.val) this, FinBase.ofNat]
+      rw [Nat.add_comm]
+      exact Nat.div_add_mod (k + 1) base.val
+
+theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : List Nat} {n : Nat} :
+  toNat.helper base (prune.helper base a n).toListNatAux 1 0 = n + (toNat.helper base a 1 0) := by
   induction a generalizing n with
-  | nil => exact noTrailingZeroAux_prune_nil
-  | cons x xs iha =>
-    simp only [prune]
-    have h1 : noTrailingZeroAux xs ∧ (xs = [] → x ≠ 0) := noTrailingZeroAux_cons_iff_noTrailingZeroAux_and.mp hntz
-    have h2 : noTrailingZeroAux (prune xs ((x + n) / base) base hb) := iha h1.left
-    simp only [noTrailingZeroAux_cons_iff_noTrailingZeroAux_and, h2, true_and]
-    intro h
-    simp only [prune_eq_nil_iff_eq_nil_and_eq_zero] at h
-    have h3 : x ≠ 0 := h1.right h.left
-    have h4 : 0 < x := Nat.pos_of_ne_zero h3
-    have h5 : 0 < x + n := Nat.add_pos_left h4 n
-    have h6 : x + n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr h5
-    exact Nat.mod_ne_zero_of_one_lt_of_div_zero_of_ne hb h.right h6
+  | nil => exact toNat_helper_prune_helper_nil_eq
+  | cons x xs ih =>
+    simp only [prune_helper_cons_eq, cons_toListNatAux_eq_coe_cons_toList, toNat_helper_cons_eq, FinBase.ofNat]
+    rw [ih, Nat.mul_add, ← Nat.add_assoc]
+    rw (occs := .pos [2]) [Nat.add_comm]
+    simp only [Nat.div_add_mod (x + n) base.val]
+    rw (occs := .pos [2]) [Nat.add_comm]
+    rw [Nat.add_assoc]
 
-end NoTrailingZeroAux_Prune
+theorem toNat_prune_eq_add_toNat {base : NatGtOne} {a : TZNumeral base} {n : Nat}  :
+  @toNat base (prune a.toListNat n) = n + a.toNat := by
+  simp only [prune, toNat, toListNat]
+  exact toNat_helper_prune_helper_eq_add_toNat_helper
 
-section ToNatAux_Prune
+theorem toNat_prune_nil_eq_add_toNat {base : NatGtOne} {n : Nat}  :
+  @toNat base (prune [] n) = n := @toNat_prune_eq_add_toNat base zero n
 
-theorem toNatAux_prune_eq_add_toNatAux {a : List Nat} {n base : Nat} (hb : 1 < base) :
-  toNatAux (prune a n base hb) base = n + toNatAux a base := by
-  induction a generalizing n with
-  | nil =>
-    induction n using Nat.strongRecOn with
-    | _ l ihl =>
-      match gl : l with
-      | 0 =>
-        rw [prune.eq_def, toNatAux.eq_def, toNatAux.helper.eq_def]
-        simp_all only [Nat.not_lt_zero, false_implies, implies_true, Nat.add_zero]
-      | k + 1 =>
-        have : (k + 1) / base < k + 1 := Nat.div_lt_self (Nat.succ_pos k) hb
-        rw [prune.eq_def, toNatAux_cons_eq, ihl ((k + 1) / base) this, Nat.mul_add, ← Nat.add_assoc]
-        rw [Nat.mod_add_div (k + 1) base, toNatAux_nil_eq, Nat.mul_zero]
-  | cons x xs iha =>
-    rw [prune.eq_def, toNatAux_cons_eq, iha, Nat.mul_add, ← Nat.add_assoc]
-    rw [Nat.mod_add_div, toNatAux_cons_eq, ← Nat.add_assoc]
-    rw (occs := [2]) [Nat.add_comm]
+end ToNat_Prune
 
-end ToNatAux_Prune
-
-end NumeralAux
+end TZNumeral
