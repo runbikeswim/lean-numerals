@@ -12,7 +12,8 @@ namespace TZNumeral
 section Tonz
 
 /--
-returns `n::a` if no additional trailing zero is created by using `n` as first digit
+returns `n::a` if no additional trailing zero is created by using `n` as first digit, otherwise
+`[] = a` is returned
 -/
 def tonz {base : NatGtOne} (n : base.Fin) (a : List base.Fin) : List base.Fin :=
   match a with
@@ -78,42 +79,39 @@ theorem equiv_helper_tonz_singleton_of_equiv_helper_nil {base : NatGtOne} {n : b
     simp only [tonz_cons_eq]
     exact equiv_helper_cons_iff.mpr (And.intro rfl h)
 
-/-
-theorem equivAux_tonz_cons_of_equivAux {n : Nat} {a b : List Nat} (h : equivAux a b) :
-  equivAux (tonz n a) (n::b) := by
-  match n, a, b with
-  | _, _, [] => exact equivAux_tonz_singleton_of_equivAux_nil h
-  | 0, [], _ =>
-    simp only [tonz_zero_nil_eq]
-    exact equivAux_iff_equivAux.mp (equivAux_cons_nil_of_equivAux_nil (equivAux_iff_equivAux.mp h))
-  | k + 1, [], _ =>
-    simp only [tonz_succ_nil_eq]
-    exact equivAux_cons_iff_eq_and_equivAux.mpr (And.intro rfl h)
-  | _, x::xs, y::ys =>
+theorem equiv_helper_tonz_cons_of_equiv_helper {base : NatGtOne} {n : base.Fin} {a b : List base.Fin}
+  (h : equiv.helper a b) : equiv.helper (tonz n a) (n::b) := by
+  match a, b with
+  | _, [] => exact equiv_helper_tonz_singleton_of_equiv_helper_nil h
+  | [], _ =>
+    if g : n = 0 then
+      simp only [g, tonz_zero_nil_eq]
+      rw [equiv_helper_nil_iff] at ⊢ h
+      simp only [List.all_cons, BEq.refl, Bool.true_and]
+      assumption
+    else
+      simp only [tonz_succ_nil_eq g, equiv_helper_cons_iff, true_and]
+      assumption
+  | x::xs, y::ys =>
     simp only [tonz_cons_eq]
-    exact equivAux_cons_iff_eq_and_equivAux.mpr (And.intro rfl h)
+    rw [equiv_helper_cons_iff]
+    exact And.intro rfl h
 
-theorem allDigitsLtBase_tonz_of {n base: Nat} {a : List Nat}
-  (hn : n < base) (ha : allDigitsLtBase a base) :
-  allDigitsLtBase (tonz n a) base := by
-  unfold tonz
-  match gn: n, ga: a with
-  | 0, [] => simp only; exact allDigitsLtBase_nil
-  | k + 1, [] => simp only; exact allDigitsLtBase_singleton hn
-  | n, x::xs => simp only; exact allDigitsLtBase_cons_iff.mpr (And.intro hn ha)
-
-theorem noTrailingZeroAux_tonz_of {n : Nat} {a : List Nat} (ha : noTrailingZeroAux a) :
+theorem noTrailingZeroAux_tonz_of {base : NatGtOne} {n : base.Fin} {a : List base.Fin} (ha : noTrailingZeroAux a) :
   noTrailingZeroAux (tonz n a) := by
   unfold tonz
-  match gn: n, ga: a with
-  | 0, [] => simp only; exact noTrailingZeroAux_nil
-  | k + 1, [] => simp only; exact noTrailingZeroAux_singleton_iff_ne_zero.mpr (Nat.succ_ne_zero k)
-  | n, x::xs =>
+  match a with
+  | [] =>
+    if g : n = 0 then
+      simp only [g, reduceIte]
+      assumption
+    else
+      simp only [g, reduceIte]
+      exact noTrailingZero_singleton_of g
+  | x::xs =>
     simp only
     have : x::xs = [] → n ≠ 0 := fun t : x::xs = [] => absurd t (List.cons_ne_nil x xs)
     exact noTrailingZeroAux_cons_of (And.intro ha this)
-
--/
 
 end Tonz
 

@@ -86,12 +86,12 @@ instance {base : NatGtOne} (n : Nat) : OfNat (base.Fin) n := ⟨ ofNat n ⟩
 theorem ofNat_mod_eq {base : NatGtOne} (n : Nat) : @ofNat base (n % base.val) = ofNat n := by
   simp only [ofNat, Nat.mod_mod]
 
-theorem eq_zero_iff_eq_zero {base : NatGtOne} (x : @FinBase base) : x = base.zero ↔ x = @ofNat base 0 := by
-  simp only [FinBase.zero_eq_zero, OfNat.ofNat, ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr base.val_pos]
+theorem eq_zero_iff_eq_zero {base : NatGtOne} (x : base.Fin) : x = 0 ↔ x = @ofNat base 0 := by
+  simp only [OfNat.ofNat, ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr base.val_pos]
 
 theorem ofNat_ne_zero_of_div_zero_of_ne {base : NatGtOne} {n : Nat} (h1 : n / base.val = 0) (h2 : n ≠ 0) :
-  @ofNat base n ≠ base.zero := by
-  unfold ofNat NatGtOne.zero
+  @ofNat base n ≠ 0 := by
+  unfold ofNat
   have : n % base.val ≠ 0 := Nat.mod_ne_zero_of_one_lt_of_div_zero_of_ne base.property h1 h2
   intro h
   simp only [eq_iff_eq_val] at h
@@ -327,8 +327,8 @@ end ToListNat
 
 section NoTrailingZero
 
-abbrev noTrailingZeroAux {base : NatGtOne} (d : List (Fin base.val)) : Prop :=
-  (h : d ≠ []) → d.getLast h ≠ base.zero
+abbrev noTrailingZeroAux {base : NatGtOne} (d : List base.Fin) : Prop :=
+  (h : d ≠ []) → d.getLast h ≠ 0
 
 abbrev noTrailingZero {base : NatGtOne} (n : TZNumeral base) : Prop :=
   noTrailingZeroAux n.digits
@@ -345,34 +345,35 @@ theorem zero_noTrailingZero {base : NatGtOne} : (@zero base).noTrailingZero :=
   noTrailingZero_of_digits_eq_nil (by simp only)
 
 theorem noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
-  (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 ≠ base.zero) :
+  (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 ≠ 0) :
   n.noTrailingZero := by
   unfold noTrailingZero
   exact (fun _ => h2)
 
-theorem singleton_noTrailingZero_of {base : NatGtOne} {n : Fin base.val} (h : n ≠ base.zero) :
-  (⟨[n]⟩ : TZNumeral base).noTrailingZero := by
-  unfold noTrailingZero
+theorem noTrailingZero_singleton_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
+  noTrailingZeroAux [n] := by
   intro
   simp only [List.getLast_singleton]
   exact h
 
+theorem singleton_noTrailingZero_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
+  (⟨[n]⟩ : TZNumeral base).noTrailingZero := by
+  unfold noTrailingZero
+  exact noTrailingZero_singleton_of h
+
 theorem one_noTrailingZero {base : NatGtOne} : (@one base).noTrailingZero := by
   rw [one_eq_one]
-  have : ⟨1, base.property⟩ ≠ base.zero := by
-    rw [← FinBase.one_eq_one]
-    exact FinBase.one_ne_zero
-  exact singleton_noTrailingZero_of this
+  exact singleton_noTrailingZero_of FinBase.one_ne_zero
 
 theorem neg_noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
-  (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 = base.zero) :
+  (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 = 0) :
   ¬ n.noTrailingZero := by
   intro h3
   unfold noTrailingZero at h3
   exact absurd h2 (h3 h1)
 
-theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : Fin base.val} {xs : TZNumeral base}
-  (h : (cons x xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ base.zero) := by
+theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
+  (h : (cons x xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
   if g: xs = 0 then
     simp only [g, cons_zero_eq] at h
     let h1 := h (List.cons_ne_nil x [])
@@ -381,15 +382,15 @@ theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : Fin base.val} {xs : TZ
     exact And.intro zero_noTrailingZero h1
   else
     have h1 : x :: xs.digits ≠ [] := List.cons_ne_nil x xs.digits
-    have h2 : (x :: xs.digits).getLast h1 ≠ base.zero := h h1
+    have h2 : (x :: xs.digits).getLast h1 ≠ 0 := h h1
     have h3 : xs.digits ≠ [] := by
       rwa [← zero_eq_zero, zero, eq_iff_digits_eq, ← ne_eq] at g
     have h4 : (x :: xs.digits).getLast h1 = xs.digits.getLast h3 := List.getLast_cons h3
-    have h5 : xs.digits.getLast h3 ≠ base.zero := by rwa [← h4]
+    have h5 : xs.digits.getLast h3 ≠ 0 := by rwa [← h4]
     exact And.intro (noTrailingZero_of h3 h5) (fun t => absurd t g)
 
-theorem noTrailingZeroAux_cons_of {base : NatGtOne} {x : Fin base.val} {xs : List (Fin base.val)}
-  (h : noTrailingZeroAux xs ∧ (xs = [] → x ≠ base.zero)) : noTrailingZeroAux (x::xs) := by
+theorem noTrailingZeroAux_cons_of {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}
+  (h : noTrailingZeroAux xs ∧ (xs = [] → x ≠ 0)) : noTrailingZeroAux (x::xs) := by
   simp only [noTrailingZeroAux] at ⊢ h
   intro _
   if g : xs = [] then
@@ -399,14 +400,14 @@ theorem noTrailingZeroAux_cons_of {base : NatGtOne} {x : Fin base.val} {xs : Lis
     rw [List.getLast_cons g]
     exact h.left g
 
-theorem cons_noTrailingZero_of {base : NatGtOne} {x : Fin base.val} {xs : TZNumeral base}
-  (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ base.zero)) : (cons x xs).noTrailingZero := by
+theorem cons_noTrailingZero_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
+  (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0)) : (cons x xs).noTrailingZero := by
   simp only [noTrailingZero, cons, eq_iff_digits_eq, OfNat.ofNat, Zero.zero] at ⊢ h
   exact noTrailingZeroAux_cons_of h
 
 theorem cons_noTrailingZero_iff_tail_noTrailingZero_and {base : NatGtOne}
   {x : Fin base.val} {xs : TZNumeral base} :
-  (cons x xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ base.zero) := by
+  (cons x xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
   constructor
   · intro h
     exact tail_noTrailingZero_and_of h
@@ -425,7 +426,7 @@ def decNoTrailingZero {base : NatGtOne} (n : TZNumeral base) : Decidable (noTrai
   if g1 : n.digits = [] then
     isTrue (noTrailingZero_of_digits_eq_nil g1)
   else
-    if g2: n.digits.getLast g1 = base.zero then
+    if g2: n.digits.getLast g1 = 0 then
       isFalse (neg_noTrailingZero_of g1 g2)
     else
       isTrue (noTrailingZero_of g1 g2)
@@ -560,11 +561,11 @@ puts `x` as additional digit in front of the digits of `y` if it will not create
 trailing zeros
 -/
 def cons {base : NatGtOne} (x : Fin base.val) (y : Numeral base) : Numeral base :=
-  if g : x = base.zero ∧ y = 0 then
+  if g : x = 0 ∧ y = 0 then
     y -- do not create trailing zeros
   else
-    have h1 : x ≠ base.zero ∨ y ≠ 0 := Decidable.not_and_iff_not_or_not.mp g
-    have h2 : y.toTZNumeral = 0 → x ≠ base.zero := by
+    have h1 : x ≠ 0 ∨ y ≠ 0 := Decidable.not_and_iff_not_or_not.mp g
+    have h2 : y.toTZNumeral = 0 → x ≠ 0 := by
       intro h
       cases h1 with
       | inl hl => assumption
