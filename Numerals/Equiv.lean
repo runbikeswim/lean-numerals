@@ -57,7 +57,6 @@ theorem equiv_helper_refl {base : NatGtOne} {a : List (Fin base.val)} : equiv.he
     simp only [equiv.helper, ih, true_and]
 
 theorem equiv_refl {base : NatGtOne} {a : TZNumeral base} : a ≈ a := by
-  unfold instHasEquiv equiv
   exact equiv_helper_refl
 
 theorem equiv_helper_symm {base : NatGtOne} {a b : List (Fin base.val)} (hab : equiv.helper a b) : equiv.helper b a := by
@@ -79,7 +78,6 @@ theorem equiv_helper_iff_equiv_helper {base : NatGtOne} {a b : List (Fin base.va
   Iff.intro (equiv_helper_symm ·) (equiv_helper_symm ·)
 
 theorem equiv_symm {base : NatGtOne} {a b : TZNumeral base} (hab : a ≈ b) : b ≈ a := by
-  unfold instHasEquiv equiv at ⊢ hab
   exact equiv_helper_symm hab
 
 theorem equiv_iff_equiv {base : NatGtOne} {a b : TZNumeral base} : a ≈ b ↔ b ≈ a :=
@@ -124,7 +122,6 @@ theorem equiv_helper_trans {base : NatGtOne} {a b c : List (Fin base.val)}
 
 theorem equiv_trans {base : NatGtOne} {a b c : TZNumeral base}
   (hab : a ≈ b) (hbc : b ≈ c) : a ≈ c := by
-  unfold instHasEquiv equiv at ⊢ hab hbc
   exact equiv_helper_trans hab hbc
 
 theorem equivalence {base: NatGtOne} :

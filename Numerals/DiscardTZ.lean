@@ -124,6 +124,39 @@ def discardTZ {base : NatGtOne} (n : TZNumeral base) : TZNumeral base :=
   | [] => []
   | x::xs => tonz x (helper base xs)
 
+theorem discardTZ_helper_nil_eq_nil {base : NatGtOne} : discardTZ.helper base [] = [] := by
+  unfold discardTZ.helper
+  rfl
+
+theorem discardTZ_zero_eq_zero {base : NatGtOne} : @discardTZ base zero = zero := by
+  simp only [discardTZ, discardTZ_helper_nil_eq_nil]
+
+theorem noTrailingZeroAux_discardTZ_helper {base : NatGtOne} {l : List base.Fin} :
+  noTrailingZeroAux (discardTZ.helper base l) := by
+  induction l with
+  | nil => simp only [discardTZ_helper_nil_eq_nil]; exact noTrailingZeroAux_nil
+  | cons x xy ih =>
+    simp only [discardTZ.helper]
+    exact noTrailingZeroAux_tonz_of ih
+
+theorem discardTZ_noTrailingZero {base : NatGtOne} {n : TZNumeral base} :
+  n.discardTZ.noTrailingZero := by
+  unfold noTrailingZero discardTZ
+  exact noTrailingZeroAux_discardTZ_helper
+
+theorem equiv_helper_discardTZ_helper {base : NatGtOne} {l : List base.Fin} :
+  equiv.helper (discardTZ.helper base l) l := by
+  induction l with
+  | nil => simp only [discardTZ.helper, equiv_helper_refl]
+  | cons x xs ih =>
+    simp only [discardTZ.helper]
+    exact equiv_helper_tonz_cons_of_equiv_helper ih
+
+theorem discardTZ_equiv {base : NatGtOne} {n : TZNumeral base} :
+  n.discardTZ ≈ n := by
+  unfold discardTZ
+  exact equiv_helper_discardTZ_helper
+
 end DiscardTZ
 
 namespace TZNumeral
