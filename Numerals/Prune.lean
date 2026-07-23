@@ -14,7 +14,7 @@ section Prune
 
 def prune {base : NatGtOne} (a : List Nat) (n : Nat) : TZNumeral base where
   digits := helper base (a : List Nat) (n : Nat) where
-  helper (base : NatGtOne) (a : List Nat) (n : Nat) : List (@FinBase base) :=
+  helper (base : NatGtOne) (a : List Nat) (n : Nat) : List base.Fin :=
     match a, n with
     | [], 0 => []
     | [], k + 1 =>
@@ -26,14 +26,14 @@ def prune {base : NatGtOne} (a : List Nat) (n : Nat) : TZNumeral base where
     termination_by (a.length, n)
 
 theorem prune_helper_nil_zero_eq_nil {base : NatGtOne} :
-  prune.helper base [] 0 = ([] : List (Fin base.val)) := by
+  prune.helper base [] 0 = ([] : List base.Fin) := by
   simp only [prune.helper]
 
 theorem prune_nil_zero_eq_zero {base : NatGtOne} : prune [] 0 = @zero base := by
   simp only [prune, prune_helper_nil_zero_eq_nil]
 
 theorem prune_helper_eq_nil_iff_eq_nil_and_eq_zero {base : NatGtOne} {a : List Nat} {n : Nat} :
-  prune.helper base a n = ([] : List (Fin base.val)) ↔ a = [] ∧ n = 0 := by
+  prune.helper base a n = ([] : List base.Fin) ↔ a = [] ∧ n = 0 := by
   constructor
   · intro h
     match a, n with

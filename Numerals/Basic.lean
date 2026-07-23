@@ -209,7 +209,7 @@ instance instZero {base : NatGtOne} : Zero (TZNumeral base) := ⟨zero⟩
 
 theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
 
-theorem digits_zero_eq_nil  {base : NatGtOne} : digits 0 = ([] : List (Fin base.val)) := rfl
+theorem digits_zero_eq_nil  {base : NatGtOne} : digits 0 = ([] : List base.Fin) := rfl
 
 end Zero
 
@@ -297,7 +297,7 @@ theorem cons_ne_zero {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) :
   have h3 : (cons x y).digits ≠ [] := by rw [h2]; exact List.cons_ne_nil x y.digits
   exact absurd h1 h3
 
-def uncons {base : NatGtOne} (a : TZNumeral base) (h : a ≠ 0) : (Fin base.val) × (TZNumeral base) :=
+def uncons {base : NatGtOne} (a : TZNumeral base) (h : a ≠ 0) : base.Fin × (TZNumeral base) :=
   match g : a.digits with
   | [] => absurd (eq_zero_of_digits_eq_nil a g) h
   | x::xs => (x, ⟨xs⟩)

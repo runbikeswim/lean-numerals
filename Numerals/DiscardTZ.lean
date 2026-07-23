@@ -15,8 +15,7 @@ section Tonz
 returns `n::a` if no additional trailing zero is created by using `n` as first digit, otherwise
 `[] = a` is returned
 -/
-def tonz {base : NatGtOne} (n : base.Fin) (a : List base.Fin) : List base.Fin :=
-  match a with
+def tonz {base : NatGtOne} (n : base.Fin) : List base.Fin → List base.Fin
   | [] => if n = 0 then [] else [n]
   | x::xs => n::x::xs
 
@@ -31,7 +30,7 @@ theorem tonz_cons_eq {base : NatGtOne} {n x : base.Fin} {xs : List base.Fin} : t
   simp only [tonz]
 
 theorem equiv_helper_tonz_cons {base : NatGtOne} {n : base.Fin} {a : List base.Fin} :
-  equiv.helper (tonz n a) (n::a) := by
+  equiv.helper base (tonz n a) (n::a) := by
   match a with
   | [] =>
     if g : n = 0 then
@@ -42,7 +41,7 @@ theorem equiv_helper_tonz_cons {base : NatGtOne} {n : base.Fin} {a : List base.F
     simp only [tonz, equiv_helper_refl]
 
 theorem equiv_helper_tonz_nil_tonz_of_equiv_helper_nil {base : NatGtOne} {n : base.Fin} {a : List base.Fin}
-  (h : equiv.helper [] a) : equiv.helper (tonz n []) (tonz n a) := by
+  (h : equiv.helper base [] a) : equiv.helper base (tonz n []) (tonz n a) := by
   match a with
   | [] => exact equiv_helper_refl
   | x::xs =>
@@ -57,7 +56,7 @@ theorem equiv_helper_tonz_nil_tonz_of_equiv_helper_nil {base : NatGtOne} {n : ba
       assumption
 
 theorem equiv_helper_tonz_tonz_of_equiv_helper {base : NatGtOne} {n : base.Fin} {a b : List base.Fin}
-  (h : equiv.helper a b) : equiv.helper (tonz n a) (tonz n b) := by
+  (h : equiv.helper base a b) : equiv.helper base (tonz n a) (tonz n b) := by
   match a, b with
   | [], _ => exact equiv_helper_tonz_nil_tonz_of_equiv_helper_nil h
   | _, [] =>
@@ -68,7 +67,7 @@ theorem equiv_helper_tonz_tonz_of_equiv_helper {base : NatGtOne} {n : base.Fin} 
     exact And.intro rfl h
 
 theorem equiv_helper_tonz_singleton_of_equiv_helper_nil {base : NatGtOne} {n : base.Fin} {a : List base.Fin}
-  (h : equiv.helper a []) : equiv.helper (tonz n a) [n] := by
+  (h : equiv.helper base a []) : equiv.helper base (tonz n a) [n] := by
   match a with
   | [] =>
     if g : n = 0 then
@@ -80,7 +79,7 @@ theorem equiv_helper_tonz_singleton_of_equiv_helper_nil {base : NatGtOne} {n : b
     exact equiv_helper_cons_iff.mpr (And.intro rfl h)
 
 theorem equiv_helper_tonz_cons_of_equiv_helper {base : NatGtOne} {n : base.Fin} {a b : List base.Fin}
-  (h : equiv.helper a b) : equiv.helper (tonz n a) (n::b) := by
+  (h : equiv.helper base a b) : equiv.helper base (tonz n a) (n::b) := by
   match a, b with
   | _, [] => exact equiv_helper_tonz_singleton_of_equiv_helper_nil h
   | [], _ =>
@@ -119,8 +118,7 @@ section DiscardTZ
 
 def discardTZ {base : NatGtOne} (n : TZNumeral base) : TZNumeral base :=
   ⟨helper base n.digits⟩ where
-  helper (base : NatGtOne) (l : List base.Fin) : List base.Fin :=
-  match l with
+  helper (base : NatGtOne) : List base.Fin → List base.Fin
   | [] => []
   | x::xs => tonz x (helper base xs)
 
@@ -145,7 +143,7 @@ theorem discardTZ_noTrailingZero {base : NatGtOne} {n : TZNumeral base} :
   exact noTrailingZeroAux_discardTZ_helper
 
 theorem equiv_helper_discardTZ_helper {base : NatGtOne} {l : List base.Fin} :
-  equiv.helper (discardTZ.helper base l) l := by
+  equiv.helper base (discardTZ.helper base l) l := by
   induction l with
   | nil => simp only [discardTZ.helper, equiv_helper_refl]
   | cons x xs ih =>

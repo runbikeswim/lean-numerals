@@ -11,20 +11,20 @@ namespace TZNumeral
 section Equivalence
 
 def equiv {base : NatGtOne} (a b : TZNumeral base) : Prop :=
-  helper a.digits b.digits where
-  helper : List (Fin base.val) → List (Fin base.val) → Prop
+  helper base a.digits b.digits where
+  helper (base : NatGtOne) : List base.Fin → List base.Fin → Prop
   | [], [] => True
-  | x::xs, [] => x = 0 ∧ helper xs []
-  | [], y::ys => y = 0 ∧ helper [] ys
-  | x::xs, y::ys => x = y ∧ helper xs ys
+  | x::xs, [] => x = 0 ∧ helper base xs []
+  | [], y::ys => y = 0 ∧ helper base [] ys
+  | x::xs, y::ys => x = y ∧ helper base xs ys
 
 instance instHasEquiv {base : NatGtOne} : HasEquiv (TZNumeral base) := ⟨equiv⟩
 
 theorem equiv_iff_equiv_helper_digits {base : NatGtOne} {a b : TZNumeral base} :
-  a ≈ b ↔ equiv.helper a.digits b.digits := by simp only [equiv]
+  a ≈ b ↔ equiv.helper base a.digits b.digits := by simp only [equiv]
 
-theorem equiv_helper_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : List (Fin base.val)} :
-  equiv.helper (x::xs) (y::ys) ↔ x = y ∧ equiv.helper xs ys := by
+theorem equiv_helper_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : List base.Fin} :
+  equiv.helper base (x::xs) (y::ys) ↔ x = y ∧ equiv.helper base xs ys := by
   simp only [equiv.helper]
 
 theorem equiv_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : TZNumeral base} :
@@ -33,7 +33,7 @@ theorem equiv_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : TZNumeral
   exact equiv_helper_cons_iff
 
 theorem equiv_helper_nil_iff {base : NatGtOne} {a : List base.Fin} :
-  equiv.helper [] a ↔ a.all (· == 0) := by
+  equiv.helper base [] a ↔ a.all (· == 0) := by
   induction a with
   | nil =>
     simp only [List.all_nil, equiv.helper]
@@ -49,7 +49,7 @@ theorem ne_zero_of_not_zero_equiv {base : NatGtOne} {a : TZNumeral base} (h : ¬
   have : a.digits.all (· == 0) := by rw [hc]; exact List.all_nil
   exact absurd (equiv_zero_iff.mpr this) h
 
-theorem equiv_helper_refl {base : NatGtOne} {a : List (Fin base.val)} : equiv.helper a a := by
+theorem equiv_helper_refl {base : NatGtOne} {a : List base.Fin} : equiv.helper base a a := by
   induction a  with
   | nil =>
     simp only [equiv.helper]
@@ -59,7 +59,8 @@ theorem equiv_helper_refl {base : NatGtOne} {a : List (Fin base.val)} : equiv.he
 theorem equiv_refl {base : NatGtOne} {a : TZNumeral base} : a ≈ a := by
   exact equiv_helper_refl
 
-theorem equiv_helper_symm {base : NatGtOne} {a b : List (Fin base.val)} (hab : equiv.helper a b) : equiv.helper b a := by
+theorem equiv_helper_symm {base : NatGtOne} {a b : List base.Fin}
+  (hab : equiv.helper base a b) : equiv.helper base b a := by
   induction a generalizing b with
   | nil =>
     induction b with
@@ -74,7 +75,8 @@ theorem equiv_helper_symm {base : NatGtOne} {a b : List (Fin base.val)} (hab : e
       rw [hab.left]
       exact And.intro rfl (ihx hab.right)
 
-theorem equiv_helper_iff_equiv_helper {base : NatGtOne} {a b : List (Fin base.val)} : equiv.helper a b ↔ equiv.helper b a :=
+theorem equiv_helper_iff_equiv_helper {base : NatGtOne} {a b : List base.Fin} :
+  equiv.helper base a b ↔ equiv.helper base b a :=
   Iff.intro (equiv_helper_symm ·) (equiv_helper_symm ·)
 
 theorem equiv_symm {base : NatGtOne} {a b : TZNumeral base} (hab : a ≈ b) : b ≈ a := by
@@ -83,8 +85,8 @@ theorem equiv_symm {base : NatGtOne} {a b : TZNumeral base} (hab : a ≈ b) : b 
 theorem equiv_iff_equiv {base : NatGtOne} {a b : TZNumeral base} : a ≈ b ↔ b ≈ a :=
   Iff.intro (equiv_symm ·) (equiv_symm ·)
 
-theorem equiv_helper_trans_nil {base : NatGtOne} {a b : List (Fin base.val)}
-  (ha : equiv.helper [] a) (hab : equiv.helper a b) : equiv.helper [] b := by
+theorem equiv_helper_trans_nil {base : NatGtOne} {a b : List base.Fin}
+  (ha : equiv.helper base [] a) (hab : equiv.helper base a b) : equiv.helper base [] b := by
   induction a generalizing b with
   | nil => exact hab
   | cons x xs ih =>
@@ -99,8 +101,8 @@ theorem equiv_helper_trans_nil {base : NatGtOne} {a b : List (Fin base.val)}
       have : z = 0 := by rw [ha.left] at hab; exact (Eq.symm hab.left)
       exact And.intro this (ih ha.right hab.right)
 
-theorem equiv_helper_trans {base : NatGtOne} {a b c : List (Fin base.val)}
-  (hab : equiv.helper a b) (hbc : equiv.helper b c) : equiv.helper a c := by
+theorem equiv_helper_trans {base : NatGtOne} {a b c : List base.Fin}
+  (hab : equiv.helper base a b) (hbc : equiv.helper base b c) : equiv.helper base a c := by
   induction a generalizing b c with
   | nil => exact equiv_helper_trans_nil hab hbc
   | cons x xs ihx =>
@@ -144,15 +146,15 @@ theorem not_equiv_of_equiv_of_not_equiv {base : NatGtOne} {a b c : TZNumeral bas
   have : b ≈ c := equivalence.trans (equivalence.symm hab) hac
   contradiction
 
-def decEquiv_helper_zero {base : NatGtOne} (a : List (Fin base.val)) :  Decidable (equiv.helper [] a) :=
+def decEquiv_helper_zero {base : NatGtOne} (a : List base.Fin) :  Decidable (equiv.helper base [] a) :=
   if g : a.all (· == 0) then
-    have : equiv.helper [] a := equiv_zero_iff.mpr g
+    have : equiv.helper base [] a := equiv_zero_iff.mpr g
     isTrue this
   else
-    have : ¬ equiv.helper [] a := (Classical.iff_iff_not_iff_not.mp equiv_zero_iff).mpr g
+    have : ¬ equiv.helper base [] a := (Classical.iff_iff_not_iff_not.mp equiv_zero_iff).mpr g
     isFalse this
 
-def decEquiv_helper {base : NatGtOne} (a b : List (Fin base.val)) : Decidable (equiv.helper a b) :=
+def decEquiv_helper {base : NatGtOne} (a b : List base.Fin) : Decidable (equiv.helper base a b) :=
   match a, b with
   | [], [] => isTrue (equiv_helper_refl)
   | [], y::ys => decEquiv_helper_zero (y::ys)
@@ -160,31 +162,34 @@ def decEquiv_helper {base : NatGtOne} (a b : List (Fin base.val)) : Decidable (e
     match decEquiv_helper_zero (x::xs) with
     | isTrue p => isTrue (equiv_helper_symm p)
     | isFalse p =>
-      have : ¬ equiv.helper (x::xs) [] := (Classical.iff_iff_not_iff_not.mp equiv_helper_iff_equiv_helper).mp p
+      have : ¬ equiv.helper base (x::xs) [] := (Classical.iff_iff_not_iff_not.mp equiv_helper_iff_equiv_helper).mp p
       isFalse this
   | x::xs, y::ys =>
     if g : x = y then
       match decEquiv_helper xs ys with
       | isTrue p =>
-        have : equiv.helper (x::xs) (y::ys) := equiv_helper_cons_iff.mpr (And.intro g p)
+        have : equiv.helper base (x::xs) (y::ys) := equiv_helper_cons_iff.mpr (And.intro g p)
         isTrue this
       | isFalse p =>
-        have h1 : ¬ (x = y ∧ equiv.helper xs ys) := Classical.not_and_iff_not_or_not.mpr (.inr p)
-        have h2 : ¬ equiv.helper (x::xs) (y::ys) :=
+        have h1 : ¬ (x = y ∧ equiv.helper base xs ys) := Classical.not_and_iff_not_or_not.mpr (.inr p)
+        have h2 : ¬ equiv.helper base (x::xs) (y::ys) :=
           (Classical.iff_iff_not_iff_not.mp equiv_helper_cons_iff).mpr h1
         isFalse h2
     else
-      have h1 : ¬ (x = y ∧ equiv.helper xs ys) := Classical.not_and_iff_not_or_not.mpr (.inl g)
-      have h2 : ¬ equiv.helper (x::xs) (y::ys) :=
+      have h1 : ¬ (x = y ∧ equiv.helper base xs ys) := Classical.not_and_iff_not_or_not.mpr (.inl g)
+      have h2 : ¬ equiv.helper base (x::xs) (y::ys) :=
         (Classical.iff_iff_not_iff_not.mp equiv_helper_cons_iff).mpr h1
       isFalse h2
+
+instance instDecEquivHelper (base : NatGtOne) (a b : List base.Fin) : Decidable (equiv.helper base a b) :=
+  decEquiv_helper a b
 
 def decEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≈ b) :=
   match decEquiv_helper a.digits b.digits with
   | isTrue p => isTrue (equiv_iff_equiv_helper_digits.mpr p)
   | isFalse p => isFalse ((Classical.iff_iff_not_iff_not.mp equiv_iff_equiv_helper_digits).mpr p)
 
-instance instdecEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≈ b) := decEquiv a b
+instance instDecEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≈ b) := decEquiv a b
 
 #eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[1, 2, 3, 0, 0]⟩
 #eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[2, 3, 0, 0]⟩
