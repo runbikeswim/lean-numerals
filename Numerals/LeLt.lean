@@ -72,7 +72,7 @@ end Equiv_LeAux
 /-
 `leAux` is _almost_ antisymmetric
 -/
-theorem equivAux_iff_leAux_and_leAux {a b : List Nat}:
+theorem equivAux_iff_leAux_and_leAux {a b : List Nat} :
   equivAux a b ↔ leAux a b ∧ leAux b a := by
   constructor
   · intro h
