@@ -52,7 +52,17 @@ def zero {base : NatGtOne} : base.Fin := ⟨0, base.val_pos⟩
 
 def one {base : NatGtOne} : base.Fin := ⟨1, base.property⟩
 
+instance (base : NatGtOne) : NeZero base.val := ⟨ base.val_ne_zero ⟩
+
 end NatGtOne
+
+namespace Fin
+
+theorem eq_zero_of_le_zero {base : NatGtOne} {a : base.Fin} (h : a ≤ base.zero) :
+  a = base.zero := Fin.le_antisymm h (Fin.zero_le a)
+
+end Fin
+
 
 namespace FinBase
 
@@ -102,6 +112,8 @@ theorem eq_one_iff_eq_one {base : NatGtOne} (x : @FinBase base) : x = base.one �
 
 end FinBase
 end NatGtOne
+
+
 
 section List
 

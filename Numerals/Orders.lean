@@ -152,6 +152,58 @@ theorem le_helper_total {base : NatGtOne} {a b : List base.Fin} :
 theorem le_total {base : NatGtOne} {a b : TZNumeral base} :
    a ≤ b ∨ b ≤ a := le_helper_total
 
+section LessThanOrEqualTo_Equiv
+
+theorem le_helper_of_le_helper_of_equiv_helper {base : NatGtOne} {a b c : List base.Fin}
+  (hab : le.helper base a b) (hbc : equiv.helper base b c): le.helper base a c := by
+  induction a generalizing b c with
+  | nil => exact le_helper_nil
+  | cons x xs ih =>
+    match b, c with
+    | [], [] => simp_all only
+    | y::ys, [] =>
+      unfold le.helper at hab ⊢
+      unfold equiv.helper at hbc
+      if g : equiv.helper base xs ys then
+        simp only [g, reduceIte, hbc.left] at hab
+        have h1 : x = 0 := Fin.eq_zero_of_le_zero hab
+        have h2 : le.helper base xs ys := le_helper_of_equiv_helper g
+        have h3 : le.helper base xs [] := ih  h2 hbc.right
+        exact And.intro h1 h3
+      else
+        simp only [g, reduceIte, hbc.left] at hab
+        have h1 : le.helper base xs [] := ih hab hbc.right
+        have h2 : equiv.helper base xs [] := equiv_helper_symm (equiv_helper_nil_of_le_helper_nil h1)
+        have h3 : equiv.helper base xs ys := equiv_helper_trans h2 (equiv_helper_symm hbc.right)
+        contradiction
+    | [], z::zs =>
+      have : equiv.helper base (x :: xs) [] := equiv_helper_symm (equiv_helper_nil_of_le_helper_nil hab)
+      have : equiv.helper base (x :: xs) (z :: zs) := equiv_helper_trans this hbc
+      exact le_helper_of_equiv_helper this
+    | y::ys, z::zs =>
+      unfold le.helper at hab ⊢
+      unfold equiv.helper at hbc
+      if g1 : equiv.helper base xs ys then
+        simp only [g1, reduceIte, hbc.left] at hab
+        if g2 : equiv.helper base xs zs then
+          simp only [g2, reduceIte]
+          exact hab
+        else
+          simp only [g2, reduceIte]
+          have : equiv.helper base xs zs := equiv_helper_trans g1 hbc.right
+          contradiction
+      else
+        simp only [g1, reduceIte] at hab
+        if g2 : equiv.helper base xs zs then
+          simp only [g2, reduceIte]
+          have : equiv.helper base xs ys := equiv_helper_trans g2 (equiv_helper_symm hbc.right)
+          contradiction
+        else
+          simp only [g2, reduceIte]
+          exact ih hab hbc.right
+
+end LessThanOrEqualTo_Equiv
+
 end LessThanOrEqualTo
 
 section LessThan
