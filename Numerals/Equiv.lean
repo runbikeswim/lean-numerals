@@ -134,17 +134,23 @@ theorem equivalence {base: NatGtOne} :
     by unfold equiv; intro a b c hab hbc; exact equiv_trans hab hbc
   ⟩
 
-theorem not_equiv_of_not_equiv {base : NatGtOne} {a b : TZNumeral base}
-  (h : ¬ a ≈ b) : ¬ b ≈ a := by
+theorem not_equiv_helper_of_not_equiv_helper {base : NatGtOne} {a b : List base.Fin}
+  (h : ¬ equiv.helper base a b) : ¬ equiv.helper base b a := by
   intro h1
-  have : a ≈ b := equivalence.symm h1
+  have : equiv.helper base a b := equiv_helper_symm h1
+  contradiction
+
+theorem not_equiv_of_not_equiv {base : NatGtOne} {a b : TZNumeral base}
+  (h : ¬ a ≈ b) : ¬ b ≈ a := not_equiv_helper_of_not_equiv_helper h
+
+theorem not_equiv_helper_of_equiv_helper_of_not_equiv_helper {base : NatGtOne} {a b c : List base.Fin}
+  (hab : equiv.helper base a b) (hbc : ¬ equiv.helper base b c) : ¬ equiv.helper base a c := by
+  intro hac
+  have : equiv.helper base b c := equiv_helper_trans (equiv_helper_symm hab) hac
   contradiction
 
 theorem not_equiv_of_equiv_of_not_equiv {base : NatGtOne} {a b c : TZNumeral base}
-  (hab : a ≈ b) (hbc : ¬ b ≈ c) : ¬ a ≈ c := by
-  intro hac
-  have : b ≈ c := equivalence.trans (equivalence.symm hab) hac
-  contradiction
+  (hab : a ≈ b) (hbc : ¬ b ≈ c) : ¬ a ≈ c := not_equiv_helper_of_equiv_helper_of_not_equiv_helper hab hbc
 
 def decEquiv_helper_zero {base : NatGtOne} (a : List base.Fin) :  Decidable (equiv.helper base [] a) :=
   if g : a.all (· == 0) then

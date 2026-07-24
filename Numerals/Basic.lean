@@ -572,7 +572,8 @@ def cons {base : NatGtOne} (x : Fin base.val) (y : Numeral base) : Numeral base 
       | inr hr =>
         rw [← TZNumeral.zero_eq_zero, ← zero_toTZNumeral_eq_TZNumeral_zero, ← eq_iff_toTZNumeral_eq] at h
         contradiction
-    have h3 : (TZNumeral.cons x (y.toTZNumeral)).noTrailingZero := TZNumeral.cons_noTrailingZero_of (And.intro y.noTZ h2)
+    have h3 : (TZNumeral.cons x (y.toTZNumeral)).noTrailingZero :=
+      TZNumeral.cons_noTrailingZero_of (And.intro y.noTZ h2)
     ⟨TZNumeral.cons x y, h3⟩
 
 end Cons
