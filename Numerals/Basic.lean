@@ -52,7 +52,7 @@ def zero {base : NatGtOne} : base.Fin := ⟨0, base.val_pos⟩
 
 def one {base : NatGtOne} : base.Fin := ⟨1, base.property⟩
 
-instance (base : NatGtOne) : NeZero base.val := ⟨ base.val_ne_zero ⟩
+instance instNeZeroNatGtOne (base : NatGtOne) : NeZero base.val := ⟨ base.val_ne_zero ⟩
 
 end NatGtOne
 
