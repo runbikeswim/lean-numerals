@@ -63,7 +63,6 @@ theorem eq_zero_of_le_zero {base : NatGtOne} {a : base.Fin} (h : a ≤ base.zero
 
 end Fin
 
-
 namespace FinBase
 
 theorem eq_iff_eq_val {base : NatGtOne} {a b : base.Fin} : a = b ↔ a.val = b.val := by
@@ -112,8 +111,6 @@ theorem eq_one_iff_eq_one {base : NatGtOne} (x : @FinBase base) : x = base.one �
 
 end FinBase
 end NatGtOne
-
-
 
 section List
 
@@ -314,7 +311,7 @@ def uncons {base : NatGtOne} (a : TZNumeral base) (h : a ≠ 0) : base.Fin × (T
   | [] => absurd (eq_zero_of_digits_eq_nil a g) h
   | x::xs => (x, ⟨xs⟩)
 
-theorem uncons_cons_cancel  {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) :
+theorem uncons_cons_cancel {base : NatGtOne} (x : Fin base.val) (y : TZNumeral base) :
   uncons (cons x y) (cons_ne_zero x y) = (x,y) := by
   simp only [uncons, cons]
 

@@ -202,6 +202,46 @@ theorem le_helper_of_le_helper_of_equiv_helper {base : NatGtOne} {a b c : List b
           simp only [g2, reduceIte]
           exact ih hab hbc.right
 
+theorem le_of_le_of_equiv {base : NatGtOne} {a b c : TZNumeral base}
+  (hab : a ≤ b) (hbc : b ≈ c): a ≤ c := le_helper_of_le_helper_of_equiv_helper hab hbc
+
+theorem le_helper_of_equiv_helper_of_le_helper {base : NatGtOne} {a b c : List base.Fin}
+  (hab : equiv.helper base a b) (hbc : le.helper base b c): le.helper base a c := by
+  induction a generalizing b c with
+  | nil => exact le_helper_nil
+  | cons x xs ih =>
+    match b, c with
+    | [], [] =>
+      simp only [equiv.helper] at hab
+      simp only [le.helper, And.intro hab.left (ih hab.right hbc), and_true]
+    | y::ys, [] =>
+      simp only [equiv.helper] at hab
+      simp only [le.helper] at hbc ⊢
+      simp only [hab.left, hbc.left, true_and, ih hab.right hbc.right]
+    | [], z::zs =>
+      simp only [equiv.helper] at hab
+      simp only [le.helper] at hbc ⊢
+      if h : equiv.helper base xs zs then
+        simp only [h, reduceIte, hab.left]
+        exact Fin.zero_le z
+      else
+        simp only [h, reduceIte]
+        exact ih hab.right le_helper_nil
+    | y::ys, z::zs =>
+      simp only [equiv.helper] at hab
+      simp only [le.helper] at hbc
+      if h : equiv.helper base ys zs then
+        simp only [h, reduceIte] at hbc
+        simp only [le.helper, equiv_helper_trans hab.right h, reduceIte]
+        rwa [hab.left]
+      else
+        simp only [h, reduceIte] at hbc
+        have : ¬ equiv.helper base xs zs := not_equiv_helper_of_equiv_helper_of_not_equiv_helper hab.right h
+        simp only [le.helper, this, reduceIte, ih hab.right hbc]
+
+theorem le_of_equiv_of_le {base : NatGtOne} {a b c : TZNumeral base}
+  (hab : a ≈ b) (hbc : b ≤ c): a ≤ c := le_helper_of_equiv_helper_of_le_helper hab hbc
+
 end LessThanOrEqualTo_Equiv
 
 end LessThanOrEqualTo
