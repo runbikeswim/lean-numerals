@@ -5,6 +5,7 @@ Author: Stefan Kusterer
 -/
 
 import Numerals.Basic
+import Numerals.ToNat
 import Numerals.Equiv
 
 namespace TZNumeral
@@ -242,7 +243,51 @@ theorem le_helper_of_equiv_helper_of_le_helper {base : NatGtOne} {a b c : List b
 theorem le_of_equiv_of_le {base : NatGtOne} {a b c : TZNumeral base}
   (hab : a ≈ b) (hbc : b ≤ c): a ≤ c := le_helper_of_equiv_helper_of_le_helper hab hbc
 
+theorem equiv_helper_and_equiv_helper_of_le_helper_of_le_helper_of_equiv_helper
+  {base : NatGtOne} {a b c : List base.Fin}
+  (hab : le.helper base a b) (hbc : le.helper base b c) (hac : equiv.helper base a c) :
+  equiv.helper base a b ∧ equiv.helper base b c := by
+  have h1 : le.helper base b a := le_helper_of_le_helper_of_equiv_helper hbc (equiv_helper_symm hac)
+  have h2 : equiv.helper base a b := equiv_helper_iff_le_helper_and_le_helper.mpr (And.intro hab h1)
+  have h3 : le.helper base c b := le_helper_of_equiv_helper_of_le_helper (equiv_helper_symm hac) hab
+  have h4 : equiv.helper base b c := equiv_helper_iff_le_helper_and_le_helper.mpr (And.intro hbc h3)
+  exact And.intro h2 h4
+
+theorem equiv_and_equiv_of_le_of_le_of_equiv {base : NatGtOne} {a b c : TZNumeral base}
+  (hab : a ≤ b) (hbc : b ≤ c) (hac : a ≈ c) : a ≈ b ∧ b ≈ c :=
+  equiv_helper_and_equiv_helper_of_le_helper_of_le_helper_of_equiv_helper hab hbc hac
+
 end LessThanOrEqualTo_Equiv
+
+section ToNat_Le
+
+theorem toNat_le_of_le {base : NatGtOne} {a b : TZNumeral base} (h : a ≤ b) :
+  toNat a ≤ toNat b := by
+  induction a generalizing b with
+  | nil => simp only [toNatAux_nil_eq, Nat.zero_le]
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      have : isZeroAux (x::xs) := equivAux_nil_of_leAux_nil h
+      have : toNatAux (x :: xs) base = 0 := (toNatAux_eq_zero_iff_isZeroAux hb).mpr this
+      simp only [this, Nat.zero_le]
+    | y::ys =>
+      simp only [leAux_cons_iff] at h
+      simp only [toNatAux_cons_eq]
+      if g : equivAux xs ys then
+        simp only [g, reduceIte] at h
+        simp only [toNatAux_eq_of_equivAux g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
+      else
+        simp only [g, reduceIte] at h
+        have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
+        have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
+        have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
+        have h4 : toNatAux xs base ≠ toNatAux ys base :=
+          (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
+        have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
+        exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
+
+end ToNat_Le
 
 end LessThanOrEqualTo
 

@@ -125,7 +125,7 @@ theorem toListNatAux_singleton_eq {base : NatGtOne} {a : Fin base.val} :
   rfl
 
 theorem cons_toListNatAux_eq_coe_cons_toList {base : NatGtOne} {a : Fin base.val} {as : List base.Fin} :
-  (a::as).toListNatAux = ↑ a :: as.toListNatAux := by
+  (a::as).toListNatAux = ↑a :: as.toListNatAux := by
   simp only [List.toListNatAux, List.map_cons]
   rfl
 

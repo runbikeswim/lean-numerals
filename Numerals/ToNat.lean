@@ -12,8 +12,8 @@ section toNat
 namespace TZNumeral
 
 def toNat {base : NatGtOne} (n : TZNumeral base) : Nat :=
-  helper base n.toListNat 1 0 where
-  helper (base : NatGtOne) (a : List Nat) (factor acc : Nat) : Nat  :=
+  helper base n.digits 1 0 where
+  helper (base : NatGtOne) (a : List base.Fin) (factor acc : Nat) : Nat  :=
     match a with
     | [] => acc
     | x::xs => helper base xs (factor * base.val) (x * factor + acc)
@@ -21,7 +21,7 @@ def toNat {base : NatGtOne} (n : TZNumeral base) : Nat :=
 theorem toNat_helper_nil_eq {base : NatGtOne} {factor acc : Nat} :
   @toNat.helper base [] factor acc = acc := rfl
 
-theorem toNat_helper_eq {base : NatGtOne} {a : List Nat} {factor acc : Nat} :
+theorem toNat_helper_eq {base : NatGtOne} {a : List base.Fin} {factor acc : Nat} :
   toNat.helper base a factor acc = acc + factor * (toNat.helper base a 1 0) := by
   induction a generalizing factor acc with
   | nil => simp_all only [toNat_helper_nil_eq, Nat.mul_zero, Nat.add_zero]
@@ -34,15 +34,15 @@ theorem toNat_helper_eq {base : NatGtOne} {a : List Nat} {factor acc : Nat} :
 
 theorem toNat_zero_eq_zero {base : NatGtOne} : @toNat base zero = 0 := rfl
 
-theorem toNat_helper_cons_eq {base : NatGtOne} {x : Nat} {xs : List Nat}  :
+theorem toNat_helper_cons_eq {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}  :
   toNat.helper base (x::xs) 1 0 = x + base.val * (toNat.helper base xs 1 0) := by
   simp only [toNat.helper, Nat.one_mul, Nat.add_zero, Nat.mul_one]
   rw [toNat_helper_eq]
 
 theorem toNat_cons_eq {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}  :
   toNat (cons x xs) = x + base.val * (toNat xs) := by
-  simp only [toNat, cons, toListNat, List.toListNatAux, List.map_cons, toNat_helper_cons_eq]
-  rfl
+  simp only [toNat, cons]
+  exact toNat_helper_cons_eq
 
 end TZNumeral
 
