@@ -261,31 +261,39 @@ end LessThanOrEqualTo_Equiv
 
 section ToNat_Le
 
-theorem toNat_le_of_le {base : NatGtOne} {a b : TZNumeral base} (h : a ≤ b) :
-  toNat a ≤ toNat b := by
+theorem toNat_helper_le_of_le_helper {base : NatGtOne} {a b : List base.Fin}
+  (h : le.helper base a b) : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 := by
   induction a generalizing b with
-  | nil => simp only [toNatAux_nil_eq, Nat.zero_le]
+  | nil => simp only [toNat_helper_nil_eq, Nat.zero_le]
   | cons x xs ih =>
     match b with
     | [] =>
-      have : isZeroAux (x::xs) := equivAux_nil_of_leAux_nil h
-      have : toNatAux (x :: xs) base = 0 := (toNatAux_eq_zero_iff_isZeroAux hb).mpr this
+      have : equiv.helper base [] (x::xs) := equiv_helper_nil_of_le_helper_nil h
+      have : toNat.helper base (x :: xs) 1 0 = 0 := toNat_helper_eq_zero_of this
       simp only [this, Nat.zero_le]
     | y::ys =>
-      simp only [leAux_cons_iff] at h
-      simp only [toNatAux_cons_eq]
-      if g : equivAux xs ys then
+      simp only [le_helper_cons_iff] at h
+      simp only [toNat_helper_cons_eq]
+      if g : equiv.helper base xs ys then
         simp only [g, reduceIte] at h
-        simp only [toNatAux_eq_of_equivAux g hb, Nat.add_le_add_right h (base * toNatAux ys base)]
+        have : toNat.helper base xs 1 0 ≤ toNat.helper base ys 1 0 :=
+            ih (le_helper_of_equiv_helper g)
+        calc ↑x + base.val * toNat.helper base xs 1 0 ≤ ↑y + base.val * toNat.helper base xs 1 0 :=
+            Nat.add_le_add_right h (base.val * toNat.helper base xs 1 0)
+          _ ≤ ↑y + base.val * toNat.helper base ys 1 0 :=
+            Nat.add_le_add_left (Nat.mul_le_mul_left base.val this) ↑y
       else
         simp only [g, reduceIte] at h
-        have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
-        have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
-        have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
-        have h4 : toNatAux xs base ≠ toNatAux ys base :=
-          (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
-        have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
-        exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
+        /-
+          have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
+          have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
+          have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
+          have h4 : toNatAux xs base ≠ toNatAux ys base :=
+            (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
+          have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
+          exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
+        -/
+        sorry
 
 end ToNat_Le
 

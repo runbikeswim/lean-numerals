@@ -52,7 +52,7 @@ def zero {base : NatGtOne} : base.Fin := ⟨0, base.val_pos⟩
 
 def one {base : NatGtOne} : base.Fin := ⟨1, base.property⟩
 
-instance instNeZeroNatGtOne (base : NatGtOne) : NeZero base.val := ⟨ base.val_ne_zero ⟩
+instance instNeZeroNatGtOne (base : NatGtOne) : NeZero base.val := ⟨base.val_ne_zero⟩
 
 end NatGtOne
 
@@ -90,7 +90,10 @@ def ofNat {base : NatGtOne} (n : Nat) : @FinBase base := ⟨n % base.val, Nat.mo
 theorem ofNat_toNat_eq_n {base : NatGtOne} (n : Nat) : (@ofNat base n).toNat = n % base.val := by
   simp only [ofNat, Fin.toNat]
 
-instance {base : NatGtOne} (n : Nat) : OfNat (base.Fin) n := ⟨ ofNat n ⟩
+theorem ofNat_coe_cancel {base : NatGtOne} {x : base.Fin} : ofNat ↑x = x :=
+  Fin.ofNat_val_eq_self x
+
+instance {base : NatGtOne} (n : Nat) : OfNat (base.Fin) n := ⟨ofNat n⟩
 
 theorem ofNat_mod_eq {base : NatGtOne} (n : Nat) : @ofNat base (n % base.val) = ofNat n := by
   simp only [ofNat, Nat.mod_mod]
@@ -106,7 +109,7 @@ theorem ofNat_ne_zero_of_div_zero_of_ne {base : NatGtOne} {n : Nat} (h1 : n / ba
   simp only [eq_iff_eq_val] at h
   contradiction
 
-theorem eq_one_iff_eq_one {base : NatGtOne} (x : @FinBase base) : x = base.one ↔ x = @ofNat base 1 := by
+theorem eq_one_iff_eq_one {base : NatGtOne} (x : base.Fin) : x = base.one ↔ x = @ofNat base 1 := by
   simp only [FinBase.one_eq_one, OfNat.ofNat, ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr base.property]
 
 end FinBase

@@ -5,6 +5,7 @@ Author: Stefan Kusterer
 -/
 
 import Numerals.Basic
+import Numerals.ToNat
 
 namespace TZNumeral
 
@@ -201,5 +202,24 @@ instance instDecEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a �
 #eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[2, 3, 0, 0]⟩
 
 end Equivalence
+
+section ToNat_Equiv
+
+theorem toNat_helper_eq_zero_of {base : NatGtOne} {a : List base.Fin} (h: equiv.helper base [] a) :
+  toNat.helper base a 1 0 = 0 := by
+  induction a with
+  | nil => exact toNat_helper_nil_eq
+  | cons x xs ih =>
+    simp only [equiv_helper_nil_iff, List.all_cons, Bool.and_eq_true] at h
+    have h1 : x = 0 := beq_iff_eq.mp h.left
+    have h2 : toNat.helper base xs 1 0 = 0 := ih (equiv_helper_nil_iff.mpr h.right)
+    simp only [toNat_helper_cons_eq, h1, h2, Nat.add_eq_zero_iff, Fin.val_eq_zero_iff]
+    simp only [Nat.mul_zero, and_true]
+    rfl
+
+theorem toNat_eq_zero_of {base : NatGtOne} {a : TZNumeral base} (h: 0 ≈ a) :
+  a.toNat = 0 := toNat_helper_eq_zero_of h
+
+end ToNat_Equiv
 
 end TZNumeral

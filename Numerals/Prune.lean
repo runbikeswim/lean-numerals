@@ -67,12 +67,12 @@ theorem prune_helper_toListAux_eq {base : NatGtOne} {a : List base.Fin} :
   induction a with
   | nil => simp only [toListNatAux_nil_eq_nil, prune_helper_nil_zero_eq_nil]
   | cons x xs ih =>
-    have h1 : ↑x < base.val := by sorry
-    have h2 : ↑x / base.val = 0 := by sorry
-    have h3 : FinBase.ofNat ↑ x = x := by sorry
-    simp only [cons_toListNatAux_eq_coe_cons_toList, prune_helper_cons_eq, Nat.add_zero, h2, ih, h3]
+    have h1 : ↑x / base.val = 0 := Nat.div_eq_zero_iff.mpr (.inr (Fin.is_lt x))
+    have h2 : FinBase.ofNat ↑x = x := Fin.ofNat_val_eq_self x
+    simp only [cons_toListNatAux_eq_coe_cons_toList, prune_helper_cons_eq, Nat.add_zero, h1, ih, h2]
 
-theorem prune_toListNat_cancel {base : NatGtOne} {a : TZNumeral base} : prune a.toListNat 0 = a := by sorry
+theorem prune_toListNat_zero_cancel {base : NatGtOne} {a : TZNumeral base} : prune a.toListNat 0 = a := by
+  simp only [prune, prune_helper_toListAux_eq]
 
 theorem prune_helper_of_lt {base : NatGtOne} {n : Nat} (hn : n < base.val) :
   prune.helper base [] n = if n = 0 then [] else [⟨n, hn⟩] := by
@@ -149,7 +149,7 @@ theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : Lis
   | nil => simp only [toNat_helper_prune_helper_nil_eq, Nat.add_zero]
   | cons x xs ih =>
     simp only [prune_helper_cons_eq, toNat_helper_cons_eq, FinBase.ofNat, Nat.add_zero]
-    rw [@ih (((x + n) / base.val)), @ih ((x / base.val)), Nat.mul_add, ← Nat.add_assoc, Nat.mul_add]
+    rw [@ih ((x + n) / base.val), @ih (x / base.val), Nat.mul_add, ← Nat.add_assoc, Nat.mul_add]
     rw (occs := .pos [2]) [← Nat.add_assoc]
     rw [Nat.mod_add_div (x + n) base.val, Nat.mod_add_div x base.val, ← Nat.add_assoc]
     rw (occs := .pos [2]) [Nat.add_comm]
@@ -160,7 +160,9 @@ theorem toNat_prune_eq_add_toNat_prune_zero {base : NatGtOne} {a : TZNumeral bas
   exact toNat_helper_prune_helper_eq_add_toNat_helper
 
 theorem toNat_prune_eq_add_toNat {base : NatGtOne} {a : TZNumeral base} {n : Nat}  :
-  @toNat base (prune a.toListNat n) = n + a.toNat := by sorry
+  @toNat base (prune a.toListNat n) = n + a.toNat := by
+  rw [toNat_prune_eq_add_toNat_prune_zero]
+  simp only [prune_toListNat_zero_cancel]
 
 theorem toNat_prune_nil_eq_add_toNat {base : NatGtOne} {n : Nat}  :
   @toNat base (prune [] n) = n := @toNat_prune_eq_add_toNat base zero n
