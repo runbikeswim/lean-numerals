@@ -78,13 +78,13 @@ theorem equiv_helper_symm {base : NatGtOne} {a b : List base.Fin}
 
 theorem equiv_helper_iff_equiv_helper {base : NatGtOne} {a b : List base.Fin} :
   equiv.helper base a b ↔ equiv.helper base b a :=
-  Iff.intro (equiv_helper_symm ·) (equiv_helper_symm ·)
+  Iff.intro equiv_helper_symm equiv_helper_symm
 
 theorem equiv_symm {base : NatGtOne} {a b : TZNumeral base} (hab : a ≈ b) : b ≈ a := by
   exact equiv_helper_symm hab
 
 theorem equiv_iff_equiv {base : NatGtOne} {a b : TZNumeral base} : a ≈ b ↔ b ≈ a :=
-  Iff.intro (equiv_symm ·) (equiv_symm ·)
+  Iff.intro equiv_symm equiv_symm
 
 theorem equiv_helper_trans_nil {base : NatGtOne} {a b : List base.Fin}
   (ha : equiv.helper base [] a) (hab : equiv.helper base a b) : equiv.helper base [] b := by
@@ -153,6 +153,15 @@ theorem not_equiv_helper_of_equiv_helper_of_not_equiv_helper {base : NatGtOne} {
 theorem not_equiv_of_equiv_of_not_equiv {base : NatGtOne} {a b c : TZNumeral base}
   (hab : a ≈ b) (hbc : ¬ b ≈ c) : ¬ a ≈ c := not_equiv_helper_of_equiv_helper_of_not_equiv_helper hab hbc
 
+theorem not_equiv_helper_of_not_equiv_helper_of_equiv_helper {base : NatGtOne} {a b c : List base.Fin}
+  (hab : ¬ equiv.helper base a b) (hbc : equiv.helper base b c) : ¬ equiv.helper base a c := by
+  intro hac
+  have : equiv.helper base a b := equiv_helper_trans hac (equiv_helper_symm hbc)
+  contradiction
+
+theorem not_equiv_of_not_equiv_of_equiv {base : NatGtOne} {a b c : TZNumeral base}
+  (hab : ¬ a ≈ b) (hbc : b ≈ c) : ¬ a ≈ c := not_equiv_helper_of_not_equiv_helper_of_equiv_helper hab hbc
+
 def decEquiv_helper_zero {base : NatGtOne} (a : List base.Fin) :  Decidable (equiv.helper base [] a) :=
   if g : a.all (· == 0) then
     have : equiv.helper base [] a := equiv_zero_iff.mpr g
@@ -192,21 +201,16 @@ instance instDecEquivHelper (base : NatGtOne) (a b : List base.Fin) : Decidable 
   decEquiv_helper a b
 
 def decEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≈ b) :=
-  match decEquiv_helper a.digits b.digits with
-  | isTrue p => isTrue (equiv_iff_equiv_helper_digits.mpr p)
-  | isFalse p => isFalse ((Classical.iff_iff_not_iff_not.mp equiv_iff_equiv_helper_digits).mpr p)
+  decEquiv_helper a.digits b.digits
 
 instance instDecEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≈ b) := decEquiv a b
-
-#eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[1, 2, 3, 0, 0]⟩
-#eval (⟨[1, 2, 3]⟩ : TZNumeral10) ≈ ⟨[2, 3, 0, 0]⟩
 
 end Equivalence
 
 section ToNat_Equiv
 
-theorem toNat_helper_eq_zero_of {base : NatGtOne} {a : List base.Fin} (h: equiv.helper base [] a) :
-  toNat.helper base a 1 0 = 0 := by
+theorem toNat_helper_eq_zero_of_equiv_helper_nil {base : NatGtOne} {a : List base.Fin}
+  (h: equiv.helper base [] a) : toNat.helper base a 1 0 = 0 := by
   induction a with
   | nil => exact toNat_helper_nil_eq
   | cons x xs ih =>
@@ -217,8 +221,71 @@ theorem toNat_helper_eq_zero_of {base : NatGtOne} {a : List base.Fin} (h: equiv.
     simp only [Nat.mul_zero, and_true]
     rfl
 
-theorem toNat_eq_zero_of {base : NatGtOne} {a : TZNumeral base} (h: 0 ≈ a) :
-  a.toNat = 0 := toNat_helper_eq_zero_of h
+theorem toNat_eq_zero_of_toNat_zero {base : NatGtOne} {a : TZNumeral base} (h: 0 ≈ a) :
+  a.toNat = 0 := toNat_helper_eq_zero_of_equiv_helper_nil h
+
+theorem toNat_helper_eq_of_equiv_helper {base : NatGtOne} {a b : List base.Fin} (h: equiv.helper base a b) :
+  toNat.helper base a 1 0 = toNat.helper base b 1 0 := by
+  induction a generalizing b with
+  | nil => simp only [toNat_helper_eq_zero_of_equiv_helper_nil h, toNat_helper_nil_eq]
+  | cons x xs ih =>
+    match b with
+    | [] => simp only [toNat_helper_eq_zero_of_equiv_helper_nil (equiv_helper_symm h), toNat_helper_nil_eq]
+    | y::ys =>
+      simp only [equiv_helper_cons_iff] at h
+      simp only [toNat_helper_cons_eq]
+      simp only [h.left, ih h.right]
+
+theorem toNat_eq_of_equiv {base : NatGtOne} {a b : TZNumeral base} (h: a ≈ b) :
+  a.toNat = b.toNat := toNat_helper_eq_of_equiv_helper h
+
+theorem equiv_helper_nil_of_toNat_helper_zero {base : NatGtOne} {a : List base.Fin}
+  (h: toNat.helper base a 1 0 = 0) : equiv.helper base [] a:= by
+  induction a with
+  | nil => exact equiv_helper_refl
+  | cons x xs ih =>
+    simp only [toNat_helper_cons_eq] at h
+    have h1 : x = 0 := Fin.eq_of_val_eq (Nat.eq_zero_of_add_eq_zero_right h)
+    have h2 : base.val = 0 ∨ toNat.helper base xs 1 0 = 0 :=
+      Nat.zero_eq_mul.mp (Eq.symm (Nat.eq_zero_of_add_eq_zero_left h))
+    have h3 : toNat.helper base xs 1 0 = 0 := by
+      cases h2 with
+      | inl h2l => exact absurd h2l base.val_ne_zero
+      | inr h2r => exact h2r
+    have h4 : equiv.helper base [] xs := ih h3
+    have h5 : (xs.all fun x ↦ x == 0) = true := equiv_helper_nil_iff.mp h4
+    simp only [equiv_helper_nil_iff, List.all_cons, Bool.and_eq_true]
+    exact And.intro (beq_iff_eq.mpr h1) h5
+
+theorem equiv_zero_of_toNat_zero {base : NatGtOne} {a : TZNumeral base} (h: a.toNat = 0) :
+  0 ≈ a := equiv_helper_nil_of_toNat_helper_zero h
+
+theorem equiv_helper_of_toNat_helper_eq {base : NatGtOne} {a b : List base.Fin}
+  (h: toNat.helper base a 1 0 = toNat.helper base b 1 0) :
+  equiv.helper base a b := by
+  induction a generalizing b with
+  | nil => rw [toNat_helper_nil_eq] at h; exact equiv_helper_nil_of_toNat_helper_zero (Eq.symm h)
+  | cons x xs ih =>
+    match g: b with
+    | [] =>
+      rw [toNat_helper_nil_eq] at h
+      exact equiv_helper_symm (equiv_helper_nil_of_toNat_helper_zero h)
+    | y::ys =>
+      simp only [toNat_helper_cons_eq] at h
+      simp only [equiv_helper_cons_iff]
+      have : x.val = y.val ∧ toNat.helper base xs 1 0 = toNat.helper base ys 1 0 :=
+        (Nat.add_mul_eq_iff_eq_and_eq_of (Fin.isLt x) (Fin.isLt y)).mp h
+      exact And.intro (Fin.eq_of_val_eq this.left) (ih this.right)
+
+theorem equiv_of_toNat_eq {base : NatGtOne} {a b : TZNumeral base}
+  (h: a.toNat = b.toNat) : a ≈ b := equiv_helper_of_toNat_helper_eq h
+
+theorem equiv_helper_iff_toNat__helper_eq {base : NatGtOne} {a b : List base.Fin} :
+  equiv.helper base a b ↔ toNat.helper base a 1 0 = toNat.helper base b 1 0 :=
+  Iff.intro toNat_helper_eq_of_equiv_helper equiv_helper_of_toNat_helper_eq
+
+theorem equiv_iff_toNat_eq {base : NatGtOne} {a b : TZNumeral base} :
+  a ≈ b ↔ a.toNat = b.toNat := equiv_helper_iff_toNat__helper_eq
 
 end ToNat_Equiv
 

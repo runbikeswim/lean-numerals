@@ -32,7 +32,7 @@ theorem le_helper_refl {base : NatGtOne} {a : List base.Fin} : le.helper base a 
   | x::xs =>
     simp only [le.helper, equiv_helper_refl, reduceIte, Fin.le_refl]
 
-theorem le_refl {base : NatGtOne} {a : TZNumeral base} : a ≤ a := by
+theorem le_refl {base : NatGtOne} (a : TZNumeral base) : a ≤ a := by
   simp only [LE.le, le]
   exact le_helper_refl
 
@@ -89,8 +89,9 @@ theorem le_helper_nil_iff_equiv_helper_nil {base : NatGtOne} {a : List base.Fin}
 theorem le_zero_iff_equiv_zero {base : NatGtOne} {a : TZNumeral base} :
   a ≤ 0 ↔ 0 ≈ a := Iff.intro equiv_zero_of_le_zero (le_of_equiv ∘ equiv_symm)
 
-end Equiv_LessThanOrEqualTo
-
+/--
+`le.helper` is _almost_ [antisymmetric](https://w.wiki/Srqa)
+-/
 theorem equiv_helper_iff_le_helper_and_le_helper {base : NatGtOne} {a b : List base.Fin} :
   equiv.helper base a b ↔ le.helper base a b ∧ le.helper base b a := by
   constructor
@@ -125,16 +126,21 @@ theorem equiv_helper_iff_le_helper_and_le_helper {base : NatGtOne} {a b : List b
           have : equiv.helper base xs ys := ih h
           contradiction
 
+/--
+`le` is _almost_ [antisymmetric](https://w.wiki/Srqa)
+-/
 theorem equiv_iff_le_and_le {base : NatGtOne} {a b : TZNumeral base} :
-  a ≈ b ↔ a ≤ b ∧  b ≤ a := equiv_helper_iff_le_helper_and_le_helper
+  a ≈ b ↔ a ≤ b ∧ b ≤ a := equiv_helper_iff_le_helper_and_le_helper
+
+end Equiv_LessThanOrEqualTo
 
 theorem le_helper_total {base : NatGtOne} {a b : List base.Fin} :
   le.helper base a b ∨ le.helper base b a := by
   induction a generalizing b with
-  | nil => exact .inl (le_helper_nil)
+  | nil => exact .inl le_helper_nil
   | cons x xs ih =>
     match b with
-    | [] => exact .inr (le_helper_nil)
+    | [] => exact .inr le_helper_nil
     | y::ys =>
       if g1 : equiv.helper base xs ys then
         if g2 : x ≤ y then
@@ -150,7 +156,7 @@ theorem le_helper_total {base : NatGtOne} {a b : List base.Fin} :
         simp only [le.helper, g1, g2, reduceIte]
         exact ih
 
-theorem le_total {base : NatGtOne} {a b : TZNumeral base} :
+theorem le_total {base : NatGtOne} (a b : TZNumeral base) :
    a ≤ b ∨ b ≤ a := le_helper_total
 
 section LessThanOrEqualTo_Equiv
@@ -259,7 +265,65 @@ theorem equiv_and_equiv_of_le_of_le_of_equiv {base : NatGtOne} {a b c : TZNumera
 
 end LessThanOrEqualTo_Equiv
 
-section ToNat_Le
+/--
+shows that [transitivity](https://w.wiki/MqgX) of `le.helper` can be shown by only using its definition and
+theorems from `Nat`
+-/
+theorem le_helper_trans {base : NatGtOne} {a b c : List base.Fin}
+  (hab : le.helper base a b) (hbc : le.helper base b c) : le.helper base a c := by
+  induction a generalizing b c with
+  | nil => exact le_helper_nil
+  | cons x xs ihx =>
+    match b, c with
+    | [], [] => unfold le.helper at hab ⊢; simp_all only [and_true]
+    | y::ys, [] =>
+      have : equiv.helper base (y::ys) [] := equiv_helper_symm (equiv_helper_nil_of_le_helper_nil hbc)
+      exact le_helper_of_le_helper_of_equiv_helper hab this
+    | [], z::zs =>
+      have : equiv.helper base (x::xs) [] := equiv_helper_symm (equiv_helper_nil_of_le_helper_nil hab)
+      exact le_helper_of_equiv_helper_of_le_helper this hbc
+    | y::ys, z::zs =>
+      unfold le.helper at hab hbc ⊢
+      if gxy : equiv.helper base xs ys then
+        if gyz : equiv.helper base ys zs then
+          have : equiv.helper base xs zs := equiv_helper_trans gxy gyz
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          simp only [this, reduceIte]
+          exact Nat.le_trans hab hbc
+        else
+          have : ¬ equiv.helper base xs zs := not_equiv_helper_of_equiv_helper_of_not_equiv_helper gxy gyz
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          simp only [this, reduceIte]
+          exact ihx (le_helper_of_equiv_helper gxy) hbc
+      else
+        if gyz : equiv.helper base ys zs then
+          have : ¬ equiv.helper base xs zs := not_equiv_helper_of_not_equiv_helper_of_equiv_helper gxy gyz
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          simp only [this, reduceIte]
+          exact ihx hab (le_helper_of_equiv_helper gyz)
+        else
+          simp only [gxy, reduceIte] at hab
+          simp only [gyz, reduceIte] at hbc
+          have : ¬ equiv.helper base xs zs := by
+            false_or_by_contra; rename _ => hc
+            exact absurd (equiv_helper_and_equiv_helper_of_le_helper_of_le_helper_of_equiv_helper hab hbc hc).left gxy
+          simp only [this, reduceIte]
+          exact ihx hab hbc
+
+theorem le_trans {base : NatGtOne} {a b c : TZNumeral base} (hab : a ≤ b) (hbc : b ≤ c) : a ≤ c :=
+  le_helper_trans hab hbc
+
+instance instIsPreorderLe {base : NatGtOne} : Std.IsPreorder (TZNumeral base) where
+  le_refl := le_refl
+  le_trans _ _ _ := le_trans
+
+instance instIsLinearPreorderLe {base : NatGtOne} : Std.IsLinearPreorder (TZNumeral base) where
+  le_total := le_total
+
+section ToNat_LessThanOrEqualTo
 
 theorem toNat_helper_le_of_le_helper {base : NatGtOne} {a b : List base.Fin}
   (h : le.helper base a b) : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 := by
@@ -269,7 +333,7 @@ theorem toNat_helper_le_of_le_helper {base : NatGtOne} {a b : List base.Fin}
     match b with
     | [] =>
       have : equiv.helper base [] (x::xs) := equiv_helper_nil_of_le_helper_nil h
-      have : toNat.helper base (x :: xs) 1 0 = 0 := toNat_helper_eq_zero_of this
+      have : toNat.helper base (x :: xs) 1 0 = 0 := toNat_helper_eq_zero_of_equiv_helper_nil this
       simp only [this, Nat.zero_le]
     | y::ys =>
       simp only [le_helper_cons_iff] at h
@@ -284,21 +348,167 @@ theorem toNat_helper_le_of_le_helper {base : NatGtOne} {a b : List base.Fin}
             Nat.add_le_add_left (Nat.mul_le_mul_left base.val this) ↑y
       else
         simp only [g, reduceIte] at h
-        /-
-          have h1 : x < base ∧ xs.all (· < base) := allDigitsLtBase_cons_iff.mp halt
-          have h2 : y < base ∧ ys.all (· < base) := allDigitsLtBase_cons_iff.mp hblt
-          have h3 : toNatAux xs base ≤ toNatAux ys base := ih h h1.right h2.right
-          have h4 : toNatAux xs base ≠ toNatAux ys base :=
-            (Classical.iff_iff_not_iff_not.mp (toNatAux_eq_iff_equivAux h1.right h2.right hb)).mpr g
-          have h3 : toNatAux xs base < toNatAux ys base := Nat.lt_of_le_of_ne h3 h4
-          exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h3 h1.left)
-        -/
-        sorry
+        have h1 : ↑x < base.val := Fin.isLt x
+        have h2 : toNat.helper base xs 1 0 ≤ toNat.helper base ys 1 0 := ih h
+        have h3 : toNat.helper base xs 1 0 ≠ toNat.helper base ys 1 0 := by
+          intro hc
+          exact absurd (equiv_helper_of_toNat_helper_eq hc) g
+        have h4 : toNat.helper base xs 1 0 < toNat.helper base ys 1 0 := Nat.lt_of_le_of_ne h2 h3
+        exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h4 h1)
 
-end ToNat_Le
+theorem toNat_le_of_le {base : NatGtOne} {a b : TZNumeral base} (h : a ≤ b) : a.toNat ≤ b.toNat :=
+  toNat_helper_le_of_le_helper h
+
+theorem le_helper_of_toNat_helper_le {base : NatGtOne} {a b : List base.Fin}
+  (h : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0) : le.helper base a b := by
+  induction a generalizing b with
+  | nil => exact le_helper_nil
+  | cons x xs ih =>
+    match b with
+    | [] =>
+      simp only [toNat_helper_nil_eq, Nat.le_zero] at h
+      rw (occs := .pos [2])[← @toNat_helper_nil_eq base 1 0] at h
+      exact le_helper_of_equiv_helper (equiv_helper_of_toNat_helper_eq h)
+    | y::ys =>
+      simp only [toNat_helper_cons_eq] at h
+      simp only [le.helper]
+      if g: equiv.helper base xs ys then
+        simp only [g, reduceIte]
+        rw [toNat_helper_eq_of_equiv_helper g] at h
+        exact Nat.le_of_add_le_add_right h
+      else
+        simp only [g, reduceIte]
+        have h1 : toNat.helper base xs 1 0 ≠ toNat.helper base ys 1 0 := by
+          intro hc
+          exact absurd (equiv_helper_of_toNat_helper_eq hc) g
+        have h2 : toNat.helper base xs 1 0 ≤ toNat.helper base ys 1 0 :=
+          (Nat.add_mul_le_iff_le_of h1 (Fin.isLt x) (Fin.isLt y)).mp h
+        exact ih h2
+
+theorem le_of_toNat_le {base : NatGtOne} {a b : TZNumeral base}
+  (h : a.toNat ≤ b.toNat) : a ≤ b := le_helper_of_toNat_helper_le h
+
+theorem le_helper_iff_toNat_helper_le {base : NatGtOne} {a b : List base.Fin} :
+  le.helper base a b ↔ toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 :=
+  Iff.intro toNat_helper_le_of_le_helper le_helper_of_toNat_helper_le
+
+theorem le_iff_toNat_le {base : NatGtOne} {a b : TZNumeral base} : a ≤ b ↔ a.toNat ≤ b.toNat :=
+  le_helper_iff_toNat_helper_le
+
+end ToNat_LessThanOrEqualTo
+
+
+/--
+gives a much shorter proof to `le_helper_trans`, but also without giving the same insight why the
+definition of `le.helper` leads to [transitivity](https://w.wiki/MqgX)
+-/
+example {base : NatGtOne} {a b c : List base.Fin}
+  (hab : le.helper base a b) (hbc : le.helper base b c) : le.helper base a c := by
+  rw [le_helper_iff_toNat_helper_le] at ⊢ hab hbc
+  exact Nat.le_trans hab hbc
+
+def decLe_helper {base : NatGtOne} (a b : List base.Fin) : Decidable (le.helper base a b) :=
+  match a, b with
+  | [], [] =>
+    isTrue le_helper_refl
+  | x::xs, [] =>
+    if g : x = 0 then
+      match decLe_helper xs [] with
+      | isFalse p =>
+        have : ¬ le.helper base (x::xs) [] := by
+          simp only [le.helper, not_and]
+          intro _
+          exact p
+        isFalse this
+      | isTrue p =>
+        have : le.helper base (x::xs) [] := by
+          simp only [le.helper, g, p, true_and]
+        isTrue this
+    else
+      have : ¬ le.helper base (x::xs) [] := by
+        simp only [le.helper, not_and]
+        intro _
+        contradiction
+      isFalse this
+  | [], y::ys =>
+    have : le.helper base [] (y::ys) := by simp only [le.helper]
+    isTrue this
+  | x::xs, y::ys =>
+    match decEquiv_helper xs ys with
+    | isFalse p =>
+      match decLe_helper xs ys with
+      | isFalse q =>
+        have : ¬ le.helper base (x::xs) (y::ys) := by
+          simp only [le.helper, p, reduceIte, q, not_false_eq_true]
+        isFalse this
+      | isTrue q =>
+        have : le.helper base (x::xs) (y::ys) := by
+          simp only [le.helper, p, reduceIte, q]
+        isTrue this
+    | isTrue p =>
+      if g : x ≤ y then
+        have : le.helper base (x::xs) (y::ys) := by
+          simp only [le.helper, p, reduceIte, g]
+        isTrue this
+      else
+        have : ¬ le.helper base (x::xs) (y::ys) := by
+          simp only [le.helper, p, reduceIte, g, not_false_eq_true]
+        isFalse this
+
+instance instDecLeHelper (base : NatGtOne) (a b : List base.Fin) : Decidable (le.helper base a b) :=
+  decLe_helper a b
+
+def decLe {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≤ b) :=
+  decLe_helper a.digits b.digits
+
+instance instDecLe {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≤ b) := decLe a b
+
+example : ([].toTZNumeral : TZNumeral10) ≤ [].toTZNumeral := by decide
+example : ([].toTZNumeral : TZNumeral10) ≤ [0].toTZNumeral := by decide
+example : ([].toTZNumeral : TZNumeral10) ≤ [1].toTZNumeral := by decide
+example : ([1].toTZNumeral : TZNumeral10) ≤ [1].toTZNumeral  := by decide
+example : ¬ ([1].toTZNumeral : TZNumeral10) ≤ [0].toTZNumeral := by decide
 
 end LessThanOrEqualTo
 
 section LessThan
+
+def lt {base : NatGtOne} (n m : TZNumeral base) : Prop :=
+  helper base n.digits m.digits where
+  helper (base : NatGtOne) (a b : List base.Fin) :=
+  match a, b with
+  | _, [] => False
+  | [], y::ys => 0 < y ∨ helper base [] ys
+  | x::xs, y::ys => x < y ∧ ¬ helper base ys xs ∨ helper base xs ys
+  termination_by a.length + b.length
+
+instance instLt {base : NatGtOne} : LT (TZNumeral base) := ⟨lt⟩
+
+theorem not_lt_helper_cons_nil {base : NatGtOne} {x : base.Fin} {xs : List base.Fin} :
+  ¬ lt.helper base (x::xs) [] := by
+  simp only [lt.helper, not_false_eq_true]
+
+theorem not_lt_cons_zero {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base} :
+  ¬ (cons x xs) < 0 := not_lt_helper_cons_nil
+
+theorem lt_helper_irrefl {base : NatGtOne} (a : List base.Fin) : ¬ lt.helper base a a  := by
+  induction a with
+  | nil => simp only [lt.helper, not_false_eq_true]
+  | cons x xs ih =>
+    simp only [lt.helper]
+    intro hc
+    cases hc with
+    | inl hcl => exact absurd hcl.left (Fin.lt_irrefl x)
+    | inr hcr => contradiction
+
+theorem lt_irrefl {base : NatGtOne} (a : TZNumeral base) : ¬ a < a :=
+  lt_helper_irrefl a.digits
+
+theorem lt_of {base : NatGtOne} {x y : base.Fin} {xs ys : List base.Fin}
+  (ha : x < y ∧ ¬ lt.helper base ys xs ∨ lt.helper base xs ys)
+  (hbl : y < x ∧ ¬lt.helper base xs ys) : x < y := by
+  have : ¬lt.helper base xs ys := hbl.right
+  have : x < y ∧ ¬lt.helper base ys xs := Or.resolve_right ha this
+  exact this.left
 
 end LessThan
