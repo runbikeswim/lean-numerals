@@ -499,7 +499,7 @@ theorem lt_helper_irrefl {base : NatGtOne} (a : List base.Fin) : ¬ lt.helper ba
     intro hc
     cases hc with
     | inl hcl => exact absurd hcl.left (Fin.lt_irrefl x)
-    | inr hcr => contradiction
+    | inr hcr => exact absurd hcr ih
 
 theorem lt_irrefl {base : NatGtOne} (a : TZNumeral base) : ¬ a < a :=
   lt_helper_irrefl a.digits
