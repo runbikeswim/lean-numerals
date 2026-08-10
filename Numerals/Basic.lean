@@ -151,25 +151,34 @@ structure TZNumeral (base : NatGtOne) where
   digits : List (base.Fin)
   deriving Repr
 
+abbrev base2 : NatGtOne := ⟨2, by decide⟩
+
 /--
 shorthand for `TZNumeral`s in binary representation
 -/
-abbrev TZNumeral2 := TZNumeral ⟨2, by decide⟩
+abbrev TZNumeral2 := TZNumeral base2
+
+abbrev base8 : NatGtOne := ⟨8, by decide⟩
 
 /--
 shorthand for `TZNumeral`s octal representation
 -/
-abbrev TZNumeral8 := TZNumeral ⟨8,by decide⟩
+abbrev TZNumeral8 := TZNumeral base8
+
+
+abbrev base10 : NatGtOne := ⟨10, by decide⟩
 
 /--
 shorthand for `TZNumeral`s decimal representation
 -/
 abbrev TZNumeral10 := TZNumeral ⟨10, by decide⟩
 
+abbrev base16 : NatGtOne := ⟨16, by decide⟩
+
 /--
 shorthand for `TZNumeral`s hexadecimal representation
 -/
-abbrev TZNumeral16 := TZNumeral ⟨16, by decide⟩
+abbrev TZNumeral16 := TZNumeral base16
 
 /--
 

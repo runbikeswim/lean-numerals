@@ -29,8 +29,7 @@ theorem zero_le {base : NatGtOne} {n : TZNumeral base} : 0 ≤ n := @le_helper_n
 theorem le_helper_refl {base : NatGtOne} {a : List base.Fin} : le.helper base a a := by
   match a with
   | [] => simp only [le.helper]
-  | x::xs =>
-    simp only [le.helper, equiv_helper_refl, reduceIte, Fin.le_refl]
+  | x::xs => simp only [le.helper, equiv_helper_refl, reduceIte, Fin.le_refl]
 
 theorem le_refl {base : NatGtOne} (a : TZNumeral base) : a ≤ a := by
   simp only [LE.le, le]
@@ -397,7 +396,6 @@ theorem le_iff_toNat_le {base : NatGtOne} {a b : TZNumeral base} : a ≤ b ↔ a
 
 end ToNat_LessThanOrEqualTo
 
-
 /--
 gives a much shorter proof to `le_helper_trans`, but also without giving the same insight why the
 definition of `le.helper` leads to [transitivity](https://w.wiki/MqgX)
@@ -463,11 +461,11 @@ def decLe {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≤ b) :=
 
 instance instDecLe {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≤ b) := decLe a b
 
-example : ([].toTZNumeral : TZNumeral10) ≤ [].toTZNumeral := by decide
-example : ([].toTZNumeral : TZNumeral10) ≤ [0].toTZNumeral := by decide
-example : ([].toTZNumeral : TZNumeral10) ≤ [1].toTZNumeral := by decide
-example : ([1].toTZNumeral : TZNumeral10) ≤ [1].toTZNumeral  := by decide
-example : ¬ ([1].toTZNumeral : TZNumeral10) ≤ [0].toTZNumeral := by decide
+example : (⟨[]⟩ : TZNumeral base10) ≤ (⟨[]⟩ : TZNumeral base10):= by decide
+example : (⟨[]⟩ : TZNumeral base10) ≤ (⟨[0]⟩ : TZNumeral base10):= by decide
+example : (⟨[]⟩ : TZNumeral base10) ≤ (⟨[1]⟩ : TZNumeral base10):= by decide
+example : (⟨[1]⟩ : TZNumeral base10) ≤ (⟨[1]⟩ : TZNumeral base10):= by decide
+example : ¬ (⟨[1]⟩ : TZNumeral base10) ≤ (⟨[0]⟩ : TZNumeral base10):= by decide
 
 end LessThanOrEqualTo
 
