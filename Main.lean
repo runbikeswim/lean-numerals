@@ -79,5 +79,5 @@ def fibonacci (n : Nat) : Numeral10 :=
 
 -/
 def main : IO Unit := do
-  let n := 123
+  let _n := 123
   -- println! s!"fibonacci {n}: {fibonacci n}"

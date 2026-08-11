@@ -61,6 +61,9 @@ namespace Fin
 theorem eq_zero_of_le_zero {base : NatGtOne} {a : base.Fin} (h : a ≤ base.zero) :
   a = base.zero := Fin.le_antisymm h (Fin.zero_le a)
 
+theorem le_zero_iff' {base : NatGtOne} {y : base.Fin} : y ≤ 0 ↔ y = 0 :=
+  Iff.intro Fin.eq_zero_of_le_zero (fun h => by rw [h]; exact Fin.le_refl 0)
+
 end Fin
 
 namespace FinBase
@@ -164,7 +167,6 @@ abbrev base8 : NatGtOne := ⟨8, by decide⟩
 shorthand for `TZNumeral`s octal representation
 -/
 abbrev TZNumeral8 := TZNumeral base8
-
 
 abbrev base10 : NatGtOne := ⟨10, by decide⟩
 
