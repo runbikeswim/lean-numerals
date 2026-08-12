@@ -29,7 +29,7 @@ theorem equiv_helper_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : Li
   simp only [equiv.helper]
 
 theorem equiv_cons_iff {base : NatGtOne} {x y : Fin base.val} {xs ys : TZNumeral base} :
-  (cons x xs) ≈ (cons y ys) ↔ x = y ∧ xs ≈ ys := by
+  cons x xs ≈ cons y ys ↔ x = y ∧ xs ≈ ys := by
   simp only [equiv, cons]
   exact equiv_helper_cons_iff
 
@@ -207,6 +207,40 @@ instance instDecEquiv {base : NatGtOne} (a b : TZNumeral base) : Decidable (a �
 
 end Equivalence
 
+section Equiv_NoTrailingZero
+
+theorem eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper {base : NatGtOne} {a : List base.Fin}
+  (he : equiv.helper base [] a) (hn : noTrailingZero.helper base a) : a = [] := by
+  match g : a with
+  | [] => rfl
+  | x::xs =>
+    have h1 : x::xs ≠ [] := List.cons_ne_nil x xs
+    have h2 : (x::xs).all (· = 0) := equiv_helper_nil_iff.mp he
+    have h3 : (x::xs).getLast h1 = 0 :=
+      beq_iff_eq.mp (List.getLast_true_of_all_true_of_ne_nil (x::xs) (· == 0) h2 h1)
+    have h5 : (x::xs).getLast h1 ≠ 0 := by
+      unfold noTrailingZero.helper at hn
+      exact hn h1
+    contradiction
+
+theorem eq_zero_of_equiv_zero_of_noTrailingZero {base : NatGtOne} {a : TZNumeral base}
+  (he : 0 ≈ a) (hn : noTrailingZero a) : a = 0 := by
+  simp only [OfNat.ofNat, Zero.zero, zero, noTrailingZero, equiv, eq_iff_digits_eq] at ⊢ he hn
+  exact eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper he hn
+
+theorem eq_of_equiv_helper_of_noTrailingZero_helper {base : NatGtOne} {a b : List base.Fin} (he : equiv.helper base a b)
+(hna : noTrailingZero.helper base a) (hnb : noTrailingZero.helper base b) : a = b := by
+  induction a generalizing b with
+  | nil => exact Eq.symm (eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper he hnb)
+  | cons x xs ih =>
+    match gb : b with
+    | [] => exact eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper (equiv_helper_symm he) hna
+    | y::ys =>
+      have h1 : x = y ∧ equiv.helper base xs ys := equiv_helper_cons_iff.mp he
+      sorry
+
+end Equiv_NoTrailingZero
+
 section ToNat_Equiv
 
 theorem toNat_helper_eq_zero_of_equiv_helper_nil {base : NatGtOne} {a : List base.Fin}
@@ -290,3 +324,45 @@ theorem equiv_iff_toNat_eq {base : NatGtOne} {a b : TZNumeral base} :
 end ToNat_Equiv
 
 end TZNumeral
+
+namespace Numeral
+
+def equiv {base : NatGtOne} (a b : Numeral base) : Prop := a.toTZNumeral ≈ b.toTZNumeral
+
+instance instHasEquiv {base : NatGtOne} : HasEquiv (Numeral base) := ⟨equiv⟩
+
+theorem eq_zero_of_zero_equiv {base : NatGtOne} {a : Numeral base} (h : 0 ≈ a) : a = 0 := by
+  have : a.toTZNumeral = 0 := TZNumeral.eq_zero_of_equiv_zero_of_noTrailingZero h a.noTZ
+  exact (eq_iff_toTZNumeral_eq a 0).mpr this
+
+theorem eq_of_equiv {base : NatGtOne} {a b : Numeral base} (h : a ≈ b) : a = b := by
+  induction ga : a.digits generalizing b with
+  | nil =>
+    have h1 : 0 ≈ a := TZNumeral.equiv_zero_iff.mpr (by rw [ga]; exact List.all_nil)
+    have h2 : 0 ≈ b := TZNumeral.equiv_trans h1 h
+    rw [eq_zero_of_zero_equiv h1, eq_zero_of_zero_equiv h2]
+  | cons x xs ih =>
+    match gb : b.digits with
+    | [] =>
+      have h1 : 0 ≈ b := TZNumeral.equiv_zero_iff.mpr (by rw [gb]; exact List.all_nil)
+      have h2 : 0 ≈ a := TZNumeral.equiv_trans h1 (TZNumeral.equiv_symm h)
+      rw [eq_zero_of_zero_equiv h1, eq_zero_of_zero_equiv h2]
+    | y::ys =>
+      have h1 : TZNumeral.cons x xs ≈ TZNumeral.cons y ys := by
+        simp only [TZNumeral.cons, TZNumeral.equiv]
+        simp only [equiv, TZNumeral.equiv, ga, gb] at h
+        assumption
+      have h2 : x = y ∧ (xs : TZNumeral base) ≈ ys := TZNumeral.equiv_cons_iff.mp h1
+      have h3 : TZNumeral.noTrailingZero.helper base xs := by sorry
+      have h4 : TZNumeral.noTrailingZero.helper base ys := by sorry
+      let p : Numeral base := ⟨xs, h3⟩
+      let q : Numeral base := ⟨ys, h4⟩
+      have h5 : p ≈ q := by sorry
+      have h6 : p.digits = xs := sorry
+      have h7 : p = q := sorry -- ih h5 h6
+      have h9 : xs = ys := by
+        sorry
+      simp only [eq_iff_toTZNumeral_eq, TZNumeral.eq_iff_digits_eq, ga, gb]
+      exact List.cons_eq_cons.mpr (And.intro h2.left h9)
+
+end Numeral

@@ -182,6 +182,9 @@ shorthand for `TZNumeral`s hexadecimal representation
 -/
 abbrev TZNumeral16 := TZNumeral base16
 
+instance instCoeList_baseFinToTZNumeral {base : NatGtOne} : Coe (List base.Fin) (TZNumeral base) where
+  coe := fun l : List base.Fin ↦ {digits := l}
+
 /--
 
 Example:
@@ -350,71 +353,65 @@ end ToListNat
 
 section NoTrailingZero
 
-abbrev noTrailingZeroAux {base : NatGtOne} (d : List base.Fin) : Prop :=
-  (h : d ≠ []) → d.getLast h ≠ 0
+def noTrailingZero {base : NatGtOne} (n : TZNumeral base) : Prop :=
+  helper base n.digits where
+  helper (base : NatGtOne) (d : List base.Fin) := (h : d ≠ []) → d.getLast h ≠ 0
 
-abbrev noTrailingZero {base : NatGtOne} (n : TZNumeral base) : Prop :=
-  noTrailingZeroAux n.digits
+theorem noTrailingZero_helper_nil {base : NatGtOne} : noTrailingZero.helper base [] := by
+  unfold noTrailingZero.helper; intro; contradiction
 
-theorem noTrailingZeroAux_nil {base : NatGtOne} : @noTrailingZeroAux base [] := by
-  unfold noTrailingZeroAux; intro; contradiction
+theorem noTrailingZero_nil {base : NatGtOne} : noTrailingZero (@zero base):=
+  noTrailingZero_helper_nil
+
+theorem zero_noTrailingZero {base : NatGtOne} : (@zero base).noTrailingZero :=
+  noTrailingZero_helper_nil
 
 theorem noTrailingZero_of_digits_eq_nil {base : NatGtOne} {n : TZNumeral base} (h : n.digits = []) :
   n.noTrailingZero := by
-  simp only [noTrailingZero, h]
-  exact noTrailingZeroAux_nil
+    simp only [noTrailingZero, h]
+    exact noTrailingZero_helper_nil
 
-theorem zero_noTrailingZero {base : NatGtOne} : (@zero base).noTrailingZero :=
-  noTrailingZero_of_digits_eq_nil (by simp only)
+theorem noTrailingZero_helper_of {base : NatGtOne} {n : List base.Fin}
+  (h1 : n ≠ []) (h2 : n.getLast h1 ≠ 0) : noTrailingZero.helper base n := fun _ : n ≠ [] ↦ h2
 
 theorem noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
   (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 ≠ 0) :
-  n.noTrailingZero := by
-  unfold noTrailingZero
-  exact (fun _ => h2)
+  n.noTrailingZero := noTrailingZero_helper_of h1 h2
 
-theorem noTrailingZero_singleton_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
-  noTrailingZeroAux [n] := by
+theorem noTrailingZero_helper_singleton_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
+  noTrailingZero.helper base [n] := by
   intro
   simp only [List.getLast_singleton]
   exact h
 
-theorem singleton_noTrailingZero_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
-  (⟨[n]⟩ : TZNumeral base).noTrailingZero := by
-  unfold noTrailingZero
-  exact noTrailingZero_singleton_of h
+theorem noTrailingZero_singleton_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
+  noTrailingZero ⟨[n]⟩ := noTrailingZero_helper_singleton_of h
 
 theorem one_noTrailingZero {base : NatGtOne} : (@one base).noTrailingZero := by
   rw [one_eq_one]
-  exact singleton_noTrailingZero_of FinBase.one_ne_zero
+  exact noTrailingZero_singleton_of FinBase.one_ne_zero
+
+theorem neg_noTrailingZero_helper_of {base : NatGtOne} {n : List base.Fin}
+  (h1 : n ≠ []) (h2 : n.getLast h1 = 0) :
+  ¬ noTrailingZero.helper base n := by
+  intro h3
+  exact absurd h2 (h3 h1)
 
 theorem neg_noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
   (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 = 0) :
-  ¬ n.noTrailingZero := by
-  intro h3
-  unfold noTrailingZero at h3
-  exact absurd h2 (h3 h1)
+  ¬ n.noTrailingZero := neg_noTrailingZero_helper_of h1 h2
 
-theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
-  (h : (cons x xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
-  if g: xs = 0 then
-    simp only [g, cons_zero_eq] at h
-    let h1 := h (List.cons_ne_nil x [])
-    simp only [List.getLast_singleton] at h1
-    simp only [g, true_imp_iff]
-    exact And.intro zero_noTrailingZero h1
-  else
-    have h1 : x :: xs.digits ≠ [] := List.cons_ne_nil x xs.digits
-    have h2 : (x :: xs.digits).getLast h1 ≠ 0 := h h1
-    have h3 : xs.digits ≠ [] := by
-      rwa [← zero_eq_zero, zero, eq_iff_digits_eq, ← ne_eq] at g
-    have h4 : (x :: xs.digits).getLast h1 = xs.digits.getLast h3 := List.getLast_cons h3
-    have h5 : xs.digits.getLast h3 ≠ 0 := by rwa [← h4]
-    exact And.intro (noTrailingZero_of h3 h5) (fun t => absurd t g)
+theorem ne_zero_of_noTrailingZero_helper_singleton {base : NatGtOne} {n : base.Fin}
+  (h : noTrailingZero.helper base [n]) : n ≠ 0 := by
+  simp only [noTrailingZero.helper, List.getLast_singleton] at h
+  exact h (List.cons_ne_nil n [])
 
-theorem noTrailingZeroAux_cons_of {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}
-  (h : noTrailingZeroAux xs ∧ (xs = [] → x ≠ 0)) : noTrailingZeroAux (x::xs) := by
-  simp only [noTrailingZeroAux] at ⊢ h
+theorem ne_zero_of_noTrailingZero_singleton {base : NatGtOne} {n : base.Fin}
+  (h : noTrailingZero ⟨[n]⟩) : n ≠ 0 := ne_zero_of_noTrailingZero_helper_singleton h
+
+theorem noTrailingZero_helper_cons_of {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}
+  (h : noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0)) : noTrailingZero.helper base (x::xs) := by
+  simp only [noTrailingZero.helper] at ⊢ h
   intro _
   if g : xs = [] then
     simp only [g, List.getLast_singleton (List.cons_ne_nil x [])]
@@ -426,16 +423,33 @@ theorem noTrailingZeroAux_cons_of {base : NatGtOne} {x : base.Fin} {xs : List ba
 theorem cons_noTrailingZero_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
   (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0)) : (cons x xs).noTrailingZero := by
   simp only [noTrailingZero, cons, eq_iff_digits_eq, OfNat.ofNat, Zero.zero] at ⊢ h
-  exact noTrailingZeroAux_cons_of h
+  exact noTrailingZero_helper_cons_of h
+
+theorem tail_noTrailingZero_helper_and_of {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}
+  (h : noTrailingZero.helper base (x::xs)) : noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0) := by
+  if g: xs = [] then
+    simp only [g] at ⊢ h
+    exact And.intro noTrailingZero_helper_nil (fun _ : True ↦ ne_zero_of_noTrailingZero_helper_singleton h)
+  else
+    simp only [noTrailingZero.helper] at ⊢ h
+    have h1 : (x :: xs).getLast (List.cons_ne_nil x xs) ≠ 0 := h (List.cons_ne_nil x xs)
+    have h2 : xs.getLast g ≠ 0 := by rwa [List.getLast_cons g] at h1
+    exact And.intro (fun _ : xs ≠ [] ↦ h2) (fun t: xs = [] ↦ absurd t g)
+
+theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
+  (h : (cons x xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
+  simp only [noTrailingZero, OfNat.ofNat, Zero.zero, eq_iff_digits_eq]
+  exact tail_noTrailingZero_helper_and_of h
+
+theorem cons_noTrailingZero_helper_iff_tail_noTrailingZero_helper_and {base : NatGtOne}
+  {x : Fin base.val} {xs : List base.Fin} :
+  noTrailingZero.helper base (x::xs) ↔ noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0) :=
+  Iff.intro tail_noTrailingZero_helper_and_of noTrailingZero_helper_cons_of
 
 theorem cons_noTrailingZero_iff_tail_noTrailingZero_and {base : NatGtOne}
   {x : Fin base.val} {xs : TZNumeral base} :
-  (cons x xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
-  constructor
-  · intro h
-    exact tail_noTrailingZero_and_of h
-  · intro h
-    exact cons_noTrailingZero_of h
+  (cons x xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) :=
+  Iff.intro tail_noTrailingZero_and_of cons_noTrailingZero_of
 
 /--
 
@@ -498,7 +512,7 @@ namespace Numeral
 
 section ToTZNumeral
 
-instance {base : NatGtOne} : Coe (Numeral base) (TZNumeral base) where
+instance instCoeNumeralToTZNumeral {base : NatGtOne} : Coe (Numeral base) (TZNumeral base) where
   coe := toTZNumeral
 
 end ToTZNumeral
@@ -591,8 +605,8 @@ def cons {base : NatGtOne} (x : Fin base.val) (y : Numeral base) : Numeral base 
     have h2 : y.toTZNumeral = 0 → x ≠ 0 := by
       intro h
       cases h1 with
-      | inl hl => assumption
-      | inr hr =>
+      | inl _ => assumption
+      | inr _ =>
         rw [← TZNumeral.zero_eq_zero, ← zero_toTZNumeral_eq_TZNumeral_zero, ← eq_iff_toTZNumeral_eq] at h
         contradiction
     have h3 : (TZNumeral.cons x (y.toTZNumeral)).noTrailingZero :=

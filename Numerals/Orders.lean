@@ -928,3 +928,18 @@ instance decInstLt {base : NatGtOne} (a b : TZNumeral base) : Decidable (a < b) 
 end LessThan
 
 end TZNumeral
+
+namespace Numeral
+
+def le {base : NatGtOne} (n m : Numeral base) : Prop := n.toTZNumeral ≤ m.toTZNumeral
+
+instance instLe {base : NatGtOne} : LE (Numeral base) := ⟨le⟩
+
+theorem le_antisymm {base : NatGtOne} {n m : Numeral base} : n ≤ m → m ≤ n → n = m := by sorry
+
+def lt {base : NatGtOne} (n m : Numeral base) : Prop := n.toTZNumeral < m.toTZNumeral
+
+instance instLt {base : NatGtOne} : LT (Numeral base) := ⟨lt⟩
+
+
+end Numeral
