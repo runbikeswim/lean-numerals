@@ -229,7 +229,7 @@ theorem eq_zero_of_equiv_zero_of_noTrailingZero {base : NatGtOne} {a : TZNumeral
   exact eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper he hn
 
 theorem eq_of_equiv_helper_of_noTrailingZero_helper {base : NatGtOne} {a b : List base.Fin} (he : equiv.helper base a b)
-(hna : noTrailingZero.helper base a) (hnb : noTrailingZero.helper base b) : a = b := by
+  (hna : noTrailingZero.helper base a) (hnb : noTrailingZero.helper base b) : a = b := by
   induction a generalizing b with
   | nil => exact Eq.symm (eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper he hnb)
   | cons x xs ih =>
@@ -237,7 +237,13 @@ theorem eq_of_equiv_helper_of_noTrailingZero_helper {base : NatGtOne} {a b : Lis
     | [] => exact eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper (equiv_helper_symm he) hna
     | y::ys =>
       have h1 : x = y ∧ equiv.helper base xs ys := equiv_helper_cons_iff.mp he
-      sorry
+      have h2 : noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0) := tail_noTrailingZero_helper_and_of hna
+      have h3 : noTrailingZero.helper base ys ∧ (ys = [] → y ≠ 0) := tail_noTrailingZero_helper_and_of hnb
+      exact List.cons_eq_cons.mpr (And.intro h1.left (ih h1.right h2.left h3.left))
+
+theorem eq_of_equiv_of_noTrailingZero {base : NatGtOne} {a b : TZNumeral base} (he : a ≈ b)
+  (hna : noTrailingZero a) (hnb : noTrailingZero b) : a = b :=
+  (eq_iff_digits_eq a b).mpr (eq_of_equiv_helper_of_noTrailingZero_helper he hna hnb)
 
 end Equiv_NoTrailingZero
 
@@ -335,34 +341,7 @@ theorem eq_zero_of_zero_equiv {base : NatGtOne} {a : Numeral base} (h : 0 ≈ a)
   have : a.toTZNumeral = 0 := TZNumeral.eq_zero_of_equiv_zero_of_noTrailingZero h a.noTZ
   exact (eq_iff_toTZNumeral_eq a 0).mpr this
 
-theorem eq_of_equiv {base : NatGtOne} {a b : Numeral base} (h : a ≈ b) : a = b := by
-  induction ga : a.digits generalizing b with
-  | nil =>
-    have h1 : 0 ≈ a := TZNumeral.equiv_zero_iff.mpr (by rw [ga]; exact List.all_nil)
-    have h2 : 0 ≈ b := TZNumeral.equiv_trans h1 h
-    rw [eq_zero_of_zero_equiv h1, eq_zero_of_zero_equiv h2]
-  | cons x xs ih =>
-    match gb : b.digits with
-    | [] =>
-      have h1 : 0 ≈ b := TZNumeral.equiv_zero_iff.mpr (by rw [gb]; exact List.all_nil)
-      have h2 : 0 ≈ a := TZNumeral.equiv_trans h1 (TZNumeral.equiv_symm h)
-      rw [eq_zero_of_zero_equiv h1, eq_zero_of_zero_equiv h2]
-    | y::ys =>
-      have h1 : TZNumeral.cons x xs ≈ TZNumeral.cons y ys := by
-        simp only [TZNumeral.cons, TZNumeral.equiv]
-        simp only [equiv, TZNumeral.equiv, ga, gb] at h
-        assumption
-      have h2 : x = y ∧ (xs : TZNumeral base) ≈ ys := TZNumeral.equiv_cons_iff.mp h1
-      have h3 : TZNumeral.noTrailingZero.helper base xs := by sorry
-      have h4 : TZNumeral.noTrailingZero.helper base ys := by sorry
-      let p : Numeral base := ⟨xs, h3⟩
-      let q : Numeral base := ⟨ys, h4⟩
-      have h5 : p ≈ q := by sorry
-      have h6 : p.digits = xs := sorry
-      have h7 : p = q := sorry -- ih h5 h6
-      have h9 : xs = ys := by
-        sorry
-      simp only [eq_iff_toTZNumeral_eq, TZNumeral.eq_iff_digits_eq, ga, gb]
-      exact List.cons_eq_cons.mpr (And.intro h2.left h9)
+theorem eq_of_equiv {base : NatGtOne} {a b : Numeral base} (h : a ≈ b) : a = b :=
+  (eq_iff_toTZNumeral_eq a b).mpr (TZNumeral.eq_of_equiv_of_noTrailingZero h a.noTZ b.noTZ)
 
 end Numeral
