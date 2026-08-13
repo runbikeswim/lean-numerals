@@ -96,8 +96,8 @@ theorem equiv_helper_tonz_cons_of_equiv_helper {base : NatGtOne} {n : base.Fin} 
     rw [equiv_helper_cons_iff]
     exact And.intro rfl h
 
-theorem noTrailingZeroAux_tonz_of {base : NatGtOne} {n : base.Fin} {a : List base.Fin} (ha : noTrailingZeroAux a) :
-  noTrailingZeroAux (tonz n a) := by
+theorem noTrailingZero_helper_tonz_of {base : NatGtOne} {n : base.Fin} {a : List base.Fin}
+  (ha : noTrailingZero.helper base a) : noTrailingZero.helper base (tonz n a) := by
   unfold tonz
   match a with
   | [] =>
@@ -110,7 +110,7 @@ theorem noTrailingZeroAux_tonz_of {base : NatGtOne} {n : base.Fin} {a : List bas
   | x::xs =>
     simp only
     have : x::xs = [] → n ≠ 0 := fun t : x::xs = [] => absurd t (List.cons_ne_nil x xs)
-    exact noTrailingZeroAux_cons_of (And.intro ha this)
+    exact noTrailingZero_helper_cons_of (And.intro ha this)
 
 end Tonz
 
@@ -129,18 +129,18 @@ theorem discardTZ_helper_nil_eq_nil {base : NatGtOne} : discardTZ.helper base []
 theorem discardTZ_zero_eq_zero {base : NatGtOne} : @discardTZ base zero = zero := by
   simp only [discardTZ, discardTZ_helper_nil_eq_nil]
 
-theorem noTrailingZeroAux_discardTZ_helper {base : NatGtOne} {l : List base.Fin} :
-  noTrailingZeroAux (discardTZ.helper base l) := by
+theorem noTrailingZero_helper_discardTZ_helper {base : NatGtOne} {l : List base.Fin} :
+  noTrailingZero.helper base (discardTZ.helper base l) := by
   induction l with
-  | nil => simp only [discardTZ_helper_nil_eq_nil]; exact noTrailingZeroAux_nil
+  | nil => simp only [discardTZ_helper_nil_eq_nil]; exact noTrailingZero_helper_nil
   | cons x xy ih =>
     simp only [discardTZ.helper]
-    exact noTrailingZeroAux_tonz_of ih
+    exact noTrailingZero_helper_tonz_of ih
 
 theorem discardTZ_noTrailingZero {base : NatGtOne} {n : TZNumeral base} :
   n.discardTZ.noTrailingZero := by
   unfold noTrailingZero discardTZ
-  exact noTrailingZeroAux_discardTZ_helper
+  exact noTrailingZero_helper_discardTZ_helper
 
 theorem equiv_helper_discardTZ_helper {base : NatGtOne} {l : List base.Fin} :
   equiv.helper base (discardTZ.helper base l) l := by

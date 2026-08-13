@@ -834,7 +834,7 @@ theorem lt_helper_iff_toNat_helper_lt_toNat_helper {base : NatGtOne} {a b : List
   lt.helper base a b ↔ toNat.helper base a 1 0 < toNat.helper base b 1 0 :=
   Iff.intro toNat_helper_lt_toNat_helper_of_lt_helper lt_helper_of_toNat_helper_lt_toNat_helper
 
-theorem lt_iff_toNat_lt_toNat {base : NatGtOne} {a b : TZNumeral base} : a < b ↔ a.toNat < b.toNat :=
+theorem lt_iff_toNat_lt {base : NatGtOne} {a b : TZNumeral base} : a < b ↔ a.toNat < b.toNat :=
   lt_helper_iff_toNat_helper_lt_toNat_helper
 
 end ToNat_LessThan
@@ -935,11 +935,40 @@ def le {base : NatGtOne} (n m : Numeral base) : Prop := n.toTZNumeral ≤ m.toTZ
 
 instance instLe {base : NatGtOne} : LE (Numeral base) := ⟨le⟩
 
-theorem le_antisymm {base : NatGtOne} {n m : Numeral base} : n ≤ m → m ≤ n → n = m := by sorry
+theorem le_refl {base : NatGtOne} (n : Numeral base) : n ≤ n :=
+  TZNumeral.le_refl n.toTZNumeral
+
+theorem le_trans {base : NatGtOne} {n m k: Numeral base} (hnm : n ≤ m) (hmk : m ≤ k) : n ≤ k :=
+  TZNumeral.le_trans hnm hmk
+
+theorem le_antisymm {base : NatGtOne} {n m : Numeral base} : n ≤ m → m ≤ n → n = m := by
+  intro h1 h2
+  have : n.toTZNumeral ≈ m.toTZNumeral := TZNumeral.equiv_iff_le_and_le.mpr (And.intro h1 h2)
+  exact eq_of_equiv this
+
+theorem le_total {base : NatGtOne} (n m : Numeral base) : n ≤ m ∨ m ≤ n:=
+  TZNumeral.le_total n.toTZNumeral m.toTZNumeral
+
+instance instLeIsLinearOrder {base : NatGtOne} : Std.IsLinearOrder (Numeral base) where
+  le_refl := le_refl
+  le_trans _ _ _ := le_trans
+  le_antisymm _ _ := le_antisymm
+  le_total := le_total
+
+theorem le_iff_toNat_le {base : NatGtOne} {a b : Numeral base} : a ≤ b ↔ a.toNat ≤ b.toNat :=
+  TZNumeral.le_helper_iff_toNat_helper_le
 
 def lt {base : NatGtOne} (n m : Numeral base) : Prop := n.toTZNumeral < m.toTZNumeral
 
 instance instLt {base : NatGtOne} : LT (Numeral base) := ⟨lt⟩
 
+theorem lt_iff_le_and_not_le {base : NatGtOne} {a b : Numeral base} : a < b ↔ a ≤ b ∧ ¬ b ≤ a :=
+  TZNumeral.lt_helper_iff_le_helper_and_not_le_helper
+
+instance instLawfulOrderLT {base : NatGtOne} : Std.LawfulOrderLT (Numeral base) where
+  lt_iff a b := @lt_iff_le_and_not_le base a b
+
+theorem lt_iff_toNat_lt {base : NatGtOne} {a b : Numeral base} : a < b ↔ a.toNat < b.toNat :=
+  TZNumeral.lt_helper_iff_toNat_helper_lt_toNat_helper
 
 end Numeral

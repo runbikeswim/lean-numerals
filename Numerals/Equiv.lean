@@ -344,4 +344,15 @@ theorem eq_zero_of_zero_equiv {base : NatGtOne} {a : Numeral base} (h : 0 ≈ a)
 theorem eq_of_equiv {base : NatGtOne} {a b : Numeral base} (h : a ≈ b) : a = b :=
   (eq_iff_toTZNumeral_eq a b).mpr (TZNumeral.eq_of_equiv_of_noTrailingZero h a.noTZ b.noTZ)
 
+theorem eq_iff_equiv {base : NatGtOne} {a b : Numeral base} : a = b ↔ a ≈ b := by
+  constructor
+  · intro h
+    rw [h]
+    exact TZNumeral.equiv_refl
+  · intro h
+    exact eq_of_equiv h
+
+theorem eq_iff_toNat_eq {base : NatGtOne} {a b : Numeral base} : a = b ↔ a.toNat = b.toNat :=
+  Iff.trans eq_iff_equiv TZNumeral.equiv_iff_toNat_eq
+
 end Numeral
