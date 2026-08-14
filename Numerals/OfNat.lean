@@ -15,7 +15,10 @@ namespace TZNumeral
 
 abbrev ofNat {base : NatGtOne} (n : Nat) : TZNumeral base := prune [] n
 
-theorem ofNat_zero_eq_zero {base : NatGtOne} : @ofNat base 0 = 0 := by
+instance instOfNatTZNumeral {base : NatGtOne} (n : Nat) : OfNat (TZNumeral base) n where
+  ofNat := ofNat n
+
+theorem ofNat_zero_eq_zero {base : NatGtOne} : @ofNat base 0 = zero := by
   simp only [ofNat, zero_eq_zero, prune_nil_zero_eq_zero]
 
 theorem eq_zero_of_ofNat_eq_zero {base : NatGtOne} {n : Nat} (h: ofNat n = @zero base) :
@@ -32,8 +35,9 @@ theorem ofNat_eq_zero_iff_eq_zero {base : NatGtOne} {n : Nat} : ofNat n = @zero 
     exact ofNat_zero_eq_zero
 
 theorem ofNat_eq_of_lt_base {base : NatGtOne} {n : Nat} (hn : n < base.val) :
-  ofNat n = if n = 0 then 0 else ⟨[⟨n, hn⟩]⟩   := by
+  ofNat n = if n = 0 then zero else ⟨[⟨n, hn⟩]⟩   := by
   simp only [ofNat, prune_of_lt hn]
+  rfl
 
 theorem ofNat_add_mul_eq_of {base : NatGtOne} {x y : Nat} (hx : x < base.val) :
   ofNat (x + base.val * y) =

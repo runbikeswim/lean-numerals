@@ -7,6 +7,7 @@ Author: Stefan Kusterer
 import Numerals.Basic
 import Numerals.ToNat
 import Numerals.Prune
+import Numerals.OfNat
 
 namespace TZNumeral
 
@@ -60,7 +61,9 @@ theorem addDigits_helper_nil_eq_toListNatAux {base : NatGtOne} {a : List base.Fi
     exact List.cons_eq_cons.mpr (And.intro rfl rfl)
 
 theorem addDigits_zero_eq_toListAux {base : NatGtOne} {a : TZNumeral base} :
-  a.addDigits 0 = a.toListNat := addDigits_helper_nil_eq_toListNatAux
+  a.addDigits 0 = a.toListNat := by
+  simp only [OfNat.ofNat, ofNat, addDigits, toListNat, prune_nil_zero_eq_zero]
+  exact addDigits_helper_nil_eq_toListNatAux
 
 theorem addDigits_helper_nil_iff_eq_nil_and_eq_nil {base : NatGtOne} {a b : List base.Fin} :
   addDigits.helper base a b = [] ↔ a = [] ∧ b = [] := by
@@ -81,7 +84,7 @@ theorem addDigits_helper_nil_iff_eq_nil_and_eq_nil {base : NatGtOne} {a b : List
 
 theorem addDigits_nil_iff_eq_zero_and_eq_zero {base : NatGtOne} {a b : TZNumeral base} :
   a.addDigits b = [] ↔ a = 0 ∧ b = 0 := by
-  simp only [OfNat.ofNat, eq_iff_digits_eq, Zero.zero]
+  simp only [OfNat.ofNat, eq_iff_digits_eq, OfNat.ofNat, ofNat, prune_nil_zero_eq_zero]
   exact addDigits_helper_nil_iff_eq_nil_and_eq_nil
 
 theorem addDigits_helper_cons_cons_eq {base : NatGtOne} {x y : base.Fin} {xs ys : List base.Fin} :
@@ -123,8 +126,8 @@ end NoTrailingZero_AddDigits
 
 section Add
 
-def add {base : NatGtOne} (n m : TZNumeral base) (k : Nat) : TZNumeral base where
-  digits := helper base n.digits m.digits k where
+def hAdd {base : NatGtOne} (n m : TZNumeral base) : TZNumeral base where
+  digits := helper base n.digits m.digits 0 where
   helper (base : NatGtOne) (a b : List base.Fin) (n : Nat) : List base.Fin :=
   match a, b, n with
   | [], [], 0 => []
@@ -137,6 +140,9 @@ def add {base : NatGtOne} (n m : TZNumeral base) (k : Nat) : TZNumeral base wher
   | [], y::ys, n => FinBase.ofNat (y + n) :: helper base [] ys ((y + n) / base.val)
   | x::xs, y::ys, n => FinBase.ofNat (x + y + n) :: helper base xs ys ((x + y + n) / base.val)
   termination_by (a.length + b.length, n)
+
+instance instHAddTZNumerals {base : NatGtOne} :
+  HAdd (TZNumeral base) (TZNumeral base) (TZNumeral base) := ⟨hAdd⟩
 
 end Add
 
