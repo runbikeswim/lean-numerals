@@ -151,7 +151,7 @@ which represents the number `12` in base ten.
 -/
 @[ext]
 structure TZNumeral (base : NatGtOne) where
-  digits : List (base.Fin)
+  digits : List base.Fin
   deriving Repr
 
 abbrev base2 : NatGtOne := ⟨2, by decide⟩

@@ -19,7 +19,7 @@ def prune {base : NatGtOne} (a : List Nat) (n : Nat) : TZNumeral base where
     | [], 0 => []
     | [], k + 1 =>
       -- for asserting termination
-      have h : 0 < (k + 1) := Nat.zero_lt_succ k
+      have h : 0 < k + 1 := Nat.zero_lt_succ k
       have : (k + 1) / base.val < k + 1 := Nat.div_lt_self h base.property
       FinBase.ofNat (k + 1) :: helper base [] ((k + 1) / base.val)
     | x::xs, n => FinBase.ofNat (x + n) :: helper base xs ((x + n) / base.val)
@@ -130,25 +130,29 @@ end NoTrailingZero_Prune
 section ToNat_Prune
 
 theorem toNat_helper_prune_helper_nil_eq {base : NatGtOne} {n : Nat} :
-  toNat.helper base (prune.helper base [] n) 1 0 = n := by
+  toNat.helper base (prune.helper base [] n).toListNatAux 1 0 = n := by
   induction n using Nat.strongRecOn with
   | _ l ih =>
     match gl : l with
-    | 0 => simp only [prune_helper_nil_zero_eq_nil, toNat.helper]
+    | 0 => simp only [prune_helper_nil_zero_eq_nil, List.toListNatAux, List.map_nil, toNat.helper]
     | k + 1 =>
       have : (k + 1) / base.val < k + 1 := Nat.div_lt_self (Nat.succ_pos k) base.property
-      simp only [prune.helper, toNat_helper_cons_eq]
+      simp only [List.toListNatAux] at ih
+      simp only [prune.helper, List.toListNatAux, List.map_cons, toNat_helper_cons_eq]
       simp only [ih ((k + 1) / base.val) this, FinBase.ofNat]
       rw [Nat.add_comm]
       exact Nat.div_add_mod (k + 1) base.val
 
 theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : List Nat} {n : Nat} :
-  toNat.helper base (prune.helper base a n) 1 0 = n + (toNat.helper base (prune.helper base a 0) 1 0) := by
+  toNat.helper base (prune.helper base a n).toListNatAux 1 0
+    = n + (toNat.helper base (prune.helper base a 0).toListNatAux 1 0) := by
   induction a generalizing n with
   | nil => simp only [toNat_helper_prune_helper_nil_eq, Nat.add_zero]
   | cons x xs ih =>
-    simp only [prune_helper_cons_eq, toNat_helper_cons_eq, FinBase.ofNat, Nat.add_zero]
+    simp only [prune_helper_cons_eq, List.toListNatAux, List.map_cons, toNat_helper_cons_eq, FinBase.ofNat, Nat.add_zero]
+    simp only [List.toListNatAux] at ih
     rw [@ih ((x + n) / base.val), @ih (x / base.val), Nat.mul_add, ← Nat.add_assoc, Nat.mul_add]
+    simp only [Fin.toNat_eq_val]
     rw (occs := .pos [2]) [← Nat.add_assoc]
     rw [Nat.mod_add_div (x + n) base.val, Nat.mod_add_div x base.val, ← Nat.add_assoc]
     rw (occs := .pos [2]) [Nat.add_comm]
