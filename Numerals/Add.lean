@@ -101,15 +101,15 @@ theorem toNat_helper_addDigits_helper_left_distrib {base : NatGtOne} {a b : List
     = (toNat.helper base a.toListNatAux 1 0) + (toNat.helper base b.toListNatAux 1 0) := by
   induction a generalizing b with
   | nil =>
-    simp only [toListNatAux_nil_eq, addDigits_helper_comm, addDigits_helper_nil_eq_toListNatAux]
+    simp only [List.toListNatAux_nil_eq, addDigits_helper_comm, addDigits_helper_nil_eq_toListNatAux]
     simp only [toNat_helper_nil_eq, Nat.zero_add]
   | cons x xs ih =>
     match b with
     | [] =>
-      simp only [toListNatAux_nil_eq, addDigits_helper_nil_eq_toListNatAux]
+      simp only [List.toListNatAux_nil_eq, addDigits_helper_nil_eq_toListNatAux]
       simp only [toNat_helper_nil_eq, Nat.add_zero]
     | y::ys =>
-      simp only [addDigits_helper_cons_cons_eq, cons_toListNatAux_eq]
+      simp only [addDigits_helper_cons_cons_eq, List.cons_toListNatAux_eq]
       simp only [toNat_helper_cons_eq, ih, Nat.mul_add]
       calc ↑x + ↑y + (base.val * toNat.helper base xs.toListNatAux 1 0 + base.val * toNat.helper base ys.toListNatAux 1 0)
           = ↑x + ↑y + base.val * toNat.helper base xs.toListNatAux 1 0 + base.val * toNat.helper base ys.toListNatAux 1 0

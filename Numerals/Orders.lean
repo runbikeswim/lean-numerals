@@ -325,51 +325,52 @@ instance instIsLinearPreorderLe {base : NatGtOne} : Std.IsLinearPreorder (TZNume
 section ToNat_LessThanOrEqualTo
 
 theorem toNat_helper_le_of_le_helper {base : NatGtOne} {a b : List base.Fin}
-  (h : le.helper base a b) : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 := by
+  (h : le.helper base a b) : toNat.helper base a.toListNatAux 1 0 ≤ toNat.helper base b.toListNatAux 1 0 := by
   induction a generalizing b with
-  | nil => simp only [toNat_helper_nil_eq, Nat.zero_le]
+  | nil =>
+    simp only [List.toListNatAux_nil_eq, toNat_helper_nil_eq, Nat.zero_le]
   | cons x xs ih =>
     match b with
     | [] =>
       have : equiv.helper base [] (x::xs) := equiv_helper_nil_of_le_helper_nil h
-      have : toNat.helper base (x :: xs) 1 0 = 0 := toNat_helper_eq_zero_of_equiv_helper_nil this
+      have : toNat.helper base (x :: xs).toListNatAux 1 0 = 0 := toNat_helper_eq_zero_of_equiv_helper_nil this
       simp only [this, Nat.zero_le]
     | y::ys =>
       simp only [le_helper_cons_iff] at h
-      simp only [toNat_helper_cons_eq]
+      simp only [List.cons_toListNatAux_eq, toNat_helper_cons_eq]
       if g : equiv.helper base xs ys then
         simp only [g, reduceIte] at h
-        have : toNat.helper base xs 1 0 ≤ toNat.helper base ys 1 0 :=
+        have : toNat.helper base xs.toListNatAux 1 0 ≤ toNat.helper base ys.toListNatAux 1 0 :=
             ih (le_helper_of_equiv_helper g)
-        calc ↑x + base.val * toNat.helper base xs 1 0 ≤ ↑y + base.val * toNat.helper base xs 1 0 :=
-            Nat.add_le_add_right h (base.val * toNat.helper base xs 1 0)
-          _ ≤ ↑y + base.val * toNat.helper base ys 1 0 :=
+        calc ↑x + base.val * toNat.helper base xs.toListNatAux 1 0 ≤ ↑y + base.val * toNat.helper base xs.toListNatAux 1 0 :=
+            Nat.add_le_add_right h (base.val * toNat.helper base xs.toListNatAux 1 0)
+          _ ≤ ↑y + base.val * toNat.helper base ys.toListNatAux 1 0 :=
             Nat.add_le_add_left (Nat.mul_le_mul_left base.val this) ↑y
       else
         simp only [g, reduceIte] at h
         have h1 : ↑x < base.val := Fin.isLt x
-        have h2 : toNat.helper base xs 1 0 ≤ toNat.helper base ys 1 0 := ih h
-        have h3 : toNat.helper base xs 1 0 ≠ toNat.helper base ys 1 0 := by
+        have h2 : toNat.helper base xs.toListNatAux 1 0 ≤ toNat.helper base ys.toListNatAux 1 0 := ih h
+        have h3 : toNat.helper base xs.toListNatAux 1 0 ≠ toNat.helper base ys.toListNatAux 1 0 := by
           intro hc
           exact absurd (equiv_helper_of_toNat_helper_eq hc) g
-        have h4 : toNat.helper base xs 1 0 < toNat.helper base ys 1 0 := Nat.lt_of_le_of_ne h2 h3
+        have h4 : toNat.helper base xs.toListNatAux 1 0 < toNat.helper base ys.toListNatAux 1 0 := Nat.lt_of_le_of_ne h2 h3
         exact Nat.le_of_lt (Nat.add_mul_lt_of_lt_of_lt h4 h1)
 
 theorem toNat_le_of_le {base : NatGtOne} {a b : TZNumeral base} (h : a ≤ b) : a.toNat ≤ b.toNat :=
   toNat_helper_le_of_le_helper h
 
 theorem le_helper_of_toNat_helper_le {base : NatGtOne} {a b : List base.Fin}
-  (h : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0) : le.helper base a b := by
+  (h : toNat.helper base a.toListNatAux 1 0 ≤ toNat.helper base b.toListNatAux 1 0) : le.helper base a b := by
   induction a generalizing b with
   | nil => exact le_helper_nil
   | cons x xs ih =>
     match b with
     | [] =>
-      simp only [toNat_helper_nil_eq, Nat.le_zero] at h
+      simp only [List.toListNatAux_nil_eq, toNat_helper_nil_eq, Nat.le_zero] at h
       rw (occs := .pos [2])[← @toNat_helper_nil_eq base 1 0] at h
       exact le_helper_of_equiv_helper (equiv_helper_of_toNat_helper_eq h)
     | y::ys =>
-      simp only [toNat_helper_cons_eq] at h
+      simp only [List.cons_toListNatAux_eq, toNat_helper_cons_eq] at h
       simp only [le.helper]
       if g: equiv.helper base xs ys then
         simp only [g, reduceIte]
@@ -377,10 +378,10 @@ theorem le_helper_of_toNat_helper_le {base : NatGtOne} {a b : List base.Fin}
         exact Nat.le_of_add_le_add_right h
       else
         simp only [g, reduceIte]
-        have h1 : toNat.helper base xs 1 0 ≠ toNat.helper base ys 1 0 := by
+        have h1 : toNat.helper base xs.toListNatAux 1 0 ≠ toNat.helper base ys.toListNatAux 1 0 := by
           intro hc
           exact absurd (equiv_helper_of_toNat_helper_eq hc) g
-        have h2 : toNat.helper base xs 1 0 ≤ toNat.helper base ys 1 0 :=
+        have h2 : toNat.helper base xs.toListNatAux 1 0 ≤ toNat.helper base ys.toListNatAux 1 0 :=
           (Nat.add_mul_le_iff_le_of h1 (Fin.isLt x) (Fin.isLt y)).mp h
         exact ih h2
 
@@ -388,7 +389,7 @@ theorem le_of_toNat_le {base : NatGtOne} {a b : TZNumeral base}
   (h : a.toNat ≤ b.toNat) : a ≤ b := le_helper_of_toNat_helper_le h
 
 theorem le_helper_iff_toNat_helper_le {base : NatGtOne} {a b : List base.Fin} :
-  le.helper base a b ↔ toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 :=
+  le.helper base a b ↔ toNat.helper base a.toListNatAux 1 0 ≤ toNat.helper base b.toListNatAux 1 0 :=
   Iff.intro toNat_helper_le_of_le_helper le_helper_of_toNat_helper_le
 
 theorem le_iff_toNat_le {base : NatGtOne} {a b : TZNumeral base} : a ≤ b ↔ a.toNat ≤ b.toNat :=
@@ -809,21 +810,25 @@ end LessThanOrEqual_LessThan
 section ToNat_LessThan
 
 theorem toNat_helper_lt_toNat_helper_of_lt_helper {base : NatGtOne} {a b : List base.Fin} (h : lt.helper base a b) :
-  toNat.helper base a 1 0 < toNat.helper base b 1 0 := by
-  have h1 : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 := toNat_helper_le_of_le_helper (le_helper_of_lt_helper h)
+  toNat.helper base a.toListNatAux 1 0 < toNat.helper base b.toListNatAux  1 0 := by
+  have h1 : toNat.helper base a.toListNatAux  1 0 ≤ toNat.helper base b.toListNatAux  1 0 :=
+    toNat_helper_le_of_le_helper (le_helper_of_lt_helper h)
   have h2 : ¬ equiv.helper base a b := not_equiv_helper_of_lt_helper h
-  have h3 : toNat.helper base a 1 0 = toNat.helper base b 1 0 ↔ equiv.helper base a b := Iff.symm equiv_helper_iff_toNat__helper_eq
-  have h4 : ¬ toNat.helper base a 1 0 = toNat.helper base b 1 0 := (Classical.iff_iff_not_iff_not.mp h3).mpr h2
+  have h3 : toNat.helper base a.toListNatAux  1 0 = toNat.helper base b.toListNatAux  1 0 ↔ equiv.helper base a b :=
+    Iff.symm equiv_helper_iff_toNat__helper_eq
+  have h4 : ¬ toNat.helper base a.toListNatAux 1 0 = toNat.helper base b.toListNatAux  1 0 :=
+    (Classical.iff_iff_not_iff_not.mp h3).mpr h2
   exact Nat.lt_of_le_of_ne h1 h4
 
 theorem toNat_lt_toNat_of_lt {base : NatGtOne} {a b : TZNumeral base} (h : a < b) : a.toNat < b.toNat :=
   toNat_helper_lt_toNat_helper_of_lt_helper h
 
 theorem lt_helper_of_toNat_helper_lt_toNat_helper {base : NatGtOne} {a b : List base.Fin}
-  (h : toNat.helper base a 1 0 < toNat.helper base b 1 0) : lt.helper base a b := by
-  have h1 : toNat.helper base a 1 0 ≤ toNat.helper base b 1 0 := Nat.le_of_lt h
-  have h2 : ¬ toNat.helper base a 1 0 = toNat.helper base b 1 0 := Nat.ne_of_lt h
-  have h3 : toNat.helper base a 1 0 = toNat.helper base b 1 0 ↔ equiv.helper base a b := Iff.symm equiv_helper_iff_toNat__helper_eq
+  (h : toNat.helper base a.toListNatAux  1 0 < toNat.helper base b.toListNatAux  1 0) : lt.helper base a b := by
+  have h1 : toNat.helper base a.toListNatAux  1 0 ≤ toNat.helper base b.toListNatAux  1 0 := Nat.le_of_lt h
+  have h2 : ¬ toNat.helper base a.toListNatAux  1 0 = toNat.helper base b.toListNatAux  1 0 := Nat.ne_of_lt h
+  have h3 : toNat.helper base a.toListNatAux  1 0 = toNat.helper base b.toListNatAux  1 0 ↔ equiv.helper base a b :=
+    Iff.symm equiv_helper_iff_toNat__helper_eq
   have h4 : ¬ equiv.helper base a b := (Classical.iff_iff_not_iff_not.mp h3).mp h2
   exact lt_helper_iff_le_helper_and_not_equiv_helper.mpr (And.intro (le_helper_of_toNat_helper_le h1) h4)
 
@@ -831,8 +836,8 @@ theorem lt_of_toNat_lt_toNat {base : NatGtOne} {a b : TZNumeral base} (h : a.toN
   lt_helper_of_toNat_helper_lt_toNat_helper h
 
 theorem lt_helper_iff_toNat_helper_lt_toNat_helper {base : NatGtOne} {a b : List base.Fin} :
-  lt.helper base a b ↔ toNat.helper base a 1 0 < toNat.helper base b 1 0 :=
-  Iff.intro toNat_helper_lt_toNat_helper_of_lt_helper lt_helper_of_toNat_helper_lt_toNat_helper
+  lt.helper base a b ↔ toNat.helper base a.toListNatAux 1 0 < toNat.helper base b.toListNatAux  1 0 :=
+    Iff.intro toNat_helper_lt_toNat_helper_of_lt_helper lt_helper_of_toNat_helper_lt_toNat_helper
 
 theorem lt_iff_toNat_lt {base : NatGtOne} {a b : TZNumeral base} : a < b ↔ a.toNat < b.toNat :=
   lt_helper_iff_toNat_helper_lt_toNat_helper
@@ -955,8 +960,8 @@ instance instLeIsLinearOrder {base : NatGtOne} : Std.IsLinearOrder (Numeral base
   le_antisymm _ _ := le_antisymm
   le_total := le_total
 
-theorem le_iff_toNat_le {base : NatGtOne} {a b : Numeral base} : a ≤ b ↔ a.toNat ≤ b.toNat :=
-  TZNumeral.le_helper_iff_toNat_helper_le
+theorem le_iff_toNat_le {base : NatGtOne} {a b : Numeral base} : a ≤ b ↔ a.toNat ≤ b.toNat := by
+  exact TZNumeral.le_helper_iff_toNat_helper_le
 
 def lt {base : NatGtOne} (n m : Numeral base) : Prop := n.toTZNumeral < m.toTZNumeral
 

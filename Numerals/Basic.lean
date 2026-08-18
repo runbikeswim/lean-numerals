@@ -120,10 +120,12 @@ end NatGtOne
 
 section List
 
-def List.toListNatAux {base : NatGtOne} (l : List base.Fin) : List Nat := l.map (fun e => e.toNat)
+namespace List
+
+def toListNatAux {base : NatGtOne} (l : List base.Fin) : List Nat := l.map (fun e => e.toNat)
 
 theorem toListNatAux_nil_eq {base : NatGtOne} : @List.toListNatAux base [] = [] := by
-  simp only [List.toListNatAux, List.map_nil]
+  simp only [toListNatAux, map_nil]
 
 theorem toListNatAux_singleton_eq {base : NatGtOne} {a : Fin base.val} :
   @List.toListNatAux base [a] = [↑a] := by
@@ -135,6 +137,7 @@ theorem cons_toListNatAux_eq {base : NatGtOne} {a : Fin base.val} {as : List bas
   simp only [List.toListNatAux, List.map_cons]
   rfl
 
+end List
 end List
 
 section NumeralsThatCanHaveTrailingZeros
@@ -339,15 +342,15 @@ section ToListNat
 abbrev toListNat {base : NatGtOne} (n : TZNumeral base) : List Nat :=  n.digits.toListNatAux
 
 theorem zero_toList_eq_nil {base : NatGtOne} : (@zero base).toListNat = [] := by
-  simp only [toListNat, toListNatAux_nil_eq]
+  simp only [toListNat, List.toListNatAux_nil_eq]
 
 theorem toList_singleton_eq {base : NatGtOne} {a : Fin base.val} :
   @toListNat base ⟨[a]⟩ = [↑a] := by
-  simp only [toListNat, toListNatAux_singleton_eq]
+  simp only [toListNat, List.toListNatAux_singleton_eq]
 
 theorem cons_toList_eq_coe_cons_toList {base : NatGtOne} {a : Fin base.val} {as : TZNumeral base} :
   (cons a as).toListNat = ↑ a :: as.toListNat := by
-  simp only [cons, toListNat, cons_toListNatAux_eq]
+  simp only [cons, toListNat, List.cons_toListNatAux_eq]
 
 end ToListNat
 

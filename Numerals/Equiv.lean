@@ -263,7 +263,7 @@ theorem toNat_helper_eq_zero_of_equiv_helper_nil {base : NatGtOne} {a : List bas
     simp only [equiv_helper_nil_iff, List.all_cons, Bool.and_eq_true] at h
     have h1 : x = 0 := beq_iff_eq.mp h.left
     have h2 : toNat.helper base xs.toListNatAux 1 0 = 0 := ih (equiv_helper_nil_iff.mpr h.right)
-    simp only [cons_toListNatAux_eq, toNat_helper_cons_eq, h1, h2, Nat.add_eq_zero_iff, Fin.val_eq_zero_iff]
+    simp only [List.cons_toListNatAux_eq, toNat_helper_cons_eq, h1, h2, Nat.add_eq_zero_iff, Fin.val_eq_zero_iff]
     simp only [Nat.mul_zero, and_true]
     rfl
 
@@ -273,13 +273,13 @@ theorem toNat_eq_zero_of_toNat_zero {base : NatGtOne} {a : TZNumeral base} (h: 0
 theorem toNat_helper_eq_of_equiv_helper {base : NatGtOne} {a b : List base.Fin} (h: equiv.helper base a b) :
   toNat.helper base a.toListNatAux 1 0 = toNat.helper base b.toListNatAux 1 0 := by
   induction a generalizing b with
-  | nil => simp only [toListNatAux_nil_eq, toNat_helper_eq_zero_of_equiv_helper_nil h, toNat_helper_nil_eq]
+  | nil => simp only [List.toListNatAux_nil_eq, toNat_helper_eq_zero_of_equiv_helper_nil h, toNat_helper_nil_eq]
   | cons x xs ih =>
     match b with
-    | [] => simp only [toListNatAux_nil_eq, toNat_helper_eq_zero_of_equiv_helper_nil (equiv_helper_symm h), toNat_helper_nil_eq]
+    | [] => simp only [List.toListNatAux_nil_eq, toNat_helper_eq_zero_of_equiv_helper_nil (equiv_helper_symm h), toNat_helper_nil_eq]
     | y::ys =>
       simp only [equiv_helper_cons_iff] at h
-      simp only [cons_toListNatAux_eq, toNat_helper_cons_eq]
+      simp only [List.cons_toListNatAux_eq, toNat_helper_cons_eq]
       simp only [h.left, ih h.right]
 
 theorem toNat_eq_of_equiv {base : NatGtOne} {a b : TZNumeral base} (h: a ≈ b) :
@@ -290,7 +290,7 @@ theorem equiv_helper_nil_of_toNat_helper_zero {base : NatGtOne} {a : List base.F
   induction a with
   | nil => exact equiv_helper_refl
   | cons x xs ih =>
-    simp only [cons_toListNatAux_eq, toNat_helper_cons_eq] at h
+    simp only [List.cons_toListNatAux_eq, toNat_helper_cons_eq] at h
     have h1 : x = 0 := Fin.eq_of_val_eq (Nat.eq_zero_of_add_eq_zero_right h)
     have h2 : base.val = 0 ∨ toNat.helper base xs.toListNatAux 1 0 = 0 :=
       Nat.zero_eq_mul.mp (Eq.symm (Nat.eq_zero_of_add_eq_zero_left h))
@@ -310,14 +310,14 @@ theorem equiv_helper_of_toNat_helper_eq {base : NatGtOne} {a b : List base.Fin}
   (h: toNat.helper base a.toListNatAux 1 0 = toNat.helper base b.toListNatAux 1 0) :
   equiv.helper base a b := by
   induction a generalizing b with
-  | nil => rw [toListNatAux_nil_eq, toNat_helper_nil_eq] at h; exact equiv_helper_nil_of_toNat_helper_zero (Eq.symm h)
+  | nil => rw [List.toListNatAux_nil_eq, toNat_helper_nil_eq] at h; exact equiv_helper_nil_of_toNat_helper_zero (Eq.symm h)
   | cons x xs ih =>
     match g: b with
     | [] =>
-      rw [toListNatAux_nil_eq, toNat_helper_nil_eq] at h
+      rw [List.toListNatAux_nil_eq, toNat_helper_nil_eq] at h
       exact equiv_helper_symm (equiv_helper_nil_of_toNat_helper_zero h)
     | y::ys =>
-      simp only [cons_toListNatAux_eq, toNat_helper_cons_eq] at h
+      simp only [List.cons_toListNatAux_eq, toNat_helper_cons_eq] at h
       simp only [equiv_helper_cons_iff]
       have : x.val = y.val ∧ toNat.helper base xs.toListNatAux 1 0 = toNat.helper base ys.toListNatAux 1 0 :=
         (Nat.add_mul_eq_iff_eq_and_eq_of (Fin.isLt x) (Fin.isLt y)).mp h

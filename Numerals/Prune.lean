@@ -64,11 +64,11 @@ theorem prune_nil_eq_cons_of_pos {base : NatGtOne} {n : Nat} (hn : 0 < n) :
 theorem prune_helper_toListAux_eq {base : NatGtOne} {a : List base.Fin} :
   prune.helper base a.toListNatAux 0 = a := by
   induction a with
-  | nil => simp only [toListNatAux_nil_eq, prune_helper_nil_zero_eq_nil]
+  | nil => simp only [List.toListNatAux_nil_eq, prune_helper_nil_zero_eq_nil]
   | cons x xs ih =>
     have h1 : ↑x / base.val = 0 := Nat.div_eq_zero_iff.mpr (.inr (Fin.is_lt x))
     have h2 : FinBase.ofNat ↑x = x := Fin.ofNat_val_eq_self x
-    simp only [cons_toListNatAux_eq, prune_helper_cons_eq, Nat.add_zero, h1, ih, h2]
+    simp only [List.cons_toListNatAux_eq, prune_helper_cons_eq, Nat.add_zero, h1, ih, h2]
 
 theorem prune_toListNat_zero_cancel {base : NatGtOne} {a : TZNumeral base} : prune a.toListNat 0 = a := by
   simp only [prune, prune_helper_toListAux_eq]
