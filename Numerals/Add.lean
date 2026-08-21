@@ -333,6 +333,41 @@ theorem zero_equiv_add_iff_zero_equiv_and_zero_equiv {base : NatGtOne} {a b : TZ
 
 end Add
 
+section Add_Prune
+
+theorem hAdd_helper_nil_eq_prune_helper_addDigits_helper_nil {base : NatGtOne} {a : List base.Fin} {n : Nat} :
+  hAdd.helper base [] a n = prune.helper base (addDigits.helper base [] a) n := by
+  induction a generalizing n with
+  | nil =>
+    induction n using Nat.strongRecOn with
+    | _ l ih =>
+      rw [addDigits.helper.eq_def, hAdd.helper.eq_def, prune.helper.eq_def]
+      if hl : l = 0 then
+        rw [hl]
+      else
+        have h1 : l / base.val < l := Nat.div_lt_self (Nat.zero_lt_of_ne_zero hl) base.property
+        have h2 : hAdd.helper base [] [] (l / base.val) = prune.helper base [] (l / base.val)  := by
+          rw [ih (l / base.val) h1, addDigits.helper.eq_def]
+        match l with | k + 1 => simp only [h2]
+  | cons y ys ih =>
+    simp only [addDigits.helper, hAdd.helper, prune.helper, List.cons.injEq, true_and]
+    exact ih
+
+theorem hAdd_helper_eq_prune_helper_addDigits_helper {base : NatGtOne} {a b : List base.Fin} {n : Nat} :
+  hAdd.helper base a b n = prune.helper base (addDigits.helper base a b) n := by
+  induction a generalizing b n with
+  | nil => exact hAdd_helper_nil_eq_prune_helper_addDigits_helper_nil
+  | cons x xs ih =>
+    rw [addDigits.helper.eq_def, hAdd.helper.eq_def, prune.helper.eq_def]
+    match b with | [] | y::ys  => simp only [List.cons.injEq, true_and]; exact ih
+
+theorem add_eq_prune_addDigits {base : NatGtOne} {a b : TZNumeral base} :
+  a + b = prune (addDigits a b) 0 := by
+  simp only [HAdd.hAdd, hAdd, prune, addDigits, eq_iff_digits_eq]
+  exact hAdd_helper_eq_prune_helper_addDigits_helper
+
+end Add_Prune
+
 end TZNumeral
 
 namespace Numeral
