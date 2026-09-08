@@ -12,7 +12,7 @@ namespace TZNumeral
 
 section Prune
 
-def prune {base : NatGtOne} (a : List Nat) (n : Nat) : TZNumeral base where
+def prune {base : NatGtOne} (a : List Nat) (n := 0) : TZNumeral base where
   digits := helper base (a : List Nat) (n : Nat) where
   helper (base : NatGtOne) (a : List Nat) (n : Nat) : List base.Fin :=
     match a, n with
@@ -92,12 +92,12 @@ end Prune
 
 section NoTrailingZero_Prune
 
-theorem noTrailingZero_helper_prune_helper_nil {base : NatGtOne} {n : Nat} :
-  noTrailingZero.helper base (prune.helper base [] n) := by
+theorem prune_helper_nil_noTrailingZero {base : NatGtOne} {n : Nat} :
+  (prune.helper base [] n).noTrailingZero := by
   induction n using Nat.strongRecOn with
   | _ l ihl =>
     match gl : l with
-    | 0 => simp only [prune_helper_nil_zero_eq_nil]; exact noTrailingZero_helper_nil
+    | 0 => simp only [prune_helper_nil_zero_eq_nil]; exact List.nil_noTrailingZero
     | k + 1 =>
       simp only [prune.helper]
       have h1 : (k + 1) / base.val < k + 1  := Nat.div_lt_self (Nat.succ_pos k) base.property
@@ -106,24 +106,24 @@ theorem noTrailingZero_helper_prune_helper_nil {base : NatGtOne} {n : Nat} :
           (@prune_helper_eq_nil_iff_eq_nil_and_eq_zero base).mpr (And.intro rfl g)
         have h3 : FinBase.ofNat (k + 1) ≠ base.zero :=
           FinBase.ofNat_ne_zero_of_div_zero_of_ne g (Nat.succ_ne_zero k)
-        have h4 : noTrailingZero.helper base (prune.helper base [] ((k + 1) / base.val))
+        have h4 : List.noTrailingZero (prune.helper base [] ((k + 1) / base.val))
                     ∧ (@prune.helper base [] ((k + 1) / base.val)  = [] → FinBase.ofNat (k + 1) ≠ base.zero) :=
           And.intro (ihl ((k + 1) / base.val) h1) (fun _ : prune.helper base [] ((k + 1) / base.val) = [] => h3)
-        exact noTrailingZero_helper_cons_of h4
+        exact List.cons_noTrailingZero_of h4
       else
         have h2 : ¬(([] : List Nat) = [] ∧ (k + 1) / base.val = 0) := by
           intro h
           exact absurd h.right g
         have h3 : @prune.helper base [] ((k + 1) / base.val) ≠ [] :=
           Classical.imp_iff_not_imp_not.mp prune_helper_eq_nil_iff_eq_nil_and_eq_zero.mp h2
-        have h4 : noTrailingZero.helper base (prune.helper base [] ((k + 1) / base.val) )
+        have h4 : List.noTrailingZero (prune.helper base [] ((k + 1) / base.val) )
                     ∧ (prune.helper base [] ((k + 1) / base.val)  = [] → FinBase.ofNat (k + 1) ≠ base.zero) :=
           And.intro (ihl ((k + 1) / base.val) h1) (fun t : prune.helper base [] ((k + 1) / base.val) = [] => absurd t h3)
-        exact noTrailingZero_helper_cons_of h4
+        exact List.cons_noTrailingZero_of h4
 
 theorem prune_nil_noTrailingZero {base : NatGtOne} {n : Nat} : (@prune base [] n).noTrailingZero := by
   unfold prune noTrailingZero
-  exact noTrailingZero_helper_prune_helper_nil
+  exact prune_helper_nil_noTrailingZero
 
 end NoTrailingZero_Prune
 

@@ -68,6 +68,8 @@ end Fin
 
 namespace FinBase
 
+instance coeToNat {base : NatGtOne} : CoeOut (base.Fin) Nat := ⟨fun v => v.val⟩
+
 theorem eq_iff_eq_val {base : NatGtOne} {a b : base.Fin} : a = b ↔ a.val = b.val := by
   constructor
   · intro h
@@ -97,6 +99,7 @@ theorem ofNat_coe_cancel {base : NatGtOne} {x : base.Fin} : ofNat ↑x = x :=
   Fin.ofNat_val_eq_self x
 
 instance {base : NatGtOne} (n : Nat) : OfNat (base.Fin) n := ⟨ofNat n⟩
+instance coeOfNat {base : NatGtOne} : Coe Nat (base.Fin) := ⟨ofNat⟩
 
 theorem ofNat_mod_eq {base : NatGtOne} (n : Nat) : @ofNat base (n % base.val) = ofNat n := by
   simp only [ofNat, Nat.mod_mod]
@@ -115,12 +118,16 @@ theorem ofNat_ne_zero_of_div_zero_of_ne {base : NatGtOne} {n : Nat} (h1 : n / ba
 theorem eq_one_iff_eq_one {base : NatGtOne} (x : base.Fin) : x = base.one ↔ x = @ofNat base 1 := by
   simp only [FinBase.one_eq_one, OfNat.ofNat, ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr base.property]
 
+instance instFinBaseZero {base : NatGtOne} : Zero base.Fin := ⟨base.zero⟩
+
 end FinBase
 end NatGtOne
 
 section List
 
 namespace List
+
+def mapCoe {α β : Type} [Coe α β] (l : List α) : List β := l.map (Coe.coe ·)
 
 def toListNatAux {base : NatGtOne} (l : List base.Fin) : List Nat := l.map (fun e => e.toNat)
 
@@ -136,6 +143,100 @@ theorem cons_toListNatAux_eq {base : NatGtOne} {a : Fin base.val} {as : List bas
   (a::as).toListNatAux = ↑a :: as.toListNatAux := by
   simp only [List.toListNatAux, List.map_cons]
   rfl
+
+def noTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Prop :=
+ (h : l ≠ []) → l.getLast h ≠ 0
+
+theorem nil_noTrailingZero {α : Type} [Zero α] [DecidableEq α] : ([] : List α).noTrailingZero := by
+  unfold noTrailingZero; intro; contradiction
+
+theorem noTrailingZero_of {α : Type} [Zero α] [DecidableEq α] {l : List α}
+  (h1 : l ≠ []) (h2 : l.getLast h1 ≠ 0) : l.noTrailingZero := by
+  unfold noTrailingZero
+  intro
+  exact h2
+
+theorem not_noTrailingZero_of {α : Type} [Zero α] [DecidableEq α] {l : List α}
+  (h1 : l ≠ []) (h2 : l.getLast h1 = 0) : ¬ l.noTrailingZero := by
+  unfold noTrailingZero
+  intro h3
+  exact absurd h2 (h3 h1)
+
+theorem singleton_noTrailingZero_of_ne_zero {α : Type} [Zero α] [DecidableEq α] {a : α} (h : a ≠ 0) :
+  [a].noTrailingZero := by
+  unfold noTrailingZero
+  intro
+  simp only [List.getLast_singleton]
+  assumption
+
+theorem ne_zero_of_singleton_noTrailingZero {α : Type} [Zero α] [DecidableEq α] {a : α} (h : [a].noTrailingZero) :
+  a ≠ 0 := by
+  unfold noTrailingZero at h
+  exact h (cons_ne_nil a [])
+
+theorem not_singleton_noTrailingZero_of_eq_zero {α : Type} [Zero α] [DecidableEq α] {a : α} (h : a = 0) :
+  ¬ [a].noTrailingZero := by
+  unfold noTrailingZero
+  intro h1
+  simp only [List.getLast_singleton] at h1
+  exact absurd h (h1 (cons_ne_nil a []))
+
+theorem eq_zero_of_not_singleton_noTrailingZero {α : Type} [Zero α] [DecidableEq α] {a : α} (h : ¬ [a].noTrailingZero) :
+  a = 0 := by
+  unfold noTrailingZero at h
+  simp only [getLast_singleton, ne_eq, cons_ne_self, not_false_eq_true] at h
+  simp only [forall_const, Decidable.not_not] at h
+  assumption
+
+theorem cons_noTrailingZero_of {α : Type} [Zero α] [DecidableEq α] {a : α} {l : List α}
+  (h : l.noTrailingZero ∧ (l = [] → a ≠ 0)) : (a::l).noTrailingZero := by
+  unfold noTrailingZero at h
+  match l with
+  | [] => exact singleton_noTrailingZero_of_ne_zero (h.right rfl)
+  | x::xs =>
+    unfold noTrailingZero
+    intro h1
+    rw [getLast_cons_cons]
+    exact h.left (cons_ne_nil x xs)
+
+theorem tail_noTrailingZero_and_of {α : Type} [Zero α] [DecidableEq α] {a : α} {l : List α}
+  (h : (a::l).noTrailingZero) : l.noTrailingZero ∧ (l = [] → a ≠ 0) := by
+  match l with
+  | [] => exact And.intro nil_noTrailingZero (fun _ ↦ ne_zero_of_singleton_noTrailingZero h)
+  | x::xs =>
+    unfold noTrailingZero at ⊢ h
+    simp only [getLast_cons_cons] at h
+    exact And.intro (fun t : x :: xs ≠ [] ↦ (h (cons_ne_nil a _))) (fun t : x :: xs = [] ↦ absurd t (cons_ne_nil x xs))
+
+def decNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
+  match l with
+  | [] => isTrue (by intro h; contradiction)
+  | x::xs =>
+    if g : (x::xs).getLast (cons_ne_nil x xs) ≠ 0 then
+      isTrue (fun _ ↦ g)
+    else
+      isFalse (by
+        simp only [noTrailingZero]
+        simp only [Ne, Classical.not_not] at g
+        intro h
+        exact absurd g (h (cons_ne_nil x xs))
+      )
+
+instance instdDecNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
+  l.decNoTrailingZero
+
+def l1 : List Nat := [1, 2, 0]
+#eval l1.noTrailingZero
+
+def l2 : List Nat := [1, 2]
+#eval l2.noTrailingZero
+
+def base10 : NatGtOne := ⟨10, by decide⟩
+def l3 : List (base10.Fin) := [1, 2, 0]
+#eval l3.noTrailingZero
+
+def l4 : List (base10.Fin) := [1, 2]
+#eval l4.noTrailingZero
 
 end List
 end List
@@ -357,97 +458,43 @@ end ToListNat
 section NoTrailingZero
 
 def noTrailingZero {base : NatGtOne} (n : TZNumeral base) : Prop :=
-  helper base n.digits where
-  helper (base : NatGtOne) (d : List base.Fin) := (h : d ≠ []) → d.getLast h ≠ 0
+  n.digits.noTrailingZero
 
-theorem noTrailingZero_helper_nil {base : NatGtOne} : noTrailingZero.helper base [] := by
-  unfold noTrailingZero.helper; intro; contradiction
-
-theorem noTrailingZero_nil {base : NatGtOne} : noTrailingZero (@zero base):=
-  noTrailingZero_helper_nil
-
-theorem zero_noTrailingZero {base : NatGtOne} : (@zero base).noTrailingZero :=
-  noTrailingZero_helper_nil
+theorem zero_noTrailingZero {base : NatGtOne} : (@zero base).noTrailingZero := by
+  simp only [noTrailingZero, List.nil_noTrailingZero]
 
 theorem noTrailingZero_of_digits_eq_nil {base : NatGtOne} {n : TZNumeral base} (h : n.digits = []) :
   n.noTrailingZero := by
     simp only [noTrailingZero, h]
-    exact noTrailingZero_helper_nil
-
-theorem noTrailingZero_helper_of {base : NatGtOne} {n : List base.Fin}
-  (h1 : n ≠ []) (h2 : n.getLast h1 ≠ 0) : noTrailingZero.helper base n := fun _ : n ≠ [] ↦ h2
+    exact List.nil_noTrailingZero
 
 theorem noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
   (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 ≠ 0) :
-  n.noTrailingZero := noTrailingZero_helper_of h1 h2
-
-theorem noTrailingZero_helper_singleton_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
-  noTrailingZero.helper base [n] := by
-  intro
-  simp only [List.getLast_singleton]
-  exact h
+  n.noTrailingZero := List.noTrailingZero_of h1 h2
 
 theorem noTrailingZero_singleton_of {base : NatGtOne} {n : base.Fin} (h : n ≠ 0) :
-  noTrailingZero ⟨[n]⟩ := noTrailingZero_helper_singleton_of h
+  noTrailingZero ⟨[n]⟩ := List.singleton_noTrailingZero_of_ne_zero h
 
 theorem one_noTrailingZero {base : NatGtOne} : (@one base).noTrailingZero := by
   rw [one_eq_one]
   exact noTrailingZero_singleton_of FinBase.one_ne_zero
 
-theorem neg_noTrailingZero_helper_of {base : NatGtOne} {n : List base.Fin}
-  (h1 : n ≠ []) (h2 : n.getLast h1 = 0) :
-  ¬ noTrailingZero.helper base n := by
-  intro h3
-  exact absurd h2 (h3 h1)
-
-theorem neg_noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
+theorem not_noTrailingZero_of {base : NatGtOne} {n : TZNumeral base}
   (h1 : n.digits ≠ []) (h2 : n.digits.getLast h1 = 0) :
-  ¬ n.noTrailingZero := neg_noTrailingZero_helper_of h1 h2
-
-theorem ne_zero_of_noTrailingZero_helper_singleton {base : NatGtOne} {n : base.Fin}
-  (h : noTrailingZero.helper base [n]) : n ≠ 0 := by
-  simp only [noTrailingZero.helper, List.getLast_singleton] at h
-  exact h (List.cons_ne_nil n [])
+  ¬ n.noTrailingZero := List.not_noTrailingZero_of h1 h2
 
 theorem ne_zero_of_noTrailingZero_singleton {base : NatGtOne} {n : base.Fin}
-  (h : noTrailingZero ⟨[n]⟩) : n ≠ 0 := ne_zero_of_noTrailingZero_helper_singleton h
-
-theorem noTrailingZero_helper_cons_of {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}
-  (h : noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0)) : noTrailingZero.helper base (x::xs) := by
-  simp only [noTrailingZero.helper] at ⊢ h
-  intro _
-  if g : xs = [] then
-    simp only [g, List.getLast_singleton (List.cons_ne_nil x [])]
-    exact h.right g
-  else
-    rw [List.getLast_cons g]
-    exact h.left g
+  (h : noTrailingZero ⟨[n]⟩) : n ≠ 0 := List.ne_zero_of_singleton_noTrailingZero h
 
 theorem cons_noTrailingZero_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
   (h : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0)) : (cons x xs).noTrailingZero := by
-  simp only [noTrailingZero, cons, eq_iff_digits_eq, OfNat.ofNat, Zero.zero] at ⊢ h
-  exact noTrailingZero_helper_cons_of h
-
-theorem tail_noTrailingZero_helper_and_of {base : NatGtOne} {x : base.Fin} {xs : List base.Fin}
-  (h : noTrailingZero.helper base (x::xs)) : noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0) := by
-  if g: xs = [] then
-    simp only [g] at ⊢ h
-    exact And.intro noTrailingZero_helper_nil (fun _ : True ↦ ne_zero_of_noTrailingZero_helper_singleton h)
-  else
-    simp only [noTrailingZero.helper] at ⊢ h
-    have h1 : (x :: xs).getLast (List.cons_ne_nil x xs) ≠ 0 := h (List.cons_ne_nil x xs)
-    have h2 : xs.getLast g ≠ 0 := by rwa [List.getLast_cons g] at h1
-    exact And.intro (fun _ : xs ≠ [] ↦ h2) (fun t: xs = [] ↦ absurd t g)
+  simp only [noTrailingZero, eq_iff_digits_eq] at ⊢ h
+  exact List.cons_noTrailingZero_of h
 
 theorem tail_noTrailingZero_and_of {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}
   (h : (cons x xs).noTrailingZero) : xs.noTrailingZero ∧ (xs = 0 → x ≠ 0) := by
   simp only [noTrailingZero, OfNat.ofNat, Zero.zero, eq_iff_digits_eq]
-  exact tail_noTrailingZero_helper_and_of h
-
-theorem cons_noTrailingZero_helper_iff_tail_noTrailingZero_helper_and {base : NatGtOne}
-  {x : Fin base.val} {xs : List base.Fin} :
-  noTrailingZero.helper base (x::xs) ↔ noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0) :=
-  Iff.intro tail_noTrailingZero_helper_and_of noTrailingZero_helper_cons_of
+  exact List.tail_noTrailingZero_and_of h
 
 theorem cons_noTrailingZero_iff_tail_noTrailingZero_and {base : NatGtOne}
   {x : Fin base.val} {xs : TZNumeral base} :
@@ -467,7 +514,7 @@ def decNoTrailingZero {base : NatGtOne} (n : TZNumeral base) : Decidable (noTrai
     isTrue (noTrailingZero_of_digits_eq_nil g1)
   else
     if g2: n.digits.getLast g1 = 0 then
-      isFalse (neg_noTrailingZero_of g1 g2)
+      isFalse (not_noTrailingZero_of g1 g2)
     else
       isTrue (noTrailingZero_of g1 g2)
 

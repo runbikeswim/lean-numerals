@@ -215,8 +215,8 @@ end Equivalence
 
 section Equiv_NoTrailingZero
 
-theorem eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper {base : NatGtOne} {a : List base.Fin}
-  (he : equiv.helper base [] a) (hn : noTrailingZero.helper base a) : a = [] := by
+theorem eq_nil_of_equiv_helper_nil_of_noTrailingZero {base : NatGtOne} {a : List base.Fin}
+  (he : equiv.helper base [] a) (hn : a.noTrailingZero) : a = [] := by
   match g : a with
   | [] => rfl
   | x::xs =>
@@ -225,31 +225,31 @@ theorem eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper {base : NatGtOne} {a
     have h3 : (x::xs).getLast h1 = 0 :=
       beq_iff_eq.mp (List.getLast_true_of_all_true_of_ne_nil (x::xs) (· == 0) h2 h1)
     have h5 : (x::xs).getLast h1 ≠ 0 := by
-      unfold noTrailingZero.helper at hn
+      unfold List.noTrailingZero at hn
       exact hn h1
     contradiction
 
 theorem eq_zero_of_equiv_zero_of_noTrailingZero {base : NatGtOne} {a : TZNumeral base}
   (he : 0 ≈ a) (hn : noTrailingZero a) : a = 0 := by
   simp only [OfNat.ofNat, Zero.zero, zero, noTrailingZero, equiv, eq_iff_digits_eq] at ⊢ he hn
-  exact eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper he hn
+  exact eq_nil_of_equiv_helper_nil_of_noTrailingZero he hn
 
-theorem eq_of_equiv_helper_of_noTrailingZero_helper {base : NatGtOne} {a b : List base.Fin} (he : equiv.helper base a b)
-  (hna : noTrailingZero.helper base a) (hnb : noTrailingZero.helper base b) : a = b := by
+theorem eq_of_equiv_helper_of_noTrailingZero {base : NatGtOne} {a b : List base.Fin} (he : equiv.helper base a b)
+  (hna : a.noTrailingZero) (hnb : b.noTrailingZero) : a = b := by
   induction a generalizing b with
-  | nil => exact Eq.symm (eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper he hnb)
+  | nil => exact Eq.symm (eq_nil_of_equiv_helper_nil_of_noTrailingZero he hnb)
   | cons x xs ih =>
     match gb : b with
-    | [] => exact eq_nil_of_equiv_helper_nil_of_noTrailingZero_helper (equiv_helper_symm he) hna
+    | [] => exact eq_nil_of_equiv_helper_nil_of_noTrailingZero (equiv_helper_symm he) hna
     | y::ys =>
       have h1 : x = y ∧ equiv.helper base xs ys := equiv_helper_cons_iff.mp he
-      have h2 : noTrailingZero.helper base xs ∧ (xs = [] → x ≠ 0) := tail_noTrailingZero_helper_and_of hna
-      have h3 : noTrailingZero.helper base ys ∧ (ys = [] → y ≠ 0) := tail_noTrailingZero_helper_and_of hnb
+      have h2 : xs.noTrailingZero ∧ (xs = [] → x ≠ 0) := List.tail_noTrailingZero_and_of hna
+      have h3 : ys.noTrailingZero ∧ (ys = [] → y ≠ 0) := List.tail_noTrailingZero_and_of hnb
       exact List.cons_eq_cons.mpr (And.intro h1.left (ih h1.right h2.left h3.left))
 
 theorem eq_of_equiv_of_noTrailingZero {base : NatGtOne} {a b : TZNumeral base} (he : a ≈ b)
   (hna : noTrailingZero a) (hnb : noTrailingZero b) : a = b :=
-  (eq_iff_digits_eq a b).mpr (eq_of_equiv_helper_of_noTrailingZero_helper he hna hnb)
+  (eq_iff_digits_eq a b).mpr (eq_of_equiv_helper_of_noTrailingZero he hna hnb)
 
 end Equiv_NoTrailingZero
 

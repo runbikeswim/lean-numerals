@@ -96,6 +96,35 @@ end AddDigits
 
 section NoTrailingZero_AddDigits
 
+/- TODO
+theorem noTrailingZero_helper_addDigits_helper_of {base : NatGtOne} {a b : List base.Fin}
+  (h : noTrailingZero.helper base a ∧ noTrailingZero.helper base b) :
+  noTrailingZero.helper base (addDigits.helper base a b) := by
+  induction a generalizing b with
+  | nil =>
+    match b with
+    | [] => intro _ ; contradiction
+    | y::ys =>
+      simp only [addDigits_comm, addDigits_nil_eq]
+      exact hbntz
+  | cons x xs ih =>
+    match b with
+    | [] => simp only [addDigits_nil_eq]; exact hantz
+    | y::ys =>
+      rw [noTrailingZeroAux_cons_iff_noTrailingZeroAux_and] at hantz hbntz
+      have : noTrailingZeroAux (addDigits xs ys) := ih hantz.left hbntz.left
+      simp only [addDigits_cons_cons_eq_add_cons_addDigits, noTrailingZeroAux_cons_iff_noTrailingZeroAux_and]
+      simp only [this, true_and, addDigits_eq_nil_iff_eq_nil_and_eq_nil]
+      intro h
+      have h1 : 0 < x := Nat.pos_iff_ne_zero.mpr (hantz.right h.left)
+      have h2 : 0 < x + y := Nat.add_pos_left h1 y
+      exact Nat.pos_iff_ne_zero.mp h2
+-/
+
+end NoTrailingZero_AddDigits
+
+section ToNat_AddDigits
+
 theorem toNat_helper_addDigits_helper_left_distrib {base : NatGtOne} {a b : List base.Fin} :
   toNat.helper base (addDigits.helper base a b) 1 0
     = (toNat.helper base a.toListNatAux 1 0) + (toNat.helper base b.toListNatAux 1 0) := by
@@ -123,7 +152,10 @@ theorem toNat_helper_addDigits_helper_left_distrib {base : NatGtOne} {a b : List
         _ = ↑x + base.val * toNat.helper base xs.toListNatAux 1 0 + (↑y + base.val * toNat.helper base ys.toListNatAux 1 0)
             := by rw [← Nat.add_assoc]
 
-end NoTrailingZero_AddDigits
+theorem toNat_helper_addDigits_left_distrib {base : NatGtOne} {a b : TZNumeral base} :
+  toNat.helper base (addDigits a b) 1 0 = a.toNat + b.toNat := toNat_helper_addDigits_helper_left_distrib
+
+end ToNat_AddDigits
 
 section Add
 
@@ -362,11 +394,20 @@ theorem hAdd_helper_eq_prune_helper_addDigits_helper {base : NatGtOne} {a b : Li
     match b with | [] | y::ys  => simp only [List.cons.injEq, true_and]; exact ih
 
 theorem add_eq_prune_addDigits {base : NatGtOne} {a b : TZNumeral base} :
-  a + b = prune (addDigits a b) 0 := by
+  a + b = prune (addDigits a b) := by
   simp only [HAdd.hAdd, hAdd, prune, addDigits, eq_iff_digits_eq]
   exact hAdd_helper_eq_prune_helper_addDigits_helper
 
 end Add_Prune
+
+section NoTrailingZero_Add
+
+theorem hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
+  {base : NatGtOne} {a b : List base.Fin} {n : Nat} (h : a.noTrailingZero ∧ b.noTrailingZero) :
+  (hAdd.helper base a b n).noTrailingZero := by sorry
+
+
+end NoTrailingZero_Add
 
 end TZNumeral
 
