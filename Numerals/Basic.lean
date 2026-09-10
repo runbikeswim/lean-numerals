@@ -115,12 +115,16 @@ theorem ofNat_ne_zero_of_div_zero_of_ne {base : NatGtOne} {n : Nat} (h1 : n / ba
   simp only [eq_iff_eq_val] at h
   contradiction
 
+theorem ofNat_eq_zero_iff_mod_eq_zero {base : NatGtOne} (n : Nat) :
+  @ofNat base n = 0 ↔ n % base.val = 0 := Fin.mk_eq_zero
+
 theorem eq_one_iff_eq_one {base : NatGtOne} (x : base.Fin) : x = base.one ↔ x = @ofNat base 1 := by
   simp only [FinBase.one_eq_one, OfNat.ofNat, ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr base.property]
 
 instance instFinBaseZero {base : NatGtOne} : Zero base.Fin := ⟨base.zero⟩
 
 end FinBase
+
 end NatGtOne
 
 section List
@@ -207,6 +211,14 @@ theorem tail_noTrailingZero_and_of {α : Type} [Zero α] [DecidableEq α] {a : �
     unfold noTrailingZero at ⊢ h
     simp only [getLast_cons_cons] at h
     exact And.intro (fun t : x :: xs ≠ [] ↦ (h (cons_ne_nil a _))) (fun t : x :: xs = [] ↦ absurd t (cons_ne_nil x xs))
+
+theorem noTrailingZero_cons_iff_noTrailingZero_and {α : Type} [Zero α] [DecidableEq α] {x : α} {xs : List α} :
+  (x::xs).noTrailingZero  ↔ xs.noTrailingZero ∧ (xs = [] → x ≠ 0) := by
+  constructor
+  · intro h
+    exact tail_noTrailingZero_and_of h
+  · intro h
+    exact cons_noTrailingZero_of h
 
 def decNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
   match l with

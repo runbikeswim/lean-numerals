@@ -125,6 +125,25 @@ theorem prune_nil_noTrailingZero {base : NatGtOne} {n : Nat} : (@prune base [] n
   unfold prune noTrailingZero
   exact prune_helper_nil_noTrailingZero
 
+theorem prune_helper_noTrailingZero_of_noTrailingZero {base : NatGtOne} {n : Nat} {a : List Nat} (h : a.noTrailingZero) :
+  (prune.helper base a n).noTrailingZero := by
+  induction a generalizing n with
+  | nil => exact prune_helper_nil_noTrailingZero
+  | cons x xs iha =>
+    simp only [prune.helper]
+    have h1 : xs.noTrailingZero ∧ (xs = [] → x ≠ 0) := List.tail_noTrailingZero_and_of h
+    have h2 : (prune.helper base xs ((x + n) / base.val) ).noTrailingZero  := iha h1.left
+    simp only [List.noTrailingZero_cons_iff_noTrailingZero_and, h2, true_and]
+    intro h
+    simp only [prune_helper_eq_nil_iff_eq_nil_and_eq_zero] at h
+    have h3 : x ≠ 0 := h1.right h.left
+    have h4 : 0 < x := Nat.pos_of_ne_zero h3
+    have h5 : 0 < x + n := Nat.add_pos_left h4 n
+    have h6 : x + n ≠ 0 := Nat.ne_zero_iff_zero_lt.mpr h5
+    have h7 : (x + n) % base.val ≠ 0 := Nat.mod_ne_zero_of_one_lt_of_div_zero_of_ne base.property h.right h6
+    intro h8
+    exact absurd ((FinBase.ofNat_eq_zero_iff_mod_eq_zero (x + n)).mp h8) h7
+
 end NoTrailingZero_Prune
 
 section ToNat_Prune
