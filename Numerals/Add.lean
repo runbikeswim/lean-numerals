@@ -56,9 +56,9 @@ theorem addDigits_comm {base : NatGtOne} {a b : TZNumeral base} :
 theorem addDigits_helper_nil_eq_toListNatAux {base : NatGtOne} {a : List base.Fin} :
   addDigits.helper base a [] = a.toListNatAux := by
   induction a with
-  | nil => simp only [addDigits.helper, List.toListNatAux, List.map_nil]
+  | nil => simp only [addDigits.helper, List.toListNatAux_nil_eq]
   | cons x xs ih =>
-    simp only [addDigits.helper, List.toListNatAux, List.map_cons, ih]
+    simp only [addDigits.helper, List.toListNatAux, ih]
     exact List.cons_eq_cons.mpr (And.intro rfl rfl)
 
 theorem addDigits_zero_eq_toListAux {base : NatGtOne} {a : TZNumeral base} :

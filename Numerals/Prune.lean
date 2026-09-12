@@ -153,12 +153,12 @@ theorem toNat_helper_prune_helper_nil_eq {base : NatGtOne} {n : Nat} :
   induction n using Nat.strongRecOn with
   | _ l ih =>
     match gl : l with
-    | 0 => simp only [prune_helper_nil_zero_eq_nil, List.toListNatAux, List.map_nil, toNat.helper]
+    | 0 => simp only [prune_helper_nil_zero_eq_nil, List.toListNatAux, List.mapCoe, List.map_nil, toNat.helper]
     | k + 1 =>
       have : (k + 1) / base.val < k + 1 := Nat.div_lt_self (Nat.succ_pos k) base.property
-      simp only [List.toListNatAux] at ih
-      simp only [prune.helper, List.toListNatAux, List.map_cons, toNat_helper_cons_eq]
-      simp only [ih ((k + 1) / base.val) this, FinBase.ofNat]
+      simp only [List.toListNatAux, List.mapCoe, CoeOut.coe] at ih
+      simp only [prune.helper, List.toListNatAux, List.mapCoe, List.map_cons, toNat_helper_cons_eq, FinBase.ofNat, CoeOut.coe]
+      simp only [ih ((k + 1) / base.val) this]
       rw [Nat.add_comm]
       exact Nat.div_add_mod (k + 1) base.val
 
@@ -168,10 +168,9 @@ theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : Lis
   induction a generalizing n with
   | nil => simp only [toNat_helper_prune_helper_nil_eq, Nat.add_zero]
   | cons x xs ih =>
-    simp only [prune_helper_cons_eq, List.toListNatAux, List.map_cons, toNat_helper_cons_eq, FinBase.ofNat, Nat.add_zero]
-    simp only [List.toListNatAux] at ih
+    simp only [prune_helper_cons_eq, List.toListNatAux, List.mapCoe, CoeOut.coe, FinBase.ofNat] at ⊢ ih
+    simp only [List.map_cons, toNat_helper_cons_eq, Nat.add_zero]
     rw [@ih ((x + n) / base.val), @ih (x / base.val), Nat.mul_add, ← Nat.add_assoc, Nat.mul_add]
-    simp only [Fin.toNat_eq_val]
     rw (occs := .pos [2]) [← Nat.add_assoc]
     rw [Nat.mod_add_div (x + n) base.val, Nat.mod_add_div x base.val, ← Nat.add_assoc]
     rw (occs := .pos [2]) [Nat.add_comm]

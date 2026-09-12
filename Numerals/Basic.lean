@@ -36,6 +36,11 @@ section NatGtOne
 
 def NatGtOne := { n : Nat // 1 < n} deriving DecidableEq
 
+abbrev base2 : NatGtOne := ⟨2, by decide⟩
+abbrev base8 : NatGtOne := ⟨8, by decide⟩
+abbrev base10 : NatGtOne := ⟨10, by decide⟩
+abbrev base16 : NatGtOne := ⟨16, by decide⟩
+
 abbrev FinBase {base : NatGtOne} : Type := Fin base.val
 
 namespace NatGtOne
@@ -131,22 +136,26 @@ section List
 
 namespace List
 
-def mapCoe {α β : Type} [Coe α β] (l : List α) : List β := l.map (Coe.coe ·)
+def mapCoe {α β : Type} [CoeOut α β] (l : List α) : List β := l.map (CoeOut.coe ·)
 
-def toListNatAux {base : NatGtOne} (l : List base.Fin) : List Nat := l.map (fun e => e.toNat)
+instance instCoeOut {α β : Type} [CoeOut α β] : CoeOut (List α) (List β) := ⟨mapCoe⟩
 
-theorem toListNatAux_nil_eq {base : NatGtOne} : @List.toListNatAux base [] = [] := by
-  simp only [toListNatAux, map_nil]
+theorem nil_coe_eq_nil {α β : Type} [CoeOut α β] : ([] : List α) = ([] : List β) := rfl
+
+theorem singleton_coe_eq_coe_singleton {α β : Type} [CoeOut α β] {a : α} : ([a] : List β) = [(a : β)] := rfl
+
+theorem cons_coe_eq_coe_cons_coe {α β : Type} [CoeOut α β]  {a : α} {as : List α} :
+  ((a::as) : List β)  = (a : β) :: (as : List β) := rfl
+
+def toListNatAux {base : NatGtOne} (l : List base.Fin) : List Nat := (l : List Nat)
+
+theorem toListNatAux_nil_eq {base : NatGtOne} : @List.toListNatAux base [] = [] := nil_coe_eq_nil
 
 theorem toListNatAux_singleton_eq {base : NatGtOne} {a : Fin base.val} :
-  @List.toListNatAux base [a] = [↑a] := by
-  simp only [List.toListNatAux, List.map_singleton]
-  rfl
+  @List.toListNatAux base [a] = [↑a] := singleton_coe_eq_coe_singleton
 
 theorem cons_toListNatAux_eq {base : NatGtOne} {a : Fin base.val} {as : List base.Fin} :
-  (a::as).toListNatAux = ↑a :: as.toListNatAux := by
-  simp only [List.toListNatAux, List.map_cons]
-  rfl
+  (a::as).toListNatAux = ↑a :: as.toListNatAux := cons_coe_eq_coe_cons_coe
 
 def noTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Prop :=
  (h : l ≠ []) → l.getLast h ≠ 0
@@ -237,19 +246,6 @@ def decNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Dec
 instance instdDecNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
   l.decNoTrailingZero
 
-def l1 : List Nat := [1, 2, 0]
-#eval l1.noTrailingZero
-
-def l2 : List Nat := [1, 2]
-#eval l2.noTrailingZero
-
-def base10 : NatGtOne := ⟨10, by decide⟩
-def l3 : List (base10.Fin) := [1, 2, 0]
-#eval l3.noTrailingZero
-
-def l4 : List (base10.Fin) := [1, 2]
-#eval l4.noTrailingZero
-
 end List
 end List
 
@@ -270,28 +266,20 @@ structure TZNumeral (base : NatGtOne) where
   digits : List base.Fin
   deriving Repr
 
-abbrev base2 : NatGtOne := ⟨2, by decide⟩
-
 /--
 shorthand for `TZNumeral`s in binary representation
 -/
 abbrev TZNumeral2 := TZNumeral base2
-
-abbrev base8 : NatGtOne := ⟨8, by decide⟩
 
 /--
 shorthand for `TZNumeral`s octal representation
 -/
 abbrev TZNumeral8 := TZNumeral base8
 
-abbrev base10 : NatGtOne := ⟨10, by decide⟩
-
 /--
 shorthand for `TZNumeral`s decimal representation
 -/
 abbrev TZNumeral10 := TZNumeral ⟨10, by decide⟩
-
-abbrev base16 : NatGtOne := ⟨16, by decide⟩
 
 /--
 shorthand for `TZNumeral`s hexadecimal representation
