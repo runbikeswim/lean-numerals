@@ -147,15 +147,15 @@ theorem singleton_coe_eq_coe_singleton {α β : Type} [CoeOut α β] {a : α} : 
 theorem cons_coe_eq_coe_cons_coe {α β : Type} [CoeOut α β]  {a : α} {as : List α} :
   ((a::as) : List β)  = (a : β) :: (as : List β) := rfl
 
-def toListNatAux {base : NatGtOne} (l : List base.Fin) : List Nat := (l : List Nat)
+def toListNat {base : NatGtOne} (l : List base.Fin) : List Nat := (l : List Nat)
 
-theorem toListNatAux_nil_eq {base : NatGtOne} : @List.toListNatAux base [] = [] := nil_coe_eq_nil
+theorem toListNat_nil_eq {base : NatGtOne} : @toListNat base [] = [] := nil_coe_eq_nil
 
-theorem toListNatAux_singleton_eq {base : NatGtOne} {a : Fin base.val} :
-  @List.toListNatAux base [a] = [↑a] := singleton_coe_eq_coe_singleton
+theorem toListNat_singleton_eq {base : NatGtOne} {a : Fin base.val} :
+  @toListNat base [a] = [↑a] := singleton_coe_eq_coe_singleton
 
-theorem cons_toListNatAux_eq {base : NatGtOne} {a : Fin base.val} {as : List base.Fin} :
-  (a::as).toListNatAux = ↑a :: as.toListNatAux := cons_coe_eq_coe_cons_coe
+theorem cons_toListNat_eq {base : NatGtOne} {a : Fin base.val} {as : List base.Fin} :
+  (a::as).toListNat = ↑a :: as.toListNat := cons_coe_eq_coe_cons_coe
 
 def noTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Prop :=
  (h : l ≠ []) → l.getLast h ≠ 0
@@ -440,18 +440,18 @@ end Cons
 
 section ToListNat
 
-abbrev toListNat {base : NatGtOne} (n : TZNumeral base) : List Nat :=  n.digits.toListNatAux
+abbrev toListNat {base : NatGtOne} (n : TZNumeral base) : List Nat :=  n.digits.toListNat
 
 theorem zero_toList_eq_nil {base : NatGtOne} : (@zero base).toListNat = [] := by
-  simp only [toListNat, List.toListNatAux_nil_eq]
+  simp only [toListNat, List.toListNat_nil_eq]
 
 theorem toList_singleton_eq {base : NatGtOne} {a : Fin base.val} :
   @toListNat base ⟨[a]⟩ = [↑a] := by
-  simp only [toListNat, List.toListNatAux_singleton_eq]
+  simp only [toListNat, List.toListNat_singleton_eq]
 
 theorem cons_toList_eq_coe_cons_toList {base : NatGtOne} {a : Fin base.val} {as : TZNumeral base} :
   (cons a as).toListNat = ↑ a :: as.toListNat := by
-  simp only [cons, toListNat, List.cons_toListNatAux_eq]
+  simp only [cons, toListNat, List.cons_toListNat_eq]
 
 end ToListNat
 

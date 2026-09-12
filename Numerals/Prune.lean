@@ -62,13 +62,13 @@ theorem prune_nil_eq_cons_of_pos {base : NatGtOne} {n : Nat} (hn : 0 < n) :
   exact prune_helper_nil_eq_cons_of_pos hn
 
 theorem prune_helper_toListAux_eq {base : NatGtOne} {a : List base.Fin} :
-  prune.helper base a.toListNatAux 0 = a := by
+  prune.helper base a.toListNat 0 = a := by
   induction a with
-  | nil => simp only [List.toListNatAux_nil_eq, prune_helper_nil_zero_eq_nil]
+  | nil => simp only [List.toListNat_nil_eq, prune_helper_nil_zero_eq_nil]
   | cons x xs ih =>
     have h1 : ↑x / base.val = 0 := Nat.div_eq_zero_iff.mpr (.inr (Fin.is_lt x))
     have h2 : FinBase.ofNat ↑x = x := Fin.ofNat_val_eq_self x
-    simp only [List.cons_toListNatAux_eq, prune_helper_cons_eq, Nat.add_zero, h1, ih, h2]
+    simp only [List.cons_toListNat_eq, prune_helper_cons_eq, Nat.add_zero, h1, ih, h2]
 
 theorem prune_toListNat_zero_cancel {base : NatGtOne} {a : TZNumeral base} : prune a.toListNat 0 = a := by
   simp only [prune, prune_helper_toListAux_eq]
@@ -149,26 +149,26 @@ end NoTrailingZero_Prune
 section ToNat_Prune
 
 theorem toNat_helper_prune_helper_nil_eq {base : NatGtOne} {n : Nat} :
-  toNat.helper base (prune.helper base [] n).toListNatAux 1 0 = n := by
+  toNat.helper base (prune.helper base [] n).toListNat 1 0 = n := by
   induction n using Nat.strongRecOn with
   | _ l ih =>
     match gl : l with
-    | 0 => simp only [prune_helper_nil_zero_eq_nil, List.toListNatAux, List.mapCoe, List.map_nil, toNat.helper]
+    | 0 => simp only [prune_helper_nil_zero_eq_nil, List.toListNat, List.mapCoe, List.map_nil, toNat.helper]
     | k + 1 =>
       have : (k + 1) / base.val < k + 1 := Nat.div_lt_self (Nat.succ_pos k) base.property
-      simp only [List.toListNatAux, List.mapCoe, CoeOut.coe] at ih
-      simp only [prune.helper, List.toListNatAux, List.mapCoe, List.map_cons, toNat_helper_cons_eq, FinBase.ofNat, CoeOut.coe]
+      simp only [List.toListNat, List.mapCoe, CoeOut.coe] at ih
+      simp only [prune.helper, List.toListNat, List.mapCoe, List.map_cons, toNat_helper_cons_eq, FinBase.ofNat, CoeOut.coe]
       simp only [ih ((k + 1) / base.val) this]
       rw [Nat.add_comm]
       exact Nat.div_add_mod (k + 1) base.val
 
 theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : List Nat} {n : Nat} :
-  toNat.helper base (prune.helper base a n).toListNatAux 1 0
-    = n + (toNat.helper base (prune.helper base a 0).toListNatAux 1 0) := by
+  toNat.helper base (prune.helper base a n).toListNat 1 0
+    = n + (toNat.helper base (prune.helper base a 0).toListNat 1 0) := by
   induction a generalizing n with
   | nil => simp only [toNat_helper_prune_helper_nil_eq, Nat.add_zero]
   | cons x xs ih =>
-    simp only [prune_helper_cons_eq, List.toListNatAux, List.mapCoe, CoeOut.coe, FinBase.ofNat] at ⊢ ih
+    simp only [prune_helper_cons_eq, List.toListNat, List.mapCoe, CoeOut.coe, FinBase.ofNat] at ⊢ ih
     simp only [List.map_cons, toNat_helper_cons_eq, Nat.add_zero]
     rw [@ih ((x + n) / base.val), @ih (x / base.val), Nat.mul_add, ← Nat.add_assoc, Nat.mul_add]
     rw (occs := .pos [2]) [← Nat.add_assoc]

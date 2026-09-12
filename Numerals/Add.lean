@@ -53,18 +53,18 @@ theorem addDigits_helper_comm {base : NatGtOne} {a b : List base.Fin} :
 theorem addDigits_comm {base : NatGtOne} {a b : TZNumeral base} :
   a.addDigits b = b.addDigits a := addDigits_helper_comm
 
-theorem addDigits_helper_nil_eq_toListNatAux {base : NatGtOne} {a : List base.Fin} :
-  addDigits.helper base a [] = a.toListNatAux := by
+theorem addDigits_helper_nil_eq_toListNat {base : NatGtOne} {a : List base.Fin} :
+  addDigits.helper base a [] = a.toListNat := by
   induction a with
-  | nil => simp only [addDigits.helper, List.toListNatAux_nil_eq]
+  | nil => simp only [addDigits.helper, List.toListNat_nil_eq]
   | cons x xs ih =>
-    simp only [addDigits.helper, List.toListNatAux, ih]
+    simp only [addDigits.helper, ih]
     exact List.cons_eq_cons.mpr (And.intro rfl rfl)
 
 theorem addDigits_zero_eq_toListAux {base : NatGtOne} {a : TZNumeral base} :
   a.addDigits 0 = a.toListNat := by
   simp only [OfNat.ofNat, ofNat, addDigits, toListNat, prune_nil_zero_eq_zero]
-  exact addDigits_helper_nil_eq_toListNatAux
+  exact addDigits_helper_nil_eq_toListNat
 
 theorem addDigits_helper_eq_nil_iff_eq_nil_and_eq_nil {base : NatGtOne} {a b : List base.Fin} :
   addDigits.helper base a b = [] ↔ a = [] ∧ b = [] := by
@@ -127,29 +127,29 @@ section ToNat_AddDigits
 
 theorem toNat_helper_addDigits_helper_left_distrib {base : NatGtOne} {a b : List base.Fin} :
   toNat.helper base (addDigits.helper base a b) 1 0
-    = (toNat.helper base a.toListNatAux 1 0) + (toNat.helper base b.toListNatAux 1 0) := by
+    = (toNat.helper base a.toListNat 1 0) + (toNat.helper base b.toListNat 1 0) := by
   induction a generalizing b with
   | nil =>
-    simp only [List.toListNatAux_nil_eq, addDigits_helper_comm, addDigits_helper_nil_eq_toListNatAux]
+    simp only [List.toListNat_nil_eq, addDigits_helper_comm, addDigits_helper_nil_eq_toListNat]
     simp only [toNat_helper_nil_eq, Nat.zero_add]
   | cons x xs ih =>
     match b with
     | [] =>
-      simp only [List.toListNatAux_nil_eq, addDigits_helper_nil_eq_toListNatAux]
+      simp only [List.toListNat_nil_eq, addDigits_helper_nil_eq_toListNat]
       simp only [toNat_helper_nil_eq, Nat.add_zero]
     | y::ys =>
-      simp only [addDigits_helper_cons_cons_eq, List.cons_toListNatAux_eq]
+      simp only [addDigits_helper_cons_cons_eq, List.cons_toListNat_eq]
       simp only [toNat_helper_cons_eq, ih, Nat.mul_add]
-      calc ↑x + ↑y + (base.val * toNat.helper base xs.toListNatAux 1 0 + base.val * toNat.helper base ys.toListNatAux 1 0)
-          = ↑x + ↑y + base.val * toNat.helper base xs.toListNatAux 1 0 + base.val * toNat.helper base ys.toListNatAux 1 0
+      calc ↑x + ↑y + (base.val * toNat.helper base xs.toListNat 1 0 + base.val * toNat.helper base ys.toListNat 1 0)
+          = ↑x + ↑y + base.val * toNat.helper base xs.toListNat 1 0 + base.val * toNat.helper base ys.toListNat 1 0
             := by rw [← Nat.add_assoc]
-        _ = ↑x + (↑y + base.val * toNat.helper base xs.toListNatAux 1 0) + base.val * toNat.helper base ys.toListNatAux 1 0
+        _ = ↑x + (↑y + base.val * toNat.helper base xs.toListNat 1 0) + base.val * toNat.helper base ys.toListNat 1 0
             := by rw [← Nat.add_assoc]
-        _ = ↑x + (base.val * toNat.helper base xs.toListNatAux 1 0 + ↑y) + base.val * toNat.helper base ys.toListNatAux 1 0
+        _ = ↑x + (base.val * toNat.helper base xs.toListNat 1 0 + ↑y) + base.val * toNat.helper base ys.toListNat 1 0
             := by rw (occs := .pos [3]) [Nat.add_comm]
-        _ = ↑x + base.val * toNat.helper base xs.toListNatAux 1 0 + ↑y + base.val * toNat.helper base ys.toListNatAux 1 0
+        _ = ↑x + base.val * toNat.helper base xs.toListNat 1 0 + ↑y + base.val * toNat.helper base ys.toListNat 1 0
             := by rw [← Nat.add_assoc]
-        _ = ↑x + base.val * toNat.helper base xs.toListNatAux 1 0 + (↑y + base.val * toNat.helper base ys.toListNatAux 1 0)
+        _ = ↑x + base.val * toNat.helper base xs.toListNat 1 0 + (↑y + base.val * toNat.helper base ys.toListNat 1 0)
             := by rw [← Nat.add_assoc]
 
 theorem toNat_helper_addDigits_left_distrib {base : NatGtOne} {a b : TZNumeral base} :
