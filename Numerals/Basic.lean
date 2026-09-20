@@ -41,11 +41,11 @@ abbrev base8 : NatGtOne := ⟨8, by decide⟩
 abbrev base10 : NatGtOne := ⟨10, by decide⟩
 abbrev base16 : NatGtOne := ⟨16, by decide⟩
 
-abbrev FinBase {base : NatGtOne} : Type := Fin base.val
+abbrev FinBase (base : NatGtOne) : Type := Fin base.val
 
 namespace NatGtOne
 
-abbrev Fin (base : NatGtOne) : Type := @FinBase base
+abbrev Fin (base : NatGtOne) : Type := FinBase base
 
 theorem val_pos {base : NatGtOne} : 0 < base.val :=
   (Nat.lt_trans (by decide)) base.property
@@ -73,7 +73,15 @@ end Fin
 
 namespace FinBase
 
-instance coeToNat {base : NatGtOne} : CoeOut (base.Fin) Nat := ⟨fun v => v.val⟩
+instance coeToNat (base : NatGtOne) : CoeOut base.Fin Nat := ⟨Fin.toNat⟩
+
+abbrev ne_zero_imp_coe_ne_zero (α β : Type) [CoeOut α β] [Zero α] [Zero β] : Prop :=
+  ∀ a : α , a ≠ 0 → (a : β) ≠ 0
+
+theorem ne_zero_imp_coeToNat_ne_zero {base : NatGtOne} : ne_zero_imp_coe_ne_zero base.Fin Nat := by
+  intro h1 h2
+  simp only [ne_eq, CoeOut.coe, Fin.toNat, Fin.val_eq_zero_iff] at ⊢ h2
+  assumption
 
 theorem eq_iff_eq_val {base : NatGtOne} {a b : base.Fin} : a = b ↔ a.val = b.val := by
   constructor
@@ -97,14 +105,17 @@ theorem one_ne_zero {base : NatGtOne} : base.one ≠ base.zero := Ne.symm zero_n
 
 def ofNat {base : NatGtOne} (n : Nat) : @FinBase base := ⟨n % base.val, Nat.mod_lt n base.val_pos⟩
 
-theorem ofNat_toNat_eq_n {base : NatGtOne} (n : Nat) : (@ofNat base n).toNat = n % base.val := by
-  simp only [ofNat, Fin.toNat]
+theorem coe_ofNat_eq_mod {base : NatGtOne} {n : Nat} : CoeOut.coe (@ofNat base n) = n % base.val:= rfl
+
+theorem ofNat_toNat_eq_mod {base : NatGtOne} (n : Nat) : (@ofNat base n).toNat = n % base.val := by
+  simp only [Fin.toNat]
+  exact coe_ofNat_eq_mod
 
 theorem ofNat_coe_cancel {base : NatGtOne} {x : base.Fin} : ofNat ↑x = x :=
   Fin.ofNat_val_eq_self x
 
-instance {base : NatGtOne} (n : Nat) : OfNat (base.Fin) n := ⟨ofNat n⟩
-instance coeOfNat {base : NatGtOne} : Coe Nat (base.Fin) := ⟨ofNat⟩
+instance instOfNat (base : NatGtOne) (n : Nat) : OfNat (base.Fin) n := ⟨ofNat n⟩
+instance instCoeNat (base : NatGtOne) : Coe Nat (base.Fin) := ⟨ofNat⟩
 
 theorem ofNat_mod_eq {base : NatGtOne} (n : Nat) : @ofNat base (n % base.val) = ofNat n := by
   simp only [ofNat, Nat.mod_mod]
@@ -126,7 +137,7 @@ theorem ofNat_eq_zero_iff_mod_eq_zero {base : NatGtOne} (n : Nat) :
 theorem eq_one_iff_eq_one {base : NatGtOne} (x : base.Fin) : x = base.one ↔ x = @ofNat base 1 := by
   simp only [FinBase.one_eq_one, OfNat.ofNat, ofNat, (Nat.mod_eq_iff_lt base.val_ne_zero).mpr base.property]
 
-instance instFinBaseZero {base : NatGtOne} : Zero base.Fin := ⟨base.zero⟩
+instance instZero (base : NatGtOne) : Zero base.Fin := ⟨base.zero⟩
 
 end FinBase
 
@@ -138,7 +149,17 @@ namespace List
 
 def mapCoe {α β : Type} [CoeOut α β] (l : List α) : List β := l.map (CoeOut.coe ·)
 
-instance instCoeOut {α β : Type} [CoeOut α β] : CoeOut (List α) (List β) := ⟨mapCoe⟩
+theorem nil_mapCoe_eq_nil {α β : Type} [CoeOut α β] :
+  ([] : List α).mapCoe = ([] : List β) := rfl
+
+theorem mapCoe_eq_nil_iff {α β : Type} [CoeOut α β] (l : List α) :
+  l.mapCoe = ([] : List β) ↔ l = [] := by
+  simp only [mapCoe, map_eq_nil_iff]
+
+theorem cons_mapCoe_eq_cons_coe_mapCoe {α β : Type} [CoeOut α β] {x : α} {xs : List α} :
+  (x :: xs).mapCoe = (x : β) :: xs.mapCoe := rfl
+
+instance instCoeOut (α β : Type) [CoeOut α β] : CoeOut (List α) (List β) := ⟨mapCoe⟩
 
 theorem nil_coe_eq_nil {α β : Type} [CoeOut α β] : ([] : List α) = ([] : List β) := rfl
 
@@ -221,13 +242,29 @@ theorem tail_noTrailingZero_and_of {α : Type} [Zero α] [DecidableEq α] {a : �
     simp only [getLast_cons_cons] at h
     exact And.intro (fun t : x :: xs ≠ [] ↦ (h (cons_ne_nil a _))) (fun t : x :: xs = [] ↦ absurd t (cons_ne_nil x xs))
 
-theorem noTrailingZero_cons_iff_noTrailingZero_and {α : Type} [Zero α] [DecidableEq α] {x : α} {xs : List α} :
-  (x::xs).noTrailingZero  ↔ xs.noTrailingZero ∧ (xs = [] → x ≠ 0) := by
+theorem cons_noTrailingZero_iff_noTrailingZero_and {α : Type} [Zero α] [DecidableEq α] {x : α} {xs : List α} :
+  (x::xs).noTrailingZero ↔ xs.noTrailingZero ∧ (xs = [] → x ≠ 0) := by
   constructor
   · intro h
     exact tail_noTrailingZero_and_of h
   · intro h
     exact cons_noTrailingZero_of h
+
+theorem noTrailingZero_imp_coe_noTrailingZero_of {α β : Type} [CoeOut α β]
+  [Zero α] [Zero β] [DecidableEq α] [DecidableEq β] (h : FinBase.ne_zero_imp_coe_ne_zero α β) (l : List α) :
+  l.noTrailingZero → (l : List β).noTrailingZero := by
+  induction l with
+  | nil => intro h; simp only [nil_mapCoe_eq_nil, nil_noTrailingZero]
+  | cons x xs ih =>
+    intro h1
+    have h2 : xs.mapCoe = ([] : List β) → xs = [] := (mapCoe_eq_nil_iff xs).mp
+    simp only [cons_mapCoe_eq_cons_coe_mapCoe]
+    simp only [cons_noTrailingZero_iff_noTrailingZero_and] at ⊢ h1
+    exact And.intro (ih h1.left) (fun t ↦ (h x) (h1.right (h2 t)))
+
+theorem noTrailingZero_imp_toListNat_noTrailingZero {base : NatGtOne} (l : List base.Fin) :
+  l.noTrailingZero → l.toListNat.noTrailingZero :=
+  noTrailingZero_imp_coe_noTrailingZero_of FinBase.ne_zero_imp_coeToNat_ne_zero l
 
 def decNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
   match l with
@@ -243,7 +280,7 @@ def decNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Dec
         exact absurd g (h (cons_ne_nil x xs))
       )
 
-instance instdDecNoTrailingZero {α : Type} [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
+instance instdDecNoTrailingZero (α : Type) [Zero α] [DecidableEq α] (l : List α) : Decidable (l.noTrailingZero) :=
   l.decNoTrailingZero
 
 end List
@@ -286,7 +323,7 @@ shorthand for `TZNumeral`s hexadecimal representation
 -/
 abbrev TZNumeral16 := TZNumeral base16
 
-instance instCoeList_baseFinToTZNumeral {base : NatGtOne} : Coe (List base.Fin) (TZNumeral base) where
+instance instCoe (base : NatGtOne) : Coe (List base.Fin) (TZNumeral base) where
   coe := fun l : List base.Fin ↦ {digits := l}
 
 /--
@@ -323,7 +360,7 @@ abbrev zero {base : NatGtOne} : TZNumeral base := ⟨[]⟩
 /--
 `zero` is the default `TZNumeral` - for any base
 -/
-instance instInhabited {base : NatGtOne} : Inhabited (TZNumeral base) := ⟨zero⟩
+instance instInhabited (base : NatGtOne) : Inhabited (TZNumeral base) := ⟨zero⟩
 
 theorem zero_eq_default {base : NatGtOne} : @zero base = default := rfl
 
@@ -335,7 +372,7 @@ Example:
 #eval (0 : TZNumeral10) -- { digits := [] }
 ```
 -/
-instance instZero {base : NatGtOne} : Zero (TZNumeral base) := ⟨zero⟩
+instance instZero (base : NatGtOne) : Zero (TZNumeral base) := ⟨zero⟩
 
 theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
 
@@ -356,7 +393,7 @@ Example:
 #eval (1 : TZNumeral10) -- { digits := [1] }
 ```
 -/
-instance instOne {base : NatGtOne} : One (TZNumeral base) where
+instance instOne (base : NatGtOne) : One (TZNumeral base) where
   one := one
 
 theorem one_eq_one {base : NatGtOne} : one = (⟨[⟨1, base.property⟩]⟩ : TZNumeral base) := rfl
@@ -395,7 +432,7 @@ def decEq {base : NatGtOne} (a b : TZNumeral base) : Decidable (a = b) :=
   else
     isFalse ((ne_iff_digits_ne a b).mpr g)
 
-instance instDecidableEq {base : NatGtOne} (a b : TZNumeral base) : Decidable (a = b) :=
+instance instDecidableEq (base : NatGtOne) (a b : TZNumeral base) : Decidable (a = b) :=
   decEq a b
 
 end Equality
@@ -518,7 +555,7 @@ def decNoTrailingZero {base : NatGtOne} (n : TZNumeral base) : Decidable (noTrai
     else
       isTrue (noTrailingZero_of g1 g2)
 
-instance instDecNoTrailingZero {base : NatGtOne} (a : TZNumeral base) :
+instance instDecNoTrailingZero (base : NatGtOne) (a : TZNumeral base) :
   Decidable (a.noTrailingZero) := decNoTrailingZero a
 
 end NoTrailingZero
@@ -562,7 +599,7 @@ namespace Numeral
 
 section ToTZNumeral
 
-instance instCoeNumeralToTZNumeral {base : NatGtOne} : Coe (Numeral base) (TZNumeral base) where
+instance instCoe (base : NatGtOne) : Coe (Numeral base) (TZNumeral base) where
   coe := toTZNumeral
 
 end ToTZNumeral
@@ -577,7 +614,7 @@ abbrev zero {base : NatGtOne} : Numeral base := {
 /-
 zero (represented by `[]`) is the default `Numeral` - for any base
 -/
-instance instInhabitedNumeral {base : NatGtOne} : Inhabited (Numeral base) := ⟨zero⟩
+instance instInhabited (base : NatGtOne) : Inhabited (Numeral base) := ⟨zero⟩
 
 /--
 Example:
@@ -585,10 +622,10 @@ Example:
 #eval (0 : Numeral10 ) -- { toTZNumeral := { digits := [] }, noTZ := _ }
 ```
 -/
-instance instZero {base : NatGtOne} : Zero (Numeral base) := ⟨zero⟩
+instance instZero (base : NatGtOne) : Zero (Numeral base) := ⟨zero⟩
 
-theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
-theorem zero_toTZNumeral_eq_TZNumeral_zero {base : NatGtOne} : (@zero base).toTZNumeral = TZNumeral.zero := rfl
+theorem zero_eq_zero (base : NatGtOne) : @zero base = 0 := rfl
+theorem zero_toTZNumeral_eq_TZNumeral_zero (base : NatGtOne) : (@zero base).toTZNumeral = TZNumeral.zero := rfl
 
 end Zero
 
@@ -607,7 +644,7 @@ Example:
 #eval (1 : Numeral10) -- { toTZNumeral := { digits := [1] }, noTZ := _ }
 ```
 -/
-instance instOne {base : NatGtOne} : One (Numeral base) where
+instance instOne (base : NatGtOne) : One (Numeral base) where
   one := one
 
 theorem one_eq_one {base : NatGtOne} : one = ⟨@TZNumeral.one base, TZNumeral.one_noTrailingZero⟩ := rfl
@@ -636,7 +673,7 @@ def decEq {base : NatGtOne} (a b : Numeral base) : Decidable (a = b) :=
   else
     isFalse ((ne_iff_toTZNumeral_ne a b).mpr g)
 
-instance instDecidableEq {base : NatGtOne} (a b : Numeral base) : Decidable (a = b) :=
+instance instDecidableEq (base : NatGtOne) (a b : Numeral base) : Decidable (a = b) :=
   decEq a b
 
 end Equality

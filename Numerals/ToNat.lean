@@ -44,6 +44,10 @@ theorem toNat_cons_eq {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}  :
   simp only [toNat, cons]
   exact toNat_helper_cons_eq
 
+/-
+instance instCoeOut {base : NatGtOne} : CoeOut (TZNumeral base) Nat := ⟨toNat⟩
+-/
+
 end TZNumeral
 
 end toNat

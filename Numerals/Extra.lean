@@ -36,6 +36,11 @@ end Classical
 
 namespace Nat
 
+theorem add_ne_zero_of_ne_zero {n : Nat} (h : n ≠ 0) (m : Nat) : n + m ≠ 0 := by
+  have h1 : 0 < n := Nat.pos_iff_ne_zero.mpr h
+  have h2 : 0 < n + m := Nat.add_pos_left h1 m
+  exact Nat.pos_iff_ne_zero.mp h2
+
 /-
 This lemma is used for asserting that `base` is greater than `0`.
 `1 < base` is always requested but sometimes `0 < base` is need as assumption
@@ -186,3 +191,22 @@ theorem getLast_true_of_all_true_of_ne_nil {α : Type} (l : List α) (p : α →
 
 end List
 end List
+
+/-
+abbrev ne_zero_imp_coe_ne_zero {α β : Type} [CoeOut α β] [Zero α] [Zero β] (a : α) : Prop :=
+  a ≠ 0 → (a : β) ≠ 0
+
+def dec_ne_zero_imp_coe_ne_zero {α β : Type} [CoeOut α β]
+  [za : Zero α] [zb : Zero β] [da : DecidableEq α] [db : DecidableEq β] (a : α) :
+  Decidable (@ne_zero_imp_coe_ne_zero α β c za zb a) :=
+  if g1 : a ≠ 0 then
+    if g2 : (a : β) ≠ 0 then
+      isTrue (fun _ ↦ g2)
+    else
+      isFalse (by
+        simp only [ne_zero_imp_coe_ne_zero, Decidable.not_imp_iff_and_not]
+        exact And.intro g1 g2
+      )
+  else
+    isTrue (by intro h1; contradiction)
+-/

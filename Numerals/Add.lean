@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Author: Stefan Kusterer
 -/
 
+import Numerals.Extra
 import Numerals.Basic
 import Numerals.ToNat
 import Numerals.Prune
@@ -21,6 +22,14 @@ def addDigits {base : NatGtOne} (a b : TZNumeral base) : List Nat :=
   | x::xs, [] => ↑x::(helper base xs [])
   | [], y::ys => ↑y::(helper base [] ys)
   | x::xs, y::ys => (↑x + ↑y)::(helper base xs ys)
+
+theorem addDigits_helper_nil_nil_eq_nil {base : NatGtOne} :
+  addDigits.helper base [] [] = []  := by simp only [addDigits.helper]
+
+theorem addDigits_zero_zero_eq_nil {base : NatGtOne} :
+  @addDigits base 0 0 = []  := by
+  simp only [addDigits, OfNat.ofNat, ofNat, prune, prune.helper]
+  exact addDigits_helper_nil_nil_eq_nil
 
 theorem addDigits_helper_cons_ne_nil {base : NatGtOne} {x : base.Fin} {xs b : List base.Fin} :
   addDigits.helper base (x::xs) b ≠ [] := by
@@ -96,36 +105,40 @@ end AddDigits
 
 section NoTrailingZero_AddDigits
 
-/- TODO
-theorem noTrailingZero_helper_addDigits_helper_of {base : NatGtOne} {a b : List base.Fin}
-  (h : noTrailingZero.helper base a ∧ noTrailingZero.helper base b) :
-  noTrailingZero.helper base (addDigits.helper base a b) := by
+theorem addDigits_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
+  {base : NatGtOne} {a b : List base.Fin} (h : a.noTrailingZero ∧ b.noTrailingZero) :
+  (addDigits.helper base a b).noTrailingZero := by
   induction a generalizing b with
   | nil =>
     match b with
-    | [] => intro _ ; contradiction
+    | [] => intro h1; exact absurd addDigits_helper_nil_nil_eq_nil h1
     | y::ys =>
-      simp only [addDigits_comm, addDigits_nil_eq]
-      exact hbntz
+      simp only [addDigits_helper_comm, addDigits_helper_nil_eq_toListNat]
+      exact List.noTrailingZero_imp_toListNat_noTrailingZero (y::ys) h.right
   | cons x xs ih =>
     match b with
-    | [] => simp only [addDigits_nil_eq]; exact hantz
+    | [] =>
+      simp only [addDigits_helper_nil_eq_toListNat]
+      exact List.noTrailingZero_imp_toListNat_noTrailingZero (x::xs) h.left
     | y::ys =>
-      rw [noTrailingZeroAux_cons_iff_noTrailingZeroAux_and] at hantz hbntz
-      have : noTrailingZeroAux (addDigits xs ys) := ih hantz.left hbntz.left
-      simp only [addDigits_cons_cons_eq_add_cons_addDigits, noTrailingZeroAux_cons_iff_noTrailingZeroAux_and]
-      simp only [this, true_and, addDigits_eq_nil_iff_eq_nil_and_eq_nil]
-      intro h
-      have h1 : 0 < x := Nat.pos_iff_ne_zero.mpr (hantz.right h.left)
-      have h2 : 0 < x + y := Nat.add_pos_left h1 y
-      exact Nat.pos_iff_ne_zero.mp h2
--/
+      rw [List.cons_noTrailingZero_iff_noTrailingZero_and, List.cons_noTrailingZero_iff_noTrailingZero_and] at h
+      simp only [addDigits_helper_cons_cons_eq, List.cons_noTrailingZero_iff_noTrailingZero_and]
+      have h1 : (addDigits.helper base xs ys).noTrailingZero := ih (And.intro h.left.left h.right.left)
+      have h2 : addDigits.helper base xs ys = [] → x ≠ 0 ∧ y ≠ 0 := by
+        rw [addDigits_helper_eq_nil_iff_eq_nil_and_eq_nil]
+        intro h3
+        exact And.intro (h.left.right h3.left) (h.right.right h3.right)
+      have h3 : x ≠ 0 → ↑x ≠ (0 : Nat) := FinBase.ne_zero_imp_coeToNat_ne_zero x
+      have h4 : ↑x ≠ (0 : Nat) → ↑x + ↑y ≠ (0 : Nat) := by
+        intro h5
+        exact Nat.add_ne_zero_of_ne_zero h5 (y : Nat)
+      exact And.intro h1 (fun t ↦ h4 (h3 (h2 t).left))
 
 end NoTrailingZero_AddDigits
 
 section ToNat_AddDigits
 
-theorem toNat_helper_addDigits_helper_left_distrib {base : NatGtOne} {a b : List base.Fin} :
+theorem toNat_helper_addDigits_helper_distrib {base : NatGtOne} {a b : List base.Fin} :
   toNat.helper base (addDigits.helper base a b) 1 0
     = (toNat.helper base a.toListNat 1 0) + (toNat.helper base b.toListNat 1 0) := by
   induction a generalizing b with
@@ -152,8 +165,8 @@ theorem toNat_helper_addDigits_helper_left_distrib {base : NatGtOne} {a b : List
         _ = ↑x + base.val * toNat.helper base xs.toListNat 1 0 + (↑y + base.val * toNat.helper base ys.toListNat 1 0)
             := by rw [← Nat.add_assoc]
 
-theorem toNat_helper_addDigits_left_distrib {base : NatGtOne} {a b : TZNumeral base} :
-  toNat.helper base (addDigits a b) 1 0 = a.toNat + b.toNat := toNat_helper_addDigits_helper_left_distrib
+theorem toNat_helper_addDigits_distrib {base : NatGtOne} {a b : TZNumeral base} :
+  toNat.helper base (addDigits a b) 1 0 = a.toNat + b.toNat := toNat_helper_addDigits_helper_distrib
 
 end ToNat_AddDigits
 
@@ -280,7 +293,8 @@ theorem equiv_helper_nil_hAdd_helper_nil_of_equiv_helper_nil {base : NatGtOne} {
   | cons x xs ih =>
     simp only [hAdd.helper]
     simp only [equiv.helper] at ⊢ h
-    simp only [h.left, Nat.add_zero, FinBase.ofNat, OfNat.ofNat, Nat.zero_mod, Nat.zero_div, true_and]
+    simp only [h.left, Nat.add_zero, FinBase.ofNat, OfNat.ofNat, Nat.zero_mod]
+    simp only [Fin.toNat_eq_val, Nat.zero_mod, Nat.zero_div, true_and]
     exact ih h.right
 
 theorem equiv_helper_nil_hAdd_helper_nil_nil_of_eq_zero {base : NatGtOne} {n : Nat} (h : n = 0) :
@@ -315,7 +329,7 @@ theorem equiv_helper_nil_hAdd_helper_of_equiv_helper_nil_and_equiv_helper_nil {b
     | y::ys =>
       simp only [hAdd.helper, equiv.helper, Nat.add_zero] at ⊢ h
       have h1 : ↑x + ↑y = (0 : Nat) := by
-        simp only [h.left.left, h.right.left, Nat.add_eq_zero_iff, Fin.val_eq_zero_iff, and_self]
+        simp only [h.left.left, h.right.left, Nat.add_eq_zero_iff, Fin.toNat, Fin.val_eq_zero_iff, and_self]
         rfl
       simp only [h1, FinBase.ofNat, OfNat.ofNat, Nat.zero_div, FinBase.ofNat, Nat.zero_mod, true_and]
       exact ih (And.intro h.left.right h.right.right)
@@ -342,8 +356,9 @@ theorem equiv_helper_nil_and_equiv_helper_nil_and_eq_zero_of_equiv_helper_nil_hA
         rw [← Nat.mod_add_div (↑x + ↑y + n) base.val, h1, h2.right.right, Nat.zero_add, Nat.mul_zero]
       have h4 : n = 0 := (Nat.add_eq_zero_iff.mp h3).right
       have h5 : x = 0 ∧ y = 0 := by
-        rw [h4, Nat.add_zero, Nat.add_eq_zero_iff] at h3
-        rwa [← @Fin.eq_mk_iff_val_eq base.val x 0 base.val_pos, ← @Fin.eq_mk_iff_val_eq base.val y 0 base.val_pos] at h3
+        rw [h4, Nat.add_zero, Nat.add_eq_zero_iff, Fin.toNat.eq_def, Fin.toNat.eq_def] at h3
+        rw [← @Fin.eq_mk_iff_val_eq base.val x 0 base.val_pos, ← @Fin.eq_mk_iff_val_eq base.val y 0 base.val_pos] at h3
+        assumption
       have h6 : x = 0 ∧ equiv.helper base [] xs := And.intro h5.left h2.left
       have h7 : y = 0 ∧ equiv.helper base [] ys := And.intro h5.right h2.right.left
       exact And.intro h6 (And.intro h7 h4)
@@ -404,10 +419,74 @@ section NoTrailingZero_Add
 
 theorem hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
   {base : NatGtOne} {a b : List base.Fin} {n : Nat} (h : a.noTrailingZero ∧ b.noTrailingZero) :
-  (hAdd.helper base a b n).noTrailingZero := by sorry
-
+  (hAdd.helper base a b n).noTrailingZero := by
+  have : (addDigits.helper base a b).noTrailingZero :=
+    addDigits_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero h
+  simp only [hAdd_helper_eq_prune_helper_addDigits_helper]
+  exact prune_helper_noTrailingZero_of_noTrailingZero this
 
 end NoTrailingZero_Add
+
+section ToNat_Add
+
+theorem toNat_helper_prune_helper_addDigits_helper_nil_mapCoe_eq {base : NatGtOne} {a : List base.Fin} :
+  toNat.helper base (prune.helper base (addDigits.helper base a []) 0).mapCoe 1 0 =
+    toNat.helper base a.mapCoe 1 0  := by
+    simp only [addDigits_helper_nil_eq_toListNat, prune_helper_toListAux_eq]
+
+theorem tbd1 (base : NatGtOne) (x y : base.Fin) :
+  CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val)
+    = CoeOut.coe x + CoeOut.coe y := by
+  calc CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val)
+      = (↑x + ↑y) % base.val + base.val * ((↑x + ↑y) / base.val) := by rw [FinBase.coe_ofNat_eq_mod]
+    _ = ↑x + ↑y := Nat.mod_add_div (Fin.toNat x + Fin.toNat y) base.val
+
+theorem tbd2 (base : NatGtOne) (x y : base.Fin) (n m : Nat) :
+  CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val + (n + m)) =
+  CoeOut.coe x + base.val * n + (CoeOut.coe y + base.val * m) := by
+  calc CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val + (n + m))
+      = CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + (base.val * ((↑x + ↑y) / base.val) + base.val * (n + m))
+        := by rw [Nat.left_distrib base.val ((↑x + ↑y) / base.val) (n + m)]
+    _ = CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val) + base.val * (n + m)
+        := by rw [← Nat.add_assoc (CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)))
+                      (base.val * ((↑x + ↑y) / base.val)) (base.val * (n + m))]
+    _ = CoeOut.coe x + CoeOut.coe y + base.val * (n + m) := by rw [tbd1]
+    _ = CoeOut.coe x + CoeOut.coe y + (base.val * n + base.val * m) := by rw [Nat.mul_add base.val n m]
+    _ = CoeOut.coe x + CoeOut.coe y + base.val * n + base.val * m
+        := by rw [← Nat.add_assoc (CoeOut.coe x + CoeOut.coe y) (base.val * n) (base.val * m)]
+    _ = CoeOut.coe x + (base.val * n + CoeOut.coe y) + base.val * m
+        := by rw [Nat.add_assoc (CoeOut.coe x) (CoeOut.coe y) (base.val * n),
+                  Nat.add_comm (CoeOut.coe y) (base.val * n)]
+    _ = CoeOut.coe x + base.val * n + CoeOut.coe y + base.val * m
+        := by rw [← Nat.add_assoc (CoeOut.coe x) (base.val * n) (CoeOut.coe y)]
+    _ = CoeOut.coe x + base.val * n + (CoeOut.coe y + base.val * m)
+       := by rw [Nat.add_assoc (CoeOut.coe x + base.val * n) (CoeOut.coe y) (base.val * m)]
+
+theorem toNat_helper_prune_helper_addDigits_helper_mapCoe_eq {base : NatGtOne} {a b : List base.Fin} :
+  toNat.helper base (prune.helper base (addDigits.helper base a b) 0).mapCoe 1 0 =
+    toNat.helper base a.mapCoe 1 0 + toNat.helper base b.mapCoe 1 0 := by
+    induction a generalizing b with
+    | nil =>
+      simp only [List.nil_mapCoe_eq_nil, toNat_helper_nil_eq, Nat.zero_add, addDigits_helper_comm]
+      exact toNat_helper_prune_helper_addDigits_helper_nil_mapCoe_eq
+    | cons x xs ih =>
+      match b with
+      | [] => exact toNat_helper_prune_helper_addDigits_helper_nil_mapCoe_eq
+      | y::ys =>
+        simp only [addDigits_helper_cons_cons_eq, prune.helper, Nat.add_zero]
+        simp only [List.cons_mapCoe_eq_cons_coe_mapCoe, toNat_helper_cons_eq]
+        rw [toNat_helper_prune_helper_mapCoe_eq, ih]
+        exact tbd2 base x y (toNat.helper base xs.mapCoe 1 0) (toNat.helper base ys.mapCoe 1 0)
+
+theorem toNat_helper_hAdd_helper_distrib {base : NatGtOne} {a b : List base.Fin} :
+  toNat.helper base (hAdd.helper base a b 0) 1 0 = (toNat.helper base a 1 0) + (toNat.helper base b 1 0) := by
+  rw [hAdd_helper_eq_prune_helper_addDigits_helper, toNat_helper_prune_helper_mapCoe_eq, Nat.zero_add]
+  exact toNat_helper_prune_helper_addDigits_helper_mapCoe_eq
+
+theorem hAdd_toNat_distrib {base : NatGtOne} {a b : TZNumeral base} :
+  (a + b).toNat  = a.toNat + b.toNat := toNat_helper_hAdd_helper_distrib
+
+end ToNat_Add
 
 end TZNumeral
 

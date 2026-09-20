@@ -133,7 +133,7 @@ theorem prune_helper_noTrailingZero_of_noTrailingZero {base : NatGtOne} {n : Nat
     simp only [prune.helper]
     have h1 : xs.noTrailingZero ∧ (xs = [] → x ≠ 0) := List.tail_noTrailingZero_and_of h
     have h2 : (prune.helper base xs ((x + n) / base.val) ).noTrailingZero  := iha h1.left
-    simp only [List.noTrailingZero_cons_iff_noTrailingZero_and, h2, true_and]
+    simp only [List.cons_noTrailingZero_iff_noTrailingZero_and, h2, true_and]
     intro h
     simp only [prune_helper_eq_nil_iff_eq_nil_and_eq_zero] at h
     have h3 : x ≠ 0 := h1.right h.left
@@ -162,7 +162,7 @@ theorem toNat_helper_prune_helper_nil_eq {base : NatGtOne} {n : Nat} :
       rw [Nat.add_comm]
       exact Nat.div_add_mod (k + 1) base.val
 
-theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : List Nat} {n : Nat} :
+theorem toNat_helper_prune_helper_toListNat_eq {base : NatGtOne} {a : List Nat} {n : Nat} :
   toNat.helper base (prune.helper base a n).toListNat 1 0
     = n + (toNat.helper base (prune.helper base a 0).toListNat 1 0) := by
   induction a generalizing n with
@@ -172,13 +172,18 @@ theorem toNat_helper_prune_helper_eq_add_toNat_helper {base : NatGtOne} {a : Lis
     simp only [List.map_cons, toNat_helper_cons_eq, Nat.add_zero]
     rw [@ih ((x + n) / base.val), @ih (x / base.val), Nat.mul_add, ← Nat.add_assoc, Nat.mul_add]
     rw (occs := .pos [2]) [← Nat.add_assoc]
-    rw [Nat.mod_add_div (x + n) base.val, Nat.mod_add_div x base.val, ← Nat.add_assoc]
+    simp only [Fin.toNat, Nat.mod_add_div (x + n) base.val, Nat.mod_add_div x base.val, ← Nat.add_assoc]
     rw (occs := .pos [2]) [Nat.add_comm]
+
+theorem toNat_helper_prune_helper_mapCoe_eq {base : NatGtOne} {a : List Nat} {n : Nat} :
+  toNat.helper base (prune.helper base a n).mapCoe 1 0
+    = n + (toNat.helper base (prune.helper base a 0).mapCoe 1 0) :=
+  toNat_helper_prune_helper_toListNat_eq
 
 theorem toNat_prune_eq_add_toNat_prune_zero {base : NatGtOne} {a : TZNumeral base} {n : Nat}  :
   @toNat base (prune a.toListNat n) = n + @toNat base (prune a.toListNat 0) := by
   simp only [prune, toNat, toListNat]
-  exact toNat_helper_prune_helper_eq_add_toNat_helper
+  exact toNat_helper_prune_helper_toListNat_eq
 
 theorem toNat_prune_eq_add_toNat {base : NatGtOne} {a : TZNumeral base} {n : Nat}  :
   @toNat base (prune a.toListNat n) = n + a.toNat := by

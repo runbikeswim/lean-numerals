@@ -263,7 +263,7 @@ theorem toNat_helper_eq_zero_of_equiv_helper_nil {base : NatGtOne} {a : List bas
     simp only [equiv_helper_nil_iff, List.all_cons, Bool.and_eq_true] at h
     have h1 : x = 0 := beq_iff_eq.mp h.left
     have h2 : toNat.helper base xs.toListNat 1 0 = 0 := ih (equiv_helper_nil_iff.mpr h.right)
-    simp only [List.cons_toListNat_eq, toNat_helper_cons_eq, h1, h2, Nat.add_eq_zero_iff, Fin.val_eq_zero_iff]
+    simp only [List.cons_toListNat_eq, toNat_helper_cons_eq, h1, h2, Nat.add_eq_zero_iff]
     simp only [Nat.mul_zero, and_true]
     rfl
 
