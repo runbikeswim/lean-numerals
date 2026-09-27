@@ -71,22 +71,22 @@ structure TZNumeral (base : NatGtOne) where
 /--
 shorthand for `TZNumeral`s in binary representation
 -/
-abbrev TZNumeral2 := TZNumeral ⟨2, by decide⟩
+abbrev TZNumeral2 := TZNumeral NumeralAux.base2
 
 /--
 shorthand for `TZNumeral`s octal representation
 -/
-abbrev TZNumeral8 := TZNumeral ⟨8,by decide⟩
+abbrev TZNumeral8 := TZNumeral NumeralAux.base8
 
 /--
 shorthand for `TZNumeral`s decimal representation
 -/
-abbrev TZNumeral10 := TZNumeral ⟨ 10, by decide⟩
+abbrev TZNumeral10 := TZNumeral NumeralAux.base10
 
 /--
 shorthand for `TZNumeral`s hexadecimal representation
 -/
-abbrev TZNumeral16 := TZNumeral ⟨16, by decide⟩
+abbrev TZNumeral16 := TZNumeral NumeralAux.base16
 
 /--
 
@@ -155,6 +155,9 @@ theorem eq_iff_digits_eq {base : NatGtOne} (a b : TZNumeral base) :
     ext
     simp only [h]
 
+theorem ne_iff_digits_ne {base : NatGtOne} (a b : TZNumeral base) :
+  a ≠ b ↔ a.digits ≠ b.digits := Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq a b)
+
 /--
 decidable equality
 -/
@@ -183,6 +186,7 @@ Examples:
 #eval (⟨[0,1,2,0], by decide⟩ : TZNumeral10).toNat -- 210
 ```
 -/
+
 def toNat {base : NatGtOne} (n : TZNumeral base) : Nat :=
   toNatAux (fromListFinBase n.digits) base.val
 
@@ -232,17 +236,22 @@ For `TZNumerals` with trailing zeros, `ofNat` is not the left inverse of `toNat`
 trailing zeros are not preserved by `toNat`. The following example shows this for a very
 simple case.
 -/
-example : ∃ p : TZNumeral10, ofNat (p.toNat) ≠ p := by
+example : ∃ p : TZNumeral10, p ≠ ofNat (p.toNat) := by
   let p : TZNumeral10 := ⟨[0]⟩
   let q : TZNumeral10 := ⟨[]⟩
   refine ⟨p, ?_⟩
-  have : p.toNat = 0 := by decide
-  rw [this]
-  have : ofNat 0 = q := by
+  have h1 : p.toNat = 0 := by decide
+  rw [h1]
+  have h2 : ofNat 0 = q := by
     simp only [ofNat, ofNatAux, prune, (toListFinBase_nil_iff_nil _ _ ).mpr _]
     rfl
-  rw [this]
-  decide
+  rw [h2]
+  have h3 : p.digits ≠ q.digits := by
+    unfold p q
+    simp only [Fin.isValue, ne_eq, List.cons_ne_self, not_false_eq_true]
+  intro h4
+  have h5 : ¬ p = q := (ne_iff_digits_ne p q).mpr h3
+  exact absurd h4 h5
 
 end ToNat_OfNat
 
@@ -326,8 +335,7 @@ theorem ofNat_isZero_iff_eq_zero {n : Nat} {base : NatGtOne} :
   simp only [isZero, ofNat, fromListFinBase_toListFinBase_cancel]
   exact isZeroAux_ofNatAux_iff_eq_zero
 
-example : (@ofNat 0 ⟨10, by decide⟩).isZero := by
-  rw [ofNat_isZero_iff_eq_zero]
+example : (@ofNat 0 ⟨10, by decide⟩).isZero := ofNat_isZero_iff_eq_zero.mpr rfl
 
 /--
 makes `isZero` decidable
@@ -341,7 +349,10 @@ instance of class `Decidable` for `isZero`
 instance instDecIsZero {base : NatGtOne} (a : TZNumeral base) : Decidable (isZero a) :=
   decIsZero a
 
-example : (0 : TZNumeral10).isZero := by native_decide
+example : (@TZNumeral.ofNat 0 ⟨10, by decide⟩).isZero := by
+  unfold ofNat
+  simp only [ofNatAux, prune, toListFinBase, isZero, isZeroAux, fromListFinBase]
+  exact equivAux_refl
 
 end IsZero
 
@@ -413,7 +424,9 @@ def decLe {base : NatGtOne} (a b : TZNumeral base) : Decidable (a ≤ b) :=
 instance instDecLe {base : NatGtOne} (a b : TZNumeral base) :
   Decidable (a ≤ b) := decLe a b
 
-example : @zero ⟨10, by decide⟩  ≤ @one ⟨10, by decide⟩  := by decide
+#check TZNumeral10
+
+example : @zero base10 ≤ @one base10 := by decide
 example : (0 : TZNumeral10) ≤ 1 := by native_decide
 example : (1966 : TZNumeral10) ≤ (2026 : TZNumeral10) := by native_decide
 
@@ -520,7 +533,8 @@ def decLt {base : NatGtOne} (a b : TZNumeral base) : Decidable (a < b) :=
 
 instance instDecLt {base : NatGtOne} : DecidableLT (TZNumeral base) := decLt
 
-example : @zero ⟨10, by decide⟩  < @one ⟨10, by decide⟩ := by native_decide
+
+example : @zero base10 < @one base10 := by native_decide
 
 end LessThan
 
