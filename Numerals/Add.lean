@@ -483,7 +483,7 @@ theorem toNat_helper_hAdd_helper_distrib {base : NatGtOne} {a b : List base.Fin}
   rw [hAdd_helper_eq_prune_helper_addDigits_helper, toNat_helper_prune_helper_mapCoe_eq, Nat.zero_add]
   exact toNat_helper_prune_helper_addDigits_helper_mapCoe_eq
 
-theorem hAdd_toNat_distrib {base : NatGtOne} {a b : TZNumeral base} :
+theorem add_toNat_distrib {base : NatGtOne} {a b : TZNumeral base} :
   (a + b).toNat  = a.toNat + b.toNat := toNat_helper_hAdd_helper_distrib
 
 end ToNat_Add
