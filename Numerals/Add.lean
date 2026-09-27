@@ -434,14 +434,14 @@ theorem toNat_helper_prune_helper_addDigits_helper_nil_mapCoe_eq {base : NatGtOn
     toNat.helper base a.mapCoe 1 0  := by
     simp only [addDigits_helper_nil_eq_toListNat, prune_helper_toListAux_eq]
 
-theorem tbd1 (base : NatGtOne) (x y : base.Fin) :
+theorem coe_toNat_add_add_mul_add_div_eq (base : NatGtOne) (x y : base.Fin) :
   CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val)
     = CoeOut.coe x + CoeOut.coe y := by
   calc CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val)
       = (↑x + ↑y) % base.val + base.val * ((↑x + ↑y) / base.val) := by rw [FinBase.coe_ofNat_eq_mod]
     _ = ↑x + ↑y := Nat.mod_add_div (Fin.toNat x + Fin.toNat y) base.val
 
-theorem tbd2 (base : NatGtOne) (x y : base.Fin) (n m : Nat) :
+theorem coe_toNat_add_add_mul_add_div_add_add_eq (base : NatGtOne) (x y : base.Fin) (n m : Nat) :
   CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val + (n + m)) =
   CoeOut.coe x + base.val * n + (CoeOut.coe y + base.val * m) := by
   calc CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val + (n + m))
@@ -450,7 +450,7 @@ theorem tbd2 (base : NatGtOne) (x y : base.Fin) (n m : Nat) :
     _ = CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val) + base.val * (n + m)
         := by rw [← Nat.add_assoc (CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)))
                       (base.val * ((↑x + ↑y) / base.val)) (base.val * (n + m))]
-    _ = CoeOut.coe x + CoeOut.coe y + base.val * (n + m) := by rw [tbd1]
+    _ = CoeOut.coe x + CoeOut.coe y + base.val * (n + m) := by rw [coe_toNat_add_add_mul_add_div_eq]
     _ = CoeOut.coe x + CoeOut.coe y + (base.val * n + base.val * m) := by rw [Nat.mul_add base.val n m]
     _ = CoeOut.coe x + CoeOut.coe y + base.val * n + base.val * m
         := by rw [← Nat.add_assoc (CoeOut.coe x + CoeOut.coe y) (base.val * n) (base.val * m)]
@@ -476,7 +476,7 @@ theorem toNat_helper_prune_helper_addDigits_helper_mapCoe_eq {base : NatGtOne} {
         simp only [addDigits_helper_cons_cons_eq, prune.helper, Nat.add_zero]
         simp only [List.cons_mapCoe_eq_cons_coe_mapCoe, toNat_helper_cons_eq]
         rw [toNat_helper_prune_helper_mapCoe_eq, ih]
-        exact tbd2 base x y (toNat.helper base xs.mapCoe 1 0) (toNat.helper base ys.mapCoe 1 0)
+        exact coe_toNat_add_add_mul_add_div_add_add_eq base x y (toNat.helper base xs.mapCoe 1 0) (toNat.helper base ys.mapCoe 1 0)
 
 theorem toNat_helper_hAdd_helper_distrib {base : NatGtOne} {a b : List base.Fin} :
   toNat.helper base (hAdd.helper base a b 0) 1 0 = (toNat.helper base a 1 0) + (toNat.helper base b 1 0) := by
