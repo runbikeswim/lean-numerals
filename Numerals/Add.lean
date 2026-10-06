@@ -492,4 +492,22 @@ end TZNumeral
 
 namespace Numeral
 
+def a : Numeral base10 := ⟨⟨[0, 1]⟩, by decide⟩
+def b : Numeral base10 := ⟨⟨[2]⟩, by decide⟩
+
+section Add
+
+def hAdd {base : NatGtOne} (n m : Numeral base) : Numeral base where
+  digits := TZNumeral.hAdd.helper base n.digits m.digits 0
+  noTZ := TZNumeral.hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
+            (And.intro n.noTZ m.noTZ)
+
+
+instance {base : NatGtOne} : HAdd (Numeral base) (Numeral base) (Numeral base) := ⟨hAdd⟩
+
+#check a + b
+#eval a + b
+
+end Add
+
 end Numeral
