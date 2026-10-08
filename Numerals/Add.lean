@@ -492,9 +492,6 @@ end TZNumeral
 
 namespace Numeral
 
-def a : Numeral base10 := ⟨⟨[0, 1]⟩, by decide⟩
-def b : Numeral base10 := ⟨⟨[2]⟩, by decide⟩
-
 section Add
 
 def hAdd {base : NatGtOne} (n m : Numeral base) : Numeral base where
@@ -502,11 +499,21 @@ def hAdd {base : NatGtOne} (n m : Numeral base) : Numeral base where
   noTZ := TZNumeral.hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
             (And.intro n.noTZ m.noTZ)
 
-
 instance {base : NatGtOne} : HAdd (Numeral base) (Numeral base) (Numeral base) := ⟨hAdd⟩
 
-#check a + b
-#eval a + b
+theorem add_comm {base : NatGtOne} {a b : Numeral base} :
+  a + b = b + a := by
+  simp only [HAdd.hAdd, hAdd, TZNumeral.hAdd_helper_comm]
+
+theorem add_eq_zero_iff {base : NatGtOne} {a b : Numeral base} :
+  a + b = 0 ↔ a = 0 ∧ b = 0 := by
+  simp only [HAdd.hAdd, hAdd, OfNat.ofNat, Zero.zero, zero, TZNumeral.zero]
+  simp only [eq_iff_digits_eq, TZNumeral.hAdd_helper_eq_nil_iff, and_true]
+
+theorem add_toNat_distrib {base : NatGtOne} {a b : Numeral base} :
+  (a + b).toNat  = a.toNat + b.toNat := by
+  simp only [HAdd.hAdd, hAdd, OfNat.ofNat, TZNumeral.toNat]
+  exact TZNumeral.toNat_helper_hAdd_helper_distrib
 
 end Add
 

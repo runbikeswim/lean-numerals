@@ -667,6 +667,14 @@ theorem ne_iff_toTZNumeral_ne {base : NatGtOne} (a b : Numeral base) :
   a ≠ b ↔ a.toTZNumeral ≠ b.toTZNumeral :=
   Classical.iff_iff_not_iff_not.mp (eq_iff_toTZNumeral_eq a b)
 
+theorem eq_iff_digits_eq {base : NatGtOne} (a b : Numeral base) :
+  a = b ↔ a.digits = b.digits := by
+  simp only [eq_iff_toTZNumeral_eq a b, TZNumeral.eq_iff_digits_eq]
+
+theorem ne_iff_digits_ne {base : NatGtOne} (a b : Numeral base) :
+  a ≠ b ↔ a.digits ≠ b.digits :=
+  Classical.iff_iff_not_iff_not.mp (eq_iff_digits_eq a b)
+
 def decEq {base : NatGtOne} (a b : Numeral base) : Decidable (a = b) :=
   if g : a.toTZNumeral = b.toTZNumeral then
     isTrue ((eq_iff_toTZNumeral_eq a b).mpr g)
