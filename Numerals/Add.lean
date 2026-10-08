@@ -227,17 +227,14 @@ theorem hAdd_helper_eq_nil_iff {base : NatGtOne} {a b : List base.Fin} {n : Nat}
   · intro h
     simp only [h.left, h.right.left, h.right.right, hAdd.helper]
 
+theorem hAdd_eq_zero_iff {base : NatGtOne} {a b : TZNumeral base} :
+  a.hAdd b = zero ↔ a = zero ∧ b = zero := by
+  simp only [hAdd, OfNat.ofNat, zero, eq_iff_digits_eq, hAdd_helper_eq_nil_iff, and_true]
+
 theorem add_eq_zero_iff {base : NatGtOne} {a b : TZNumeral base} :
   a + b = 0 ↔ a = 0 ∧ b = 0 := by
-  simp only [HAdd.hAdd, hAdd, OfNat.ofNat, ofNat, prune_nil_zero_eq_zero, zero, eq_iff_digits_eq]
-  constructor
-  · intro h
-    have : a.digits = [] ∧ b.digits = [] ∧ 0 = 0 := hAdd_helper_eq_nil_iff.mp h
-    exact And.intro this.left this.right.left
-  · intro h
-    have : hAdd.helper base a.digits b.digits 0 = [] :=
-      hAdd_helper_eq_nil_iff.mpr (And.intro h.left (And.intro h.right rfl))
-    exact this
+  simp only [HAdd.hAdd, OfNat.ofNat, ofNat_zero_eq_zero]
+  exact hAdd_eq_zero_iff
 
 theorem not_equiv_helper_nil_hAdd_helper_nil_nil_of_ne_zero {base : NatGtOne} {n : Nat} (h : n ≠ 0) :
   ¬ equiv.helper base [] (hAdd.helper base [] [] n) := by
@@ -425,6 +422,10 @@ theorem hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
   simp only [hAdd_helper_eq_prune_helper_addDigits_helper]
   exact prune_helper_noTrailingZero_of_noTrailingZero this
 
+theorem add_noTrailingZero_of_noTrailingZero_and_noTrailingZero
+  {base : NatGtOne} {a b : TZNumeral base} (h : a.noTrailingZero ∧ b.noTrailingZero) :
+  (a + b).noTrailingZero := hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero h
+
 end NoTrailingZero_Add
 
 section ToNat_Add
@@ -495,25 +496,28 @@ namespace Numeral
 section Add
 
 def hAdd {base : NatGtOne} (n m : Numeral base) : Numeral base where
-  digits := TZNumeral.hAdd.helper base n.digits m.digits 0
-  noTZ := TZNumeral.hAdd_helper_noTrailingZero_of_noTrailingZero_and_noTrailingZero
-            (And.intro n.noTZ m.noTZ)
+  toTZNumeral := n.toTZNumeral + m.toTZNumeral
+  noTZ := by
+    have : n.noTrailingZero ∧ m.noTrailingZero := (And.intro n.noTZ m.noTZ)
+    exact TZNumeral.add_noTrailingZero_of_noTrailingZero_and_noTrailingZero this
 
 instance {base : NatGtOne} : HAdd (Numeral base) (Numeral base) (Numeral base) := ⟨hAdd⟩
 
 theorem add_comm {base : NatGtOne} {a b : Numeral base} :
   a + b = b + a := by
-  simp only [HAdd.hAdd, hAdd, TZNumeral.hAdd_helper_comm]
+  simp only [HAdd.hAdd, hAdd, eq_iff_toTZNumeral_eq]
+  exact TZNumeral.add_comm
 
 theorem add_eq_zero_iff {base : NatGtOne} {a b : Numeral base} :
   a + b = 0 ↔ a = 0 ∧ b = 0 := by
-  simp only [HAdd.hAdd, hAdd, OfNat.ofNat, Zero.zero, zero, TZNumeral.zero]
-  simp only [eq_iff_digits_eq, TZNumeral.hAdd_helper_eq_nil_iff, and_true]
+  simp only [HAdd.hAdd, hAdd, eq_iff_toTZNumeral_eq]
+  simp only [OfNat.ofNat, Zero.zero]
+  exact TZNumeral.hAdd_eq_zero_iff
 
 theorem add_toNat_distrib {base : NatGtOne} {a b : Numeral base} :
   (a + b).toNat  = a.toNat + b.toNat := by
-  simp only [HAdd.hAdd, hAdd, OfNat.ofNat, TZNumeral.toNat]
-  exact TZNumeral.toNat_helper_hAdd_helper_distrib
+  simp only [HAdd.hAdd, hAdd]
+  exact TZNumeral.add_toNat_distrib
 
 end Add
 

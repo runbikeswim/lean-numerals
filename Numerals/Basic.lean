@@ -626,6 +626,7 @@ instance instZero (base : NatGtOne) : Zero (Numeral base) := ⟨zero⟩
 
 theorem zero_eq_zero (base : NatGtOne) : @zero base = 0 := rfl
 theorem zero_toTZNumeral_eq_TZNumeral_zero (base : NatGtOne) : (@zero base).toTZNumeral = TZNumeral.zero := rfl
+theorem toTZNumeral_ofNat_zero_eq_zero (base : NatGtOne) : toTZNumeral (@OfNat.ofNat (Numeral base) 0 Zero.toOfNat0 ) = 0 := rfl
 
 end Zero
 
