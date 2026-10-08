@@ -8,6 +8,7 @@ import Numerals.Extra
 import Numerals.Basic
 import Numerals.ToNat
 import Numerals.Prune
+import Numerals.Equiv
 
 section OfNat
 
@@ -64,10 +65,27 @@ theorem toNat_ofNat_cancel {base : NatGtOne} (n : Nat) :
   simp only [ofNat]
   exact toNat_prune_nil_eq_add_toNat
 
+theorem ofNat_toNat_equiv {base : NatGtOne} (n : TZNumeral base) :
+  @ofNat base (n.toNat) ≈ n := by
+  simp only [ofNat, equiv_iff_toNat_eq, toNat_prune_nil_eq_add_toNat]
+
 theorem ofNat_noTrailingZero {base : NatGtOne} {n : Nat} : (@ofNat base n).noTrailingZero := by
   unfold ofNat
   exact prune_nil_noTrailingZero
 
 end TZNumeral
+
+namespace Numeral
+
+abbrev ofNat {base : NatGtOne} (n : Nat) : Numeral base where
+  toTZNumeral := TZNumeral.ofNat n
+  noTZ := TZNumeral.ofNat_noTrailingZero
+
+theorem ofNat_toNat_cancel {base : NatGtOne} (n : Numeral base) :
+  @ofNat base (n.toNat) = n := by
+  have : @ofNat base (n.toNat) ≈ n := TZNumeral.ofNat_toNat_equiv n.toTZNumeral
+  exact eq_iff_equiv.mpr this
+
+end Numeral
 
 end OfNat
