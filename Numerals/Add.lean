@@ -511,7 +511,7 @@ theorem add_comm {base : NatGtOne} {a b : Numeral base} :
 theorem add_eq_zero_iff {base : NatGtOne} {a b : Numeral base} :
   a + b = 0 ↔ a = 0 ∧ b = 0 := by
   simp only [HAdd.hAdd, hAdd, eq_iff_toTZNumeral_eq]
-  simp only [OfNat.ofNat, Zero.zero]
+  simp only [OfNat.ofNat, TZNumeral.ofNat_zero_eq_zero]
   exact TZNumeral.hAdd_eq_zero_iff
 
 theorem add_toNat_distrib {base : NatGtOne} {a b : Numeral base} :

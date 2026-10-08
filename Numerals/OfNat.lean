@@ -81,6 +81,12 @@ abbrev ofNat {base : NatGtOne} (n : Nat) : Numeral base where
   toTZNumeral := TZNumeral.ofNat n
   noTZ := TZNumeral.ofNat_noTrailingZero
 
+instance instOfNatNumeral {base : NatGtOne} (n : Nat) : OfNat (Numeral base) n where
+  ofNat := ofNat n
+
+theorem ofNat_zero_eq_zero {base : NatGtOne} : @ofNat base 0 = zero := by
+  simp only [ofNat, TZNumeral.ofNat_zero_eq_zero]
+
 theorem ofNat_toNat_cancel {base : NatGtOne} (n : Numeral base) :
   @ofNat base (n.toNat) = n := by
   have : @ofNat base (n.toNat) ≈ n := TZNumeral.ofNat_toNat_equiv n.toTZNumeral
