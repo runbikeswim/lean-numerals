@@ -303,26 +303,6 @@ structure TZNumeral (base : NatGtOne) where
   digits : List base.Fin
   deriving Repr
 
-/--
-shorthand for `TZNumeral`s in binary representation
--/
-abbrev TZNumeral2 := TZNumeral base2
-
-/--
-shorthand for `TZNumeral`s octal representation
--/
-abbrev TZNumeral8 := TZNumeral base8
-
-/--
-shorthand for `TZNumeral`s decimal representation
--/
-abbrev TZNumeral10 := TZNumeral base10
-
-/--
-shorthand for `TZNumeral`s hexadecimal representation
--/
-abbrev TZNumeral16 := TZNumeral base16
-
 instance instCoe (base : NatGtOne) : Coe (List base.Fin) (TZNumeral base) where
   coe := fun l : List base.Fin ↦ {digits := l}
 
@@ -357,8 +337,8 @@ section ToString
 
 def toString.doDigits (base : NatGtOne) (digits : List base.Fin) : List String :=
     match digits with
-        | [] => []
-        | x::xs => (doDigit x.val base.val x.isLt)::(doDigits base xs)
+    | [] => []
+    | x::xs => (doDigit x.val base.val x.isLt)::(doDigits base xs)
     where doDigit (digit base : Nat) (h : digit < base) : String :=
       if g : base = 16 ∧ 10 ≤ digit then
         /- needed for avoiding "Missing cases"-error in the following match -/
@@ -385,9 +365,7 @@ def toString {base : NatGtOne} (n : TZNumeral base) : String :=
   | 16 => s!"0x{String.join r}"
   | _ => s!"({base.val}){",".intercalate r}"
 
-def n : TZNumeral base16 := ⟨[0,1]⟩
-
-#eval n.toString
+instance {base : NatGtOne} : ToString (TZNumeral base) := ⟨toString⟩
 
 end ToString
 
@@ -553,12 +531,12 @@ theorem toNat_helper_eq {base : NatGtOne} {a : List Nat} {factor acc : Nat} :
     rw (occs := .pos [2]) [ih]
     rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
 
-theorem toNat_zero_eq_zero {base : NatGtOne} : @toNat base zero = 0 := rfl
-
 theorem toNat_helper_cons_eq {base : NatGtOne} {x : Nat} {xs : List Nat}  :
   toNat.helper base (x::xs) 1 0 = x + base.val * (toNat.helper base xs 1 0) := by
   simp only [toNat.helper, Nat.one_mul, Nat.add_zero, Nat.mul_one]
   rw [toNat_helper_eq]
+
+theorem toNat_zero_eq_zero {base : NatGtOne} : @toNat base zero = 0 := rfl
 
 theorem toNat_cons_eq {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}  :
   toNat (cons x xs) = x + base.val * (toNat xs) := by
@@ -679,18 +657,19 @@ Example:
 -/
 instance instZero (base : NatGtOne) : Zero (Numeral base) := ⟨zero⟩
 
-theorem zero_eq_zero (base : NatGtOne) : @zero base = 0 := rfl
-theorem zero_toTZNumeral_eq_TZNumeral_zero (base : NatGtOne) : (@zero base).toTZNumeral = TZNumeral.zero := rfl
-theorem toTZNumeral_ofNat_zero_eq_zero (base : NatGtOne) : toTZNumeral (@OfNat.ofNat (Numeral base) 0 Zero.toOfNat0 ) = 0 := rfl
+theorem zero_eq_zero {base : NatGtOne} : @zero base = 0 := rfl
+theorem zero_toTZNumeral_eq_TZNumeral_zero {base : NatGtOne} : (@zero base).toTZNumeral = TZNumeral.zero := rfl
+theorem toTZNumeral_ofNat_zero_eq_zero {base : NatGtOne} : toTZNumeral (@OfNat.ofNat (Numeral base) 0 Zero.toOfNat0 ) = 0 := rfl
+theorem toNat_zero_eq_zero {base : NatGtOne} : (@zero base).toNat = 0 := rfl
 
 end Zero
 
 section One
 
 abbrev one {base : NatGtOne} : Numeral base := {
-      toTZNumeral := TZNumeral.one,
-      noTZ := TZNumeral.one_noTrailingZero
-    }
+    toTZNumeral := TZNumeral.one,
+    noTZ := TZNumeral.one_noTrailingZero
+  }
 
 /--
 use `1` for one
@@ -705,6 +684,7 @@ instance instOne (base : NatGtOne) : One (Numeral base) where
 
 theorem one_eq_one {base : NatGtOne} : one = ⟨@TZNumeral.one base, TZNumeral.one_noTrailingZero⟩ := rfl
 theorem one_eq_one' {base : NatGtOne} : one = (1 : Numeral base) := rfl
+theorem toNat_one_eq_one {base : NatGtOne} : (@one base).toNat = 1 := rfl
 
 end One
 
