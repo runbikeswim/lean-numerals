@@ -6,7 +6,6 @@ Author: Stefan Kusterer
 
 import Numerals.Extra
 import Numerals.Basic
-import Numerals.ToNat
 import Numerals.Prune
 import Numerals.OfNat
 import Numerals.Equiv

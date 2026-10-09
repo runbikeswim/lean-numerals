@@ -6,7 +6,6 @@ Author: Stefan Kusterer
 
 import Numerals.Extra
 import Numerals.Basic
-import Numerals.ToNat
 
 namespace TZNumeral
 

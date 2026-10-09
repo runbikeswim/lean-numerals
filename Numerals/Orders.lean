@@ -5,7 +5,6 @@ Author: Stefan Kusterer
 -/
 
 import Numerals.Basic
-import Numerals.ToNat
 import Numerals.Equiv
 
 namespace TZNumeral

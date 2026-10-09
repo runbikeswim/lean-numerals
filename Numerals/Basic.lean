@@ -316,7 +316,7 @@ abbrev TZNumeral8 := TZNumeral base8
 /--
 shorthand for `TZNumeral`s decimal representation
 -/
-abbrev TZNumeral10 := TZNumeral ⟨10, by decide⟩
+abbrev TZNumeral10 := TZNumeral base10
 
 /--
 shorthand for `TZNumeral`s hexadecimal representation
@@ -352,6 +352,44 @@ def p : TZNumeral10 := [1, 2, 3, 0].toTZNumeral
 def base {_base : NatGtOne} (_ : TZNumeral _base) : NatGtOne := _base
 
 end Base
+
+section ToString
+
+def toString.doDigits (base : NatGtOne) (digits : List base.Fin) : List String :=
+    match digits with
+        | [] => []
+        | x::xs => (doDigit x.val base.val x.isLt)::(doDigits base xs)
+    where doDigit (digit base : Nat) (h : digit < base) : String :=
+      if g : base = 16 ∧ 10 ≤ digit then
+        /- needed for avoiding "Missing cases"-error in the following match -/
+        have : decide (digit < 16) := by
+          rw [g.left] at h
+          simp only [h, decide_true]
+        match digit with
+        | 10 => "a"
+        | 11 => "b"
+        | 12 => "c"
+        | 13 => "d"
+        | 14 => "e"
+        | 15 => "f"
+      else
+        s!"{digit}"
+
+def toString {base : NatGtOne} (n : TZNumeral base) : String :=
+  let s := toString.doDigits base n.digits
+  let r := if s = [] then ["0"] else s.reverse
+  match base.val with
+  | 2 => s!"0b{String.join r}"
+  | 8 => s!"0o{String.join r}"
+  | 10 => s!"{String.join r}"
+  | 16 => s!"0x{String.join r}"
+  | _ => s!"({base.val}){",".intercalate r}"
+
+def n : TZNumeral base16 := ⟨[0,1]⟩
+
+#eval n.toString
+
+end ToString
 
 section Zero
 
@@ -492,6 +530,43 @@ theorem cons_toList_eq_coe_cons_toList {base : NatGtOne} {a : Fin base.val} {as 
 
 end ToListNat
 
+section toNat
+
+def toNat {base : NatGtOne} (n : TZNumeral base) : Nat :=
+  helper base n.toListNat 1 0 where
+  helper (base : NatGtOne) (a : List Nat) (factor acc : Nat) : Nat  :=
+    match a with
+    | [] => acc
+    | x::xs => helper base xs (factor * base.val) (x * factor + acc)
+
+theorem toNat_helper_nil_eq {base : NatGtOne} {factor acc : Nat} :
+  toNat.helper base [] factor acc = acc := rfl
+
+theorem toNat_helper_eq {base : NatGtOne} {a : List Nat} {factor acc : Nat} :
+  toNat.helper base a factor acc = acc + factor * (toNat.helper base a 1 0) := by
+  induction a generalizing factor acc with
+  | nil => simp_all only [toNat_helper_nil_eq, Nat.mul_zero, Nat.add_zero]
+  | cons head tail ih =>
+    unfold toNat.helper
+    simp only [Nat.one_mul, Nat.mul_one, Nat.add_zero]
+    rw [ih, Nat.add_comm (head * factor) acc]
+    rw (occs := .pos [2]) [ih]
+    rw [Nat.mul_add, Nat.mul_assoc, Nat.add_assoc, Nat.mul_comm]
+
+theorem toNat_zero_eq_zero {base : NatGtOne} : @toNat base zero = 0 := rfl
+
+theorem toNat_helper_cons_eq {base : NatGtOne} {x : Nat} {xs : List Nat}  :
+  toNat.helper base (x::xs) 1 0 = x + base.val * (toNat.helper base xs 1 0) := by
+  simp only [toNat.helper, Nat.one_mul, Nat.add_zero, Nat.mul_one]
+  rw [toNat_helper_eq]
+
+theorem toNat_cons_eq {base : NatGtOne} {x : base.Fin} {xs : TZNumeral base}  :
+  toNat (cons x xs) = x + base.val * (toNat xs) := by
+  simp only [toNat, cons]
+  exact toNat_helper_cons_eq
+
+end toNat
+
 section NoTrailingZero
 
 def noTrailingZero {base : NatGtOne} (n : TZNumeral base) : Prop :=
@@ -574,26 +649,6 @@ By this, every natural number has a unique representation for the given `base`.
 structure Numeral (base : NatGtOne) extends TZNumeral base where
   noTZ : toTZNumeral.noTrailingZero
   deriving Repr
-
-/--
-Numerals in binary representation
--/
-abbrev Numeral2 := Numeral ⟨2, by decide⟩
-
-/--
-Numerals in octal representation
--/
-abbrev Numeral8 := Numeral ⟨8, by decide⟩
-
-/--
-Numerals in decimal representation
--/
-abbrev Numeral10 := Numeral ⟨10, by decide⟩
-
-/--
-Numerals in hexadecimal representation
--/
-abbrev Numeral16 := Numeral ⟨16, by decide⟩
 
 namespace Numeral
 
