@@ -814,7 +814,7 @@ theorem toNat_helper_lt_toNat_helper_of_lt_helper {base : NatGtOne} {a b : List 
     toNat_helper_le_of_le_helper (le_helper_of_lt_helper h)
   have h2 : ¬ equiv.helper base a b := not_equiv_helper_of_lt_helper h
   have h3 : toNat.helper base a.toListNat  1 0 = toNat.helper base b.toListNat  1 0 ↔ equiv.helper base a b :=
-    Iff.symm equiv_helper_iff_toNat__helper_eq
+    Iff.symm equiv_helper_iff_toNat_helper_eq
   have h4 : ¬ toNat.helper base a.toListNat 1 0 = toNat.helper base b.toListNat  1 0 :=
     (Classical.iff_iff_not_iff_not.mp h3).mpr h2
   exact Nat.lt_of_le_of_ne h1 h4
@@ -827,7 +827,7 @@ theorem lt_helper_of_toNat_helper_lt_toNat_helper {base : NatGtOne} {a b : List 
   have h1 : toNat.helper base a.toListNat  1 0 ≤ toNat.helper base b.toListNat  1 0 := Nat.le_of_lt h
   have h2 : ¬ toNat.helper base a.toListNat  1 0 = toNat.helper base b.toListNat  1 0 := Nat.ne_of_lt h
   have h3 : toNat.helper base a.toListNat  1 0 = toNat.helper base b.toListNat  1 0 ↔ equiv.helper base a b :=
-    Iff.symm equiv_helper_iff_toNat__helper_eq
+    Iff.symm equiv_helper_iff_toNat_helper_eq
   have h4 : ¬ equiv.helper base a b := (Classical.iff_iff_not_iff_not.mp h3).mp h2
   exact lt_helper_iff_le_helper_and_not_equiv_helper.mpr (And.intro (le_helper_of_toNat_helper_le h1) h4)
 

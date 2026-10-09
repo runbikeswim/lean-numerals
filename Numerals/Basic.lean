@@ -637,6 +637,13 @@ instance instCoe (base : NatGtOne) : Coe (Numeral base) (TZNumeral base) where
 
 end ToTZNumeral
 
+section ToString
+
+instance {base : NatGtOne} : ToString (Numeral base) :=
+  ⟨fun n ↦ n.toTZNumeral.toString⟩
+
+end ToString
+
 section Zero
 
 abbrev zero {base : NatGtOne} : Numeral base := {
