@@ -34,7 +34,7 @@ set_option linter.missingDocs false
 
 section NatGtOne
 
-def NatGtOne := { n : Nat // 1 < n} deriving DecidableEq
+def NatGtOne := { n : Nat // 1 < n } deriving DecidableEq
 
 abbrev base2 : NatGtOne := ⟨2, by decide⟩
 abbrev base8 : NatGtOne := ⟨8, by decide⟩
@@ -53,9 +53,9 @@ theorem val_pos {base : NatGtOne} : 0 < base.val :=
 theorem val_ne_zero {base : NatGtOne} : base.val ≠ 0 :=
   Nat.ne_zero_of_lt base.val_pos
 
-def zero {base : NatGtOne} : base.Fin := ⟨0, base.val_pos⟩
+def zero (base : NatGtOne) : base.Fin := ⟨0, base.val_pos⟩
 
-def one {base : NatGtOne} : base.Fin := ⟨1, base.property⟩
+def one (base : NatGtOne) : base.Fin := ⟨1, base.property⟩
 
 instance instNeZeroNatGtOne (base : NatGtOne) : NeZero base.val := ⟨base.val_ne_zero⟩
 
@@ -592,7 +592,6 @@ theorem cons_noTrailingZero_iff_tail_noTrailingZero_and {base : NatGtOne}
   Iff.intro tail_noTrailingZero_and_of cons_noTrailingZero_of
 
 /--
-
 Examples:
 ```
 #eval (⟨[3,2,1]⟩ : TZNumeral10).noTrailingZero
