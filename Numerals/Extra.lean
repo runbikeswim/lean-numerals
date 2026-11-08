@@ -36,6 +36,66 @@ end Classical
 
 namespace Nat
 
+theorem suc_mod_eq_zero_of {a b : Nat} (ha : a % b = b - 1) (hb : 1 < b) : (a + 1) % b = 0 := by
+  have h1 : 1 ≤ b * (a / b) + b := by
+    calc 1 ≤ b := Nat.le_of_lt hb
+      _ ≤ b * (a / b) + b := Nat.le_add_left b (b * (a / b))
+  have h2 : a = b * (a / b) + b - 1 := by
+    calc a =  b * (a / b) + a % b := Eq.symm (Nat.div_add_mod a b)
+      _ = b * (a / b) + (b - 1) := by rw [ha]
+      _ = b * (a / b) + b - 1 := by rw [← Nat.add_sub_assoc (Nat.le_of_lt hb) (b * (a / b))]
+  have h3 : a + 1 = b * (a / b + 1) := by
+    calc a + 1 = b * (a / b) + b - 1 + 1 := Nat.add_one_inj.mpr h2
+      _ = b * (a / b) + b := by rw [Nat.sub_add_cancel h1]
+      _ = b * (a / b) + b * 1:= by rw [Nat.mul_one b]
+      _ = b * (a / b + 1) := by rw [← Nat.mul_add b (a / b) 1]
+  rw [h3]
+  exact Nat.mul_mod_right b (a / b + 1)
+
+theorem succ_mod_of_succ_mod_pos_of_one_lt {a b : Nat} (ha : 0 < (a + 1) % b) (hb : 1 < b) :
+  (a + 1) % b = a % b + 1 := by
+  have h1 : a % b + 1 ≤ b := Nat.succ_le_of_lt (Nat.mod_lt a (Nat.lt_trans (by decide) hb))
+  have h2 : a % b + 1 ≠ b := by
+    intro h3
+    let h4 : a % b = b - 1 := by
+      calc a % b = a % b + 1 - 1 := Nat.add_sub_cancel (a % b) 1
+        _ = b - 1 := by rw [h3]
+    exact absurd (Eq.symm (suc_mod_eq_zero_of h4 hb)) (Nat.ne_of_lt ha)
+  have h3 : a % b + 1 % b < b := by
+    calc a % b + 1 % b = a % b + 1 := by rw [Nat.mod_eq_of_lt hb]
+      _ < b := Nat.lt_of_le_of_ne h1 h2
+  simp only [Nat.add_mod_eq_sub, h3, reduceIte, Nat.sub_zero]
+  rw [Nat.mod_eq_of_lt hb]
+
+theorem mod_of_succ_mod_eq_zero {a b : Nat} (ha : 0 = (a + 1) % b) (hb : 1 < b):
+  a % b = b - 1 := by
+    have h1 : a % b = a - b * (a / b) := Nat.mod_eq_sub_mul_div
+    have h2 : a + 1 = b * (a / b) + b := by
+      calc a + 1 = b * ((a + 1) / b) + (a + 1) % b := Eq.symm (Nat.div_add_mod (a + 1) b)
+        _ = b * ((a + 1) / b) := by rw [← ha, Nat.add_zero]
+        _ = b * (a / b + 1) := by rw [succ_div_of_mod_eq_zero (Eq.symm ha)]
+        _ = b * (a / b) + b := Nat.mul_add_one b (a / b)
+    have h3 : a - b * (a / b) = b - 1 := by
+      calc a - b * (a / b) = a + 1 - 1 - b * (a / b) := by rw [Nat.add_sub_cancel a 1]
+        _ = b * (a / b) + b - 1 - b * (a / b) := by rw [h2]
+        _ = b * (a / b) + (b - 1) - b * (a / b) := by rw [Nat.add_sub_assoc (Nat.le_of_lt hb) (b * (a / b))]
+        _ = b - 1 := by rw [Nat.add_sub_self_left (b * (a / b)) (b -1)]
+    exact Eq.trans h1 h3
+
+theorem sub_sub_lt_of {b x : Nat} (y c : Nat) (hx : x < b) :
+  x - y - c < b := by
+    calc x - y - c ≤ x - y := Nat.sub_le (x - y) c
+      _ ≤ x := Nat.sub_le x y
+      _ < b := hx
+
+theorem add_sub_lt_of_not_le {b x c : Nat} (hb : 0 < b) (h : ¬ c ≤ x) : b + x - c < b := by
+  calc b + x - c < b + x - x := Nat.sub_lt_sub_left (Nat.lt_add_of_pos_left hb) (Nat.lt_of_not_le h)
+    _ = b := by simp only [Nat.add_sub_cancel]
+
+theorem add_sub_sub_lt_of_not_le {b x y c : Nat} (hb : 0 < b) (h : ¬ y + c ≤ x) : b + x - y - c < b := by
+  rw [← Nat.sub_add_eq (b + x) y c]
+  exact add_sub_lt_of_not_le hb h
+
 theorem add_ne_zero_of_ne_zero {n : Nat} (h : n ≠ 0) (m : Nat) : n + m ≠ 0 := by
   have h1 : 0 < n := Nat.pos_iff_ne_zero.mpr h
   have h2 : 0 < n + m := Nat.add_pos_left h1 m

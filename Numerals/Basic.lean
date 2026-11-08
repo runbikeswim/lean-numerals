@@ -55,6 +55,8 @@ theorem val_ne_zero {base : NatGtOne} : base.val ≠ 0 :=
 
 def zero (base : NatGtOne) : base.Fin := ⟨0, base.val_pos⟩
 
+theorem zero_coe_eq {base : NatGtOne} : (base.zero : Nat) = 0 := rfl
+
 def one (base : NatGtOne) : base.Fin := ⟨1, base.property⟩
 
 instance instNeZeroNatGtOne (base : NatGtOne) : NeZero base.val := ⟨base.val_ne_zero⟩
@@ -103,13 +105,21 @@ theorem zero_ne_one {base : NatGtOne} : base.zero ≠ base.one := by
 
 theorem one_ne_zero {base : NatGtOne} : base.one ≠ base.zero := Ne.symm zero_ne_one
 
-def ofNat {base : NatGtOne} (n : Nat) : @FinBase base := ⟨n % base.val, Nat.mod_lt n base.val_pos⟩
+/--
+returns an element of type `base.Fin` with a value of `n` modulo `base.val` (with `n` being the natural
+number provided as input). This is identical to what `CoeOut`
+-/
+def ofNat {base : NatGtOne} (n : Nat) : base.Fin := ⟨n % base.val, Nat.mod_lt n base.val_pos⟩
 
-theorem coe_ofNat_eq_mod {base : NatGtOne} {n : Nat} : CoeOut.coe (@ofNat base n) = n % base.val:= rfl
+instance coeOfNat (base : NatGtOne) : Coe Nat base.Fin := ⟨ofNat⟩
+
+theorem coeToNat_coeOfNat_eq_mod {base : NatGtOne} {n : Nat} : ((n : base.Fin) : Nat) = n % base.val := rfl
+
+theorem coeToNat_ofNat_eq_mod {base : NatGtOne} {n : Nat} : CoeOut.coe (@ofNat base n) = n % base.val:= rfl
 
 theorem ofNat_toNat_eq_mod {base : NatGtOne} (n : Nat) : (@ofNat base n).toNat = n % base.val := by
   simp only [Fin.toNat]
-  exact coe_ofNat_eq_mod
+  exact coeToNat_ofNat_eq_mod
 
 theorem ofNat_coe_cancel {base : NatGtOne} {x : base.Fin} : ofNat ↑x = x :=
   Fin.ofNat_val_eq_self x

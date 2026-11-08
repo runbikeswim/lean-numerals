@@ -438,7 +438,7 @@ theorem coe_toNat_add_add_mul_add_div_eq (base : NatGtOne) (x y : base.Fin) :
   CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val)
     = CoeOut.coe x + CoeOut.coe y := by
   calc CoeOut.coe (@FinBase.ofNat base (↑x + ↑y)) + base.val * ((↑x + ↑y) / base.val)
-      = (↑x + ↑y) % base.val + base.val * ((↑x + ↑y) / base.val) := by rw [FinBase.coe_ofNat_eq_mod]
+      = (↑x + ↑y) % base.val + base.val * ((↑x + ↑y) / base.val) := by rw [FinBase.coeToNat_ofNat_eq_mod]
     _ = ↑x + ↑y := Nat.mod_add_div (Fin.toNat x + Fin.toNat y) base.val
 
 theorem coe_toNat_add_add_mul_add_div_add_add_eq (base : NatGtOne) (x y : base.Fin) (n m : Nat) :
