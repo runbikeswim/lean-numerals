@@ -38,12 +38,11 @@ namespace Nat
 
 theorem succ_mod_of_succ_mod_pos {a b : Nat} (ha : 0 < (a + 1) % b) :
   (a + 1) % b = a % b + 1 := by
-  have h1 : a + 1 = b * (a / b) + a % b + 1 := by simp only [Nat.div_add_mod a b]
-  have h2 : a + 1 = b * (a / b) + (a + 1) % b := by
+  have h1 : a + 1 = b * (a / b) + (a + 1) % b := by
     calc a + 1 = b * ((a + 1) / b) + (a + 1) % b := Eq.symm (Nat.div_add_mod (a + 1) b)
       _ =  b * (a / b) + (a + 1) % b := by rw [Nat.succ_div_of_mod_ne_zero (Nat.ne_zero_iff_zero_lt.mpr ha)]
-  have h3 : b * (a / b) + (a + 1) % b = b * (a / b) + a % b + 1 := by rw [← h1, ← h2]
-  exact Nat.add_left_cancel h3
+  have h2 : a + 1 = b * (a / b) + a % b + 1 := by rw [Nat.div_add_mod a b]
+  exact Nat.add_left_cancel (Eq.trans (Eq.symm h1) h2)
 
 theorem mod_of_succ_mod_eq_zero_of {a b : Nat} (ha : 0 = (a + 1) % b) (hb : 1 < b):
   a % b = b - 1 := by
